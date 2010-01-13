@@ -78,6 +78,31 @@ Debug viewable buffer and associated data.
 char *dv=NULL;
 int dvsz=0,topdv=-1,dvfl;
 
+#include <printf.h>
+int hesc_printf_handler(FILE* stream, const struct printf_info *info, const void *const *args) {
+	const char* str = *((const char**)(args[0]));
+	int rlen = 0;
+	const char* ipos = str;
+	for (ipos = str; *ipos; ipos++) {
+		switch (*ipos) {
+			case '<': rlen += fprintf(stream,"%s","&lt;"); break;
+			case '>': rlen += fprintf(stream,"%s","&gt;"); break;
+			case '&': rlen += fprintf(stream,"%s","&amp;"); break;
+			default: rlen += fprintf(stream,"%c",*ipos); break;
+		}
+	}
+	return rlen;
+}
+int hesc_printf_arginfo(const struct printf_info *info, size_t n, int *argtypes) {
+	if (n > 0) {
+		argtypes[0] = PA_POINTER;
+	}
+	return 1;
+}
+
+void __attribute__((constructor)) setup_hesc_printf() {
+	register_printf_function('H',hesc_printf_handler,hesc_printf_arginfo);
+}
 /*
 
 Test if the character is a separator.
@@ -1311,8 +1336,7 @@ void html2ge(char *ht,int lm)
         }
 
         else if (el == CML_TAG) {
-
-            printf("UNRECOGNIZED TAG %s\n",tag);
+            printf("UNRECOGNIZED TAG (%ld) %s\n", t - ht, tag);
         }
 
         else {
@@ -1630,7 +1654,7 @@ Poor man's headline.
 void pm_hl(char *s)
 {
     totext("<BR><TABLE><TR>\n");
-    totext("<TD BGCOLOR=WHITE>%s</TD>\n",s);
+    totext("<TD BGCOLOR=WHITE>%H</TD>\n",s);
     totext("</TR></TABLE>\n");
 }
 
@@ -1644,7 +1668,7 @@ void pm_cbox(char *name,int st,char *t)
     char *C;
 
     C = (st) ? "CHECKED" : "";
-    totext("<INPUT TYPE=CHECKBOX %s NAME=%s>%s\n",C,name,t);
+    totext("<INPUT TYPE=CHECKBOX %H NAME=%H>%H\n",C,name,t);
 }
 
 /*
@@ -1657,7 +1681,7 @@ void pm_radio(char *name,int st,int v,char *t)
     char *C;
 
     C = (st) ? "CHECKED" : "";
-    totext("<INPUT TYPE=RADIO %s NAME=%s VALUE=%d>%s\n",C,name,v,t);
+    totext("<INPUT TYPE=RADIO %H NAME=%H VALUE=%d>%H\n",C,name,v,t);
 }
 
 /*
@@ -1667,7 +1691,7 @@ Poor man's integer field.
 */
 void pm_int(char *name,char *t,int v)
 {
-    totext("<BR><INPUT TYPE=TEXT SIZE=8 NAME=%s VALUE=%d> %s\n",name,v,t);
+    totext("<BR><INPUT TYPE=TEXT SIZE=8 NAME=%H VALUE=%d> %H\n",name,v,t);
 }
 
 /*
@@ -1678,9 +1702,9 @@ Poor man's conditional float field.
 void pm_fl(char *name,char *t,float v,int c)
 {
     if (c)
-        totext("%s <INPUT TYPE=TEXT SIZE=8 NAME=%s VALUE=%3.2f>\n",t,name,v);
+        totext("%H <INPUT TYPE=TEXT SIZE=8 NAME=%H VALUE=%3.2f>\n",t,name,v);
     else
-        totext("%s %3.2f\n",t,v);
+        totext("%H %3.2f\n",t,v);
 }
 
 /*
@@ -1690,9 +1714,9 @@ Poor man's table line with integer input field.
 */
 void pm_tl(char *n,char *t,int v,int e)
 {
-    totext("<TR><TD BGCOLOR=DARKGRAY>%s</TD><TD>",t);
+    totext("<TR><TD BGCOLOR=DARKGRAY>%H</TD><TD>",t);
     if (e)
-        totext("<INPUT TYPE=TEXT SIZE=8 VALUE=%d NAME=%s>",v,n);
+        totext("<INPUT TYPE=TEXT SIZE=8 VALUE=%d NAME=%H>",v,n);
     else
         totext("%d",v);
     totext("</TD></TR>\n");
@@ -1705,11 +1729,11 @@ Poor man's table line with text input field.
 */
 void pm_tt(char *n,char *t,char *v,int e)
 {
-    totext("<TR><TD BGCOLOR=DARKGRAY>%s</TD><TD>",t);
+    totext("<TR><TD BGCOLOR=DARKGRAY>%H</TD><TD>",t);
     if (e)
-        totext("<INPUT TYPE=TEXT SIZE=20 VALUE=\"%s\" NAME=%s>",v,n);
+        totext("<INPUT TYPE=TEXT SIZE=20 VALUE=\"%H\" NAME=%H>",v,n);
     else
-        totext("%s",v);
+        totext("%H",v);
     totext("</TD></TR>\n");
 }
 
@@ -1720,9 +1744,9 @@ Poor man's table line with float input field.
 */
 void pm_tf(char *n,char *t,float v,int e)
 {
-    totext("<TR><TD BGCOLOR=DARKGRAY>%s</TD><TD>",t);
+    totext("<TR><TD BGCOLOR=DARKGRAY>%H</TD><TD>",t);
     if (e)
-        totext("<INPUT TYPE=TEXT SIZE=8 VALUE=%3.2f NAME=%s>",v,n);
+        totext("<INPUT TYPE=TEXT SIZE=8 VALUE=%3.2f NAME=%H>",v,n);
     else
         totext("%3.2f",v,n);
     totext("</TD></TR>\n");
@@ -1738,9 +1762,9 @@ void pm_tlc(char *n,char *t,int v,int e)
     char *C;
 
     C = (v) ? "CHECKED" : "";
-    totext("<TR><TD BGCOLOR=DARKGRAY>%s</TD><TD>",t);
+    totext("<TR><TD BGCOLOR=DARKGRAY>%H</TD><TD>",t);
     if (e)
-        totext("<INPUT TYPE=CHECKBOX %s NAME=%s>",C,n);
+        totext("<INPUT TYPE=CHECKBOX %H NAME=%H>",C,n);
     else
         totext(v ? "yes" : "no");
     totext("</TD></TR>\n");
@@ -1753,9 +1777,9 @@ Poor man's table line with conditional integer input.
 */
 void pm_tli(char *n,char *t,int v,int e)
 {
-    totext("<TR><TD BGCOLOR=DARKGRAY>%s</TD><TD>",t);
+    totext("<TR><TD BGCOLOR=DARKGRAY>%H</TD><TD>",t);
     if (e)
-        totext("<INPUT TYPE=NUMBER SIZE=8 NAME=%s VALUE=%d>",n,v);
+        totext("<INPUT TYPE=NUMBER SIZE=8 NAME=%H VALUE=%d>",n,v);
     else
         totext("%d",v);
     totext("</TD></TR>\n");
@@ -1768,9 +1792,9 @@ Poor man's table line with conditional float input.
 */
 void pm_tlf(char *n,char *t,float v,int e)
 {
-    totext("<TR><TD BGCOLOR=DARKGRAY>%s</TD><TD>",t);
+    totext("<TR><TD BGCOLOR=DARKGRAY>%H</TD><TD>",t);
     if (e)
-        totext("<INPUT TYPE=NUMBER SIZE=8 NAME=%s VALUE=%3.2f>",n,v);
+        totext("<INPUT TYPE=NUMBER SIZE=8 NAME=%H VALUE=%3.2f>",n,v);
     else
         totext("%3.2f",v);
     totext("</TD></TR>\n");
@@ -1831,7 +1855,7 @@ void mk_page_symbol(int c)
     if ((m->tr == NULL) || (((m->tr)->t) == NULL))
         totext("<INPUT TYPE=TEXT VALUE=\"\"><BR>\n");
     else
-        totext("<INPUT TYPE=TEXT VALUE=\"%s\"><BR>\n",(m->tr)->t);
+        totext("<INPUT TYPE=TEXT VALUE=\"%H\"><BR>\n",(m->tr)->t);
     totext("Symbol %d, %d component(s)\n",c,m->ncl);
     totext("<UL>\n");
 
@@ -1841,7 +1865,7 @@ void mk_page_symbol(int c)
                m->bm,id2idx(m->bm));
     totext("<LI>width %d height %d zone %d\n",m->r-m->l+1,m->b-m->t+1,m->c);
     totext("<LI>alignment %d\n",m->va);
-    totext("<LI>class %s\n",classname(m->tc));
+    totext("<LI>class %H\n",classname(m->tc));
     totext("<LI>shape status %d (best match %d)\n",C_ISSET(m->f,F_SS),m->bm);
     totext("<LI>start of word = %d\n",C_ISSET(m->f,F_ISW));
     totext("<LI>ispreferred = %d\n",C_ISSET(m->f,F_ISP));
@@ -1867,11 +1891,11 @@ void mk_page_symbol(int c)
 
         /* transliteration main properties */
         for (v=t->v, tv=0; v!=NULL; v=(vdesc *)(v->nv), ++tv);
-        totext("<LI>Transliteration \"%s\" (%d votes)\n",(t->t),tv);
-        totext("<LI>Alphabet %s\n",aname(t->a));
+        totext("<LI>Transliteration \"%H\" (%d votes)\n",(t->t),tv);
+        totext("<LI>Alphabet %H\n",aname(t->a));
         totext("<UL>\n");
         totext("<LI>preference = %d\n",t->pr);
-        totext("<LI>flags =%s%s%s\n",
+        totext("<LI>flags =%H%H%H\n",
             (t->f&F_ITALIC) ? " italic" : "",
             (t->f&F_BOLD) ? " bold" : "",
             (t->f) ? "" : " none");
@@ -1882,14 +1906,14 @@ void mk_page_symbol(int c)
             if ((0<=v->act) && (v->act<=topa)) {
                 a = act + v->act;
                 totext("<UL>\n");
-                totext("<LI>%s quality %d (act %d)\n",
+                totext("<LI>%H quality %d (act %d)\n",
                         origname(v->orig),v->q,v->act);
-                totext("<LI>by %s (%s) ",a->r,typename(a->rt));
+                totext("<LI>by %H (%H) ",a->r,typename(a->rt));
                 /*
                 if (v->orig == REVISION)
                     totext("[<A HREF=nullify/%d>nullify</A>]\n",v->act);
                 */
-                totext("<LI>from %s at %s",a->sa,ctime(&(a->dt)));
+                totext("<LI>from %H at %H",a->sa,ctime(&(a->dt)));
                 totext("</UL>\n");
             }
         }
@@ -2218,23 +2242,23 @@ void mk_page_output(int encap)
                         for (k=mc[a].sl; k>=0; k = mc[k].sl) {
                             if (mc[k].tr != NULL) {
                                 if (pass == 2)
-                                    totext("(char %d %d %d %d %d \"%s\")\n",mc[k].l,YRES-lb,mc[k].r,YRES-lt,mc[k].bm,mc[k].tr->t);
+                                    totext("(char %d %d %d %d %d \"%H\")\n",mc[k].l,YRES-lb,mc[k].r,YRES-lt,mc[k].bm,mc[k].tr->t);
                                 else if (encap)
-                                    totext("\\%s",mc[k].tr->t);
+                                    totext("\\%H",mc[k].tr->t);
                                 else
-                                    totext("<A HREF=symb/%d>\\%s</A>",k,mc[k].tr->t);
+                                    totext("<A HREF=symb/%d>\\%H</A>",k,mc[k].tr->t);
                             }
                         }
 
                         /* now the symbol */
                         if (pass == 2)
-                            totext("(char %d %d %d %d %d \"%s\")\n",mc[a].l,YRES-lb,mc[a].r,YRES-lt,mc[a].bm,mc[a].tr->t);
+                            totext("(char %d %d %d %d %d \"%H\")\n",mc[a].l,YRES-lb,mc[a].r,YRES-lt,mc[a].bm,mc[a].tr->t);
                         else if ((strcmp(mc[a].tr->t,"\"") == 0) && (encap == 3))
                             totext("\\\"");
                         else if (encap)
-                            totext("%s",mc[a].tr->t);
+                            totext("%H",mc[a].tr->t);
                         else
-                            totext("<A HREF=symb/%d>%s</A>",a,mc[a].tr->t);
+                            totext("<A HREF=symb/%d>%H</A>",a,mc[a].tr->t);
                     }
                 }
 
@@ -2464,7 +2488,7 @@ void mk_pattern_list(void)
         */
 
         /* non editable transliteration */
-        totext("<TD BGCOLOR=WHITE>%s\n",((d->tr==NULL) ? "" : d->tr));
+        totext("<TD BGCOLOR=WHITE>%H\n",((d->tr==NULL) ? "" : d->tr));
 
         /* matches and size */
         totext("<TD>%d</TD><TD>%dx%dx%d</TD>\n",
@@ -2476,7 +2500,7 @@ void mk_pattern_list(void)
         /* page */
         n = pagenbr(d->d);
         if (n >= 0)
-            totext("<TD><A HREF=load/%d>%s</A>",n,d->d);
+            totext("<TD><A HREF=load/%d>%H</A>",n,d->d);
         totext("</TD></TR>\n");
     }
     totext("</TABLE>\n");
@@ -2563,11 +2587,11 @@ void acc_alpha(int a)
             c = A[i].sc;
             s = pt[cpt].sc[c];
 
-            totext("<TR><TD>%s:</TD><TD>%d</TD>",A[i].ln,m[c]);
+            totext("<TR><TD>%H:</TD><TD>%d</TD>",A[i].ln,m[c]);
 
             for (j=CL_BOT; j<=CL_TOP; ++j) {
                 C = (s & (1<<(j-1))) ? " CHECKED" : "";
-                totext("<TD><INPUT TYPE=CHECKBOX NAME=%d_%d%s></TD>",j,c,C);
+                totext("<TD><INPUT TYPE=CHECKBOX NAME=%d_%d%H></TD>",j,c,C);
             }
         }
         else
@@ -2577,11 +2601,11 @@ void acc_alpha(int a)
         c = A[i].cc;
         s = pt[cpt].sc[c];
 
-        totext("<TD>%s:</TD><TD>%d</TD>",A[i].LN,m[c]);
+        totext("<TD>%H:</TD><TD>%d</TD>",A[i].LN,m[c]);
 
         for (j=CL_BOT; j<=CL_TOP; ++j) {
             C = (s & (1<<(j-1))) ? " CHECKED" : "";
-            totext("<TD><INPUT TYPE=CHECKBOX NAME=%d_%d%s></TD>",j,c,C);
+            totext("<TD><INPUT TYPE=CHECKBOX NAME=%d_%d%H></TD>",j,c,C);
         }
 
         totext("</TR>\n");
@@ -2761,17 +2785,17 @@ void mk_pattern_props(void)
         if (s->tr == NULL)
             totext("<INPUT TYPE=TEXT VALUE=\"\"><BR>");
         else
-            totext("<INPUT TYPE=TEXT VALUE=\"%s\"><BR>",s->tr);
+            totext("<INPUT TYPE=TEXT VALUE=\"%H\"><BR>",s->tr);
     }
     else {
         if (s->tr == NULL)
             totext("(untransliterated)<BR>");
         else
-            totext("Transliteration: %s<BR>",s->tr);
+            totext("Transliteration: %H<BR>",s->tr);
     }
 
     /* other details */
-    totext("Alphabet: %s<BR>\n",aname(s->a));
+    totext("Alphabet: %H<BR>\n",aname(s->a));
     totext("Type: %d<BR>\n",s->pt);
 
     /*
@@ -2804,9 +2828,9 @@ void mk_pattern_props(void)
 
     if (s->d != NULL) {
         if (n >= 0)
-            totext("<A HREF=load/%d>%s</A><BR>\n",n,s->d);
+            totext("<A HREF=load/%d>%H</A><BR>\n",n,s->d);
         else
-            totext("%s<BR>\n",s->d);
+            totext("%H<BR>\n",s->d);
     }
 
     /* "Nullify and remove" link */
@@ -2846,10 +2870,10 @@ void mk_pattern_action(void)
     totext("<BR><TABLE>\n");
 
     totext("<TR><TD><IMG SRC=pattern/%d></TD>\n",r_tr_patt);
-    totext("<TD BGCOLOR=WHITE>'%s' (pattern)</TD></TR>\n",r_tr_old);
+    totext("<TD BGCOLOR=WHITE>'%H' (pattern)</TD></TR>\n",r_tr_old);
 
     totext("<TR><TD><IMG SRC=symbol/%d></TD>\n",r_tr_symb);
-    totext("<TD BGCOLOR=WHITE>'%s' (symbol)</TD></TR>\n",r_tr_new);
+    totext("<TD BGCOLOR=WHITE>'%H' (symbol)</TD></TR>\n",r_tr_new);
 
     totext("</TABLE>\n");
 
@@ -2860,12 +2884,12 @@ void mk_pattern_action(void)
     {
         char s[81];
 
-        snprintf(s,80,"Both pattern and symbol are '%s'<BR>",r_tr_old);
+        snprintf(s,80,"Both pattern and symbol are '%H'<BR>",r_tr_old);
         s[80] = 0;
         pm_radio("AP",action_type==1,1,s);
-        snprintf(s,80,"Both pattern and symbol are '%s'<BR>",r_tr_new);
+        snprintf(s,80,"Both pattern and symbol are '%H'<BR>",r_tr_new);
         pm_radio("AP",action_type==3,3,s);
-        snprintf(s,80,"The symbol is '%s', the pattern is '%s'<BR>",r_tr_new,r_tr_old);
+        snprintf(s,80,"The symbol is '%H', the pattern is '%H'<BR>",r_tr_new,r_tr_old);
         pm_radio("AP",action_type==2,2,s);
     }
 
@@ -3038,7 +3062,7 @@ void mk_page_list(void)
             totext("<TD>%d *</TD>",n);
         else
             totext("<TD>%d</TD>",n);
-        totext("<TD><A HREF=load/%d>%s</A></TD>\n",n,pagelist+j);
+        totext("<TD><A HREF=load/%d>%H</A></TD>\n",n,pagelist+j);
         totext("<TD>%d</TD><TD>%s</TD>\n",dl_r[n],ht(dl_t[n]));
         totext("<TD>%d</TD>\n",dl_w[n]);
         totext("<TD>%d</TD><TD>%d</TD>\n",dl_ne[n],dl_db[n]);
@@ -3156,12 +3180,12 @@ void mk_history(int n)
 
     /* preamble */
     totext("%sRevision act</TD><TD>%d</TD></TR>\n",t,n);
-    totext("%sfrom page</TD><TD>%s</TD></TR>\n",t,a->d);
-    totext("%snullificated ?</TD><TD>%s</TD></TR>\n",
+    totext("%sfrom page</TD><TD>%H</TD></TR>\n",t,a->d);
+    totext("%snullificated ?</TD><TD>%H</TD></TR>\n",
         t,(C_ISSET(a->f,F_ISNULL) ? "yes":"no"));
     totext("%spropagability</TD><TD>%d</TD></TR>\n",
         t,(C_ISSET(a->f,F_PROPAG)));
-    totext("%stype</TD><TD>%s</TD></TR>\n",t,opname(a->t));
+    totext("%stype</TD><TD>%H</TD></TR>\n",t,opname(a->t));
 
     /* transliteration */
     if ((a->t == REV_TR) || (a->t == REV_PATT)) {
@@ -3169,8 +3193,8 @@ void mk_history(int n)
             totext("%ssymbol</TD><TD>%d</TD></TR>\n",t,a->mc);
         else
             totext("%spattern</TD><TD>%d</TD></TR>\n",t,a->mc);
-        totext("%salphabet</TD><TD> %s</TD></TR>\n",t,aname(a->a));
-        totext("%stransliteration</TD><TD> %s</TD></TR>\n",t,a->tr);
+        totext("%salphabet</TD><TD> %H</TD></TR>\n",t,aname(a->a));
+        totext("%stransliteration</TD><TD> %H</TD></TR>\n",t,a->tr);
         totext("%sflags</TD><TD> %d</TD></TR>\n",t,a->f);
     }
 
@@ -3181,35 +3205,35 @@ void mk_history(int n)
 
     /* symbol linkage */
     else if (a->t == REV_SLINK) {
-        totext("%sleft symbol</TD><TD>%d</TD></TR>\n",t,a->mc);
-        totext("%sright symbol</TD><TD>%d</TD></TR>\n",t,a->a1);
+        totext("%Hleft symbol</TD><TD>%d</TD></TR>\n",t,a->mc);
+        totext("%Hright symbol</TD><TD>%d</TD></TR>\n",t,a->a1);
     }
 
     /* symbol linkage */
     else if (a->t == REV_ALINK) {
-        totext("%sbase symbol</TD><TD>%d</TD></TR>\n",t,a->mc);
-        totext("%saccent</TD><TD>%d</TD></TR>\n",t,a->a1);
+        totext("%Hbase symbol</TD><TD>%d</TD></TR>\n",t,a->mc);
+        totext("%Haccent</TD><TD>%d</TD></TR>\n",t,a->a1);
     }
 
     /* symbol disassemble */
     else if (a->t == REV_DIS) {
-        totext("%ssymbol</TD><TD>%d</TD></TR>\n",t,a->mc);
+        totext("%Hsymbol</TD><TD>%d</TD></TR>\n",t,a->mc);
     }
 
     /* reviewer data */
-    totext("%ssubmitted at</TD><TD>%s</TD></TR>\n",t,ctime(&(a->dt)));
-    totext("%sreceived from host</TD><TD>%s</TD></TR>\n",t,a->sa);
-    totext("%sreviewer</TD><TD>%s (%s)</TD></TR>\n",t,a->r,typename(a->rt));
+    totext("%Hsubmitted at</TD><TD>%H</TD></TR>\n",t,ctime(&(a->dt)));
+    totext("%Hreceived from host</TD><TD>%H</TD></TR>\n",t,a->sa);
+    totext("%Hreviewer</TD><TD>%H (%H)</TD></TR>\n",t,a->r,typename(a->rt));
 
     /* original revision data */
     if (a->ob != NULL)
-        totext("%soriginal book</TD><TD>%s</TD></TR>\n",t,a->ob);
+        totext("%Horiginal book</TD><TD>%H</TD></TR>\n",t,a->ob);
     if (a->om >= 0)
-        totext("%soriginal symbol</TD><TD>%d</TD></TR>\n",t,a->om);
+        totext("%Horiginal symbol</TD><TD>%d</TD></TR>\n",t,a->om);
     if (a->od > 0)
-        totext("%soriginal submission</TD><TD>%s</TD></TR>\n",t,ctime(&(a->od)));
+        totext("%Horiginal submission</TD><TD>%H</TD></TR>\n",t,ctime(&(a->od)));
     if (a->or != NULL)
-        totext("%soriginal reviewer</TD><TD> %s</TD></TR>\n",t,a->or);
+        totext("%Horiginal reviewer</TD><TD> %H</TD></TR>\n",t,a->or);
 
     totext("</TABLE>\n");
 
@@ -3268,11 +3292,11 @@ void mk_tune(void)
     /* classifier type */
     pm_hl("3. Classification");
     C = (classifier==CL_SKEL) ? "CHECKED" : "";
-    totext("<BR><INPUT TYPE=RADIO NAME=C %s VALUE=1>Skeleton-based classifier\n",C);
+    totext("<BR><INPUT TYPE=RADIO NAME=C %H VALUE=1>Skeleton-based classifier\n",C);
     C = (classifier==CL_BM) ? "CHECKED" : "";
-    totext("<BR><INPUT TYPE=RADIO NAME=C %s VALUE=2>Border mapping classifier (experimental)\n",C);
+    totext("<BR><INPUT TYPE=RADIO NAME=C %H VALUE=2>Border mapping classifier (experimental)\n",C);
     C = (classifier==CL_PD) ? "CHECKED" : "";
-    totext("<BR><INPUT TYPE=RADIO NAME=C %s VALUE=3>Pixel distance classifier\n",C);
+    totext("<BR><INPUT TYPE=RADIO NAME=C %H VALUE=3>Pixel distance classifier\n",C);
     totext("<BR>\n");
 
     /* other options */
@@ -3487,7 +3511,7 @@ void ge2txt(void)
             if ((m=n) > 80)
                 m = 80;
             w[m] = 0;
-            totext("%s",w);
+            totext("%H",w);
             w[m] = ' ';
             col += m;
             n -= m;
@@ -3495,7 +3519,7 @@ void ge2txt(void)
 
         /* send text to output */
         if ((t=ge[a[i]].txt) != NULL) {
-            totext("%s",t);
+            totext("%H",t);
             col += strlen(t);
         }
     }

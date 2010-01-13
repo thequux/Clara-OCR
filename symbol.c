@@ -3655,7 +3655,7 @@ void p_spl_comp(c) {
     int i,j,h,w,d;
     float s;
 
-    fprintf(stderr,"p_spl_comp(%d)\n",c); /*debug*/
+    /* fprintf(stderr,"p_spl_comp(%d)\n",c); */ /*debug*/
     w=mc[c].r-mc[c].l+1;
     h=mc[c].b-mc[c].t+1;
 
@@ -3699,7 +3699,7 @@ void p_spl_comp(c) {
 
     P_SPL[0]=0;
 
-    for (i=1; i<w-1; i++) if (!P_SPL[i]) fprintf(stderr,"%d ~ ",i); fprintf(stderr,"\n"); /*debug*/
+    /* for (i=1; i<w-1; i++) if (!P_SPL[i]) fprintf(stderr,"%d ~ ",i); fprintf(stderr,"\n"); */ /*debug*/
 }
 
 /*
