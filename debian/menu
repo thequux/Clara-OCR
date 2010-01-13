@@ -1,0 +1,2 @@
+?package(clara):needs="X11" section="Applications/Project Management"\
+  title="clara" command="/usr/bin/clara"

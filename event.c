@@ -638,6 +638,8 @@ void show_hint(int f,char *s, ...)
         }
     }
 
+    va_end(args);
+
 /*
     printf("request (priority %d, mclip=%d, redraw=%d) to draw the message \"%s\"\n",f,mclip,redraw_stline,s);
 */

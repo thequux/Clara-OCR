@@ -1,0 +1,100 @@
+clara (20031214-4) unstable; urgency=low
+
+  [ Kumar Appaiah ]
+  * QA upload.
+  * debian/control:
+    + Make Debian QA Group the maintainer.
+    + Update Standards Version to 3.7.3.
+    + Make Priority optional from extra.
+  * debian/rules:
+    + Don't ignore make clean error.
+
+  [ Varun Hiremath ]
+  * debian/menu: fix according to new menu policy
+  * debian/rules: call dh_installmenu
+  * Minor cleanups in debian/copyright
+
+ -- Varun Hiremath <varunhiremath@gmail.com>  Sun, 09 Dec 2007 13:59:59 +0530
+
+clara (20031214-3) unstable; urgency=low
+
+  * debian/control: ${misc:Depends} added
+  * Updated debhelper compatability to 5
+  * debian/rules: minor cleanups, removed useless lines
+  * removed manpages, added its entry to debian/rules
+  * debian/copyright: corrected name of original package builder
+  * debian/menu: corrected entry by adding quotes
+
+ -- Kartik Mistry <kartik.mistry@gmail.com>  Tue, 27 Mar 2007 10:08:15 +0530
+
+clara (20031214-2) unstable; urgency=low
+
+  * New maintainer (closes: #391128)
+  * Upgraded standard version to 3.7.2
+  * Fixed wrong menu entry Apps/Text to Apps/Grphics
+  * Removed useless debian/dir
+  * clara.manpages is now manpages
+  * debian/rules: removed useless dh* calls
+
+ -- Kartik Mistry <kartik.mistry@gmail.com>  Sat,  7 Oct 2006 15:28:30 +0530
+
+clara (20031214-1.1) unstable; urgency=low
+
+  * Non-maintainer upload.
+  * Fix segmentation fault on powerpc (Closes: #307103).
+  * Split xlibs-dev build-deps.
+
+ -- Luk Claes <luk@debian.org>  Thu,  5 Jan 2006 18:59:37 +0100
+
+clara (20031214-1) unstable; urgency=low
+
+  * New upstream release (closes: #261492)
+  * Changelog is now included only once (closes: #216452)
+  * Changed package description slightly
+  * Versioning scheme was changed upstream
+
+ -- Eduardo Marcel Macan <macan@debian.org>  Sat, 31 Jul 2004 12:36:00 -0300
+
+clara (0.9.9-1.1) unstable; urgency=low
+
+  * NMU
+  * Update xlib6g-dev -> xlibs-dev.  Closes: #170120.
+
+ -- Daniel Schepler <schepler@debian.org>  Fri, 14 Mar 2003 23:08:38 -0800
+
+clara (0.9.9-1) unstable; urgency=low
+
+  * New upstream release
+
+ -- Eduardo Marcel Macan <macan@debian.org>  Sun, 21 Oct 2001 00:44:00 +0000
+
+clara (0.9.8-2) unstable; urgency=low
+
+  * NMU (Eduardo asked me to take care of this while he's away)
+  * debian/docs: removed the doc/README file since it is only
+    useful for people using the source package. Removed
+    changelog also, it is nowhere in the source package.
+  * debian/rules: removed some hacks to install the strange-named 
+    CHANGELOG to do it the right way (using dh_installchangelogs). 
+    This entry, together with the first: (Closes: #107289)
+
+ -- Gustavo Noronha Silva <kov@debian.org>  Wed, 21 Nov 2001 21:34:21 -0200
+
+clara (0.9.8-1) unstable; urgency=low
+
+  * New upstream release
+
+ -- Eduardo Marcel Macan <macan@debian.org>  Sun, 21 Oct 2001 00:44:00 +0000
+
+clara (0.9.7-1) unstable; urgency=low
+
+  * New upstream release
+  * Uploaded to debian, closes: #105856
+
+ -- root <root@lespaul.metainfo.org>  Thu, 19 Jul 2001 23:10:41 +0000
+
+clara (0.9.2-1) unstable; urgency=low
+
+  * Initial Release.
+
+ -- Eduardo Marcel Macan <macan@debian.org>  Fri, 27 Apr 2001 21:51:09 -0300

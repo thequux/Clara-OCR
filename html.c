@@ -1548,11 +1548,12 @@ void to(char **t,int *top,int *sz,const char *fmt, ...)
     va_list args;
     int n=0,f;
 
-    va_start(args, fmt);
     for (f=0; f==0; ) {
 
         /* try to write */
+        va_start(args, fmt);
         n = vsnprintf(*t+*top+1,*sz-*top-1,fmt,args);
+        va_end(args);
 
         /*
             Some implementations of vsnprintf return -1 when
@@ -1589,11 +1590,12 @@ void totext(const char *fmt, ...)
     va_list args;
     int n=0,f;
 
-    va_start(args, fmt);
     for (f=0; f==0; ) {
 
         /* try to write */
+        va_start(args, fmt);
         n = vsnprintf(text+topt+1,textsz-topt-1,fmt,args);
+        va_end(args);
 
         /*
             Some implementations of vsnprintf return -1 when

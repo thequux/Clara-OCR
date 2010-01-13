@@ -1,0 +1,81 @@
+.\" First parameter, NAME, should be all caps
+.\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
+.\" other parameters are allowed: see man(7), man(1)
+.TH selthresh 1 "2002-09-07"
+.\" Please adjust this date whenever revising the manpage.
+.\"
+.\" Some roff macros, for reference:
+.\" .nh        disable hyphenation
+.\" .hy        enable hyphenation
+.\" .ad l      left justify
+.\" .ad b      justify to both left and right margins
+.\" .nf        disable filling
+.\" .fi        enable filling
+.\" .br        insert line break
+.\" .sp <n>    insert n+1 empty lines
+.\" for manpage-specific macros, see man(7)
+.SH NAME
+selthresh.h \- Simple perl script to choose the "best" threshold when converting PGM to PBM.
+.SH SYNOPSIS
+.B selthresh.h
+.RI [-y res] [-w path] [-l ll rl] file1.pgm [file2.pgm ...]
+.br
+.SH DESCRIPTION
+This manual page documents briefly the
+.B selthresh
+command.
+This manual page was written for the Debian distribution
+because the original program does not have a manual page.
+.br
+.SH OPTIONS
+These programs follow the usual GNU command line syntax, with long
+options starting with two dashes (`-').
+A summary of options is included below.
+For a complete description, see the Info files.
+.TP
+.B \-y res
+Sets the resolution (defauts to 600 dpi)
+.TP
+.B \-v
+Sets the path of the work directory (defaults to "./")
+.TP
+.B \-l ll rl
+Sets the interval to analyse (defaults to [0.4,0.6])
+.SH BUGS
+ 1. won't distinguish two files with identical names but on
+    different directories. Example:
+
+        selthresh /home/foo/foo.pgm /tmp/foo.pgm
+
+.SH WARNINGS
+1. selthresh destroys the file selthresh.tem.pbm on the work
+   directory (if one such file exists), without asking confirmation!
+
+2. Make sure that clara, pnmenlarge and pgmtopbm are on the
+   current path.
+
+3. Write permission on the work directory is required. Two files
+   will be created there (selthresh.out and selthresh.temp.pbm). The
+   file selthresh.out contains all results, please do not remove
+   it.
+
+4. The paths of file1.pgm, file2.pgm, etc, must be relative to
+   the work directory.
+
+5. The results are affected by MD (see the -P flag), more than
+   should be. So the threshold quality measured by selthresh is
+   somewhat "unstable".
+
+6. Floating comparisons '<=' and '>=' include a 0.001 delta to
+   avoid failures due to the inexact binary representation of some tresholds.
+
+
+.SH SEE ALSO
+.BR clara (1),
+.br
+The programs are documented fully by
+.IR "The Rise and Fall of a Fooish Bar" ,
+available via the Info system.
+.SH AUTHOR
+This manual page was written by Eduardo Marcel Macan <macan@debian.org>,
+for the Debian GNU/Linux system (but may be used by others).

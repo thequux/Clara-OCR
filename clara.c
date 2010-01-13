@@ -751,11 +751,12 @@ void tr(char *m, ...)
     s[128] = 0;
     logmsg(s);
 
-    if (!trace)
-        return;
-    va_start(args,m);
-    vfprintf(stderr,m,args);
-    fprintf(stderr,"\n");
+    if (trace) {
+        vfprintf(stderr,m,args);
+        fprintf(stderr,"\n");
+    }
+
+    va_end(args);
 }
 
 /*
@@ -775,10 +776,12 @@ void db(char *m, ...)
     logmsg(s);
 
     /* send to stderr if requested */
-    if (!debug)
-        return;
-    vfprintf(stderr,m,args);
-    fprintf(stderr,"\n");
+    if (debug) {
+        vfprintf(stderr,m,args);
+        fprintf(stderr,"\n");
+    }
+
+    va_end(args);
 }
 
 /*
@@ -797,9 +800,10 @@ void warn(char *m, ...)
     s[128] = 0;
     logmsg(s);
 
-    va_start(args,m);
     vfprintf(stderr,m,args);
     fprintf(stderr,"\n");
+
+    va_end(args);
 }
 
 /* (devel)

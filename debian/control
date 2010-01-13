@@ -1,0 +1,13 @@
+Source: clara
+Section: graphics
+Priority: optional
+Maintainer: Debian QA Group <packages@qa.debian.org>
+Build-Depends: debhelper (>= 5), libx11-dev
+Standards-Version: 3.7.3
+
+Package: clara
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Free OCR program for Unix Systems
+ Clara OCR is intended for large scale digitalization projects. It features a 
+ powerful GUI and a web interface for cooperative digitalization of books.

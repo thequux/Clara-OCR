@@ -29,15 +29,15 @@ VERSION=20031214;
 # Configure the destination directories:
 #
 #BINDIR=/usr/local/bin
-BINDIR=/usr/bin
+BINDIR=$(DESTDIR)/usr/bin
 
 #MANDIR=/usr/local/man/man1
-MANDIR=/usr/man/man1
+MANDIR=$(DESTDIR)/usr/share/man/man1
 
 #DOCDIR=/usr/local/doc/clara
 #DOCDIR=/usr/doc/clara
 #DOCDIR=/usr/doc/clara-$(VERSION)
-DOCDIR=/usr/share/doc/clara
+DOCDIR=$(DESTDIR)/usr/share/doc/clara
 
 #
 # Configure these variables accordingly to your system:
