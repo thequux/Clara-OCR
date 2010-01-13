@@ -1,0 +1,59 @@
+
+Summary: An X window Optical Character Recognition (OCR) package
+Name:    clara
+
+%define  version 0.9.8
+Version: %{version}
+Release: 1
+Copyright: GPL
+Group:   Applications/Publishing
+Source0: %{name}-%{version}.tar.gz
+URL:     http://www.claraocr.org/
+
+BuildRoot: %{_tmppath}/%{name}-root
+
+%description
+Clara OCR is a free OCR, written for systems supporting the 
+C library and the X Windows System. Clara OCR is intended 
+for the cooperative OCR of books.
+
+%prep
+
+%setup -q
+
+%build
+make BINDIR=/usr/bin  				\
+	DOCDIR=/usr/share/doc/%{name}    	\
+	MANDIR=/usr/man/man1   all doc
+
+%install
+rm -rf $RPM_BUILD_ROOT
+
+install -d           $RPM_BUILD_ROOT/%{_bindir}
+install clara        $RPM_BUILD_ROOT/%{_bindir}
+install selthresh    $RPM_BUILD_ROOT/%{_bindir}
+install -d           $RPM_BUILD_ROOT/%{_mandir}/man1
+install doc/clara.1 doc/clara-dev.1 doc/clara-adv.1 \
+		     $RPM_BUILD_ROOT/%{_mandir}/man1
+install -d 	     $RPM_BUILD_ROOT/%{_docdir}
+install ANNOUNCE CHANGELOG COPYING INSTALL imre.pbm doc/FAQ \
+	doc/*.html   $RPM_BUILD_ROOT/%{_docdir}
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%pre
+
+%post
+
+#	does a chroot, and runs the post strips and man page compress
+%files
+%defattr(-,root,root)
+%doc ANNOUNCE CHANGELOG COPYING INSTALL imre.pbm doc/*
+%attr(0755, root, root)	%{_bindir}/clara 
+%attr(0755, root, root)	%{_bindir}/selthresh
+%{_mandir}/man1/* 
+
+%changelog
+* Mon Oct 29 2001 R P Herrold <herrold@owlriver.com>
+- initial packging

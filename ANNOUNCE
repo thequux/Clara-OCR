@@ -1,0 +1,143 @@
+Clara OCR 0.9.9
+---------------
+
+Clara OCR version 0.9.9 is available. Clara OCR is designed to
+OCR old books. It's available under the terms of the GPL.
+
+Clara OCR features a GUI and a web interface. It also features a
+command-line interface, but X Windows is always required both to
+compile and run. The development effort is using Intel 32-bits
+boxes running various Linux distributions and FreeBSD.
+
+Clara OCR can be found at http://www.claraocr.org
+
+New in 0.9.9
+------------
+
+1. Added grayscale native support (PGM format), plus four
+binarization methods.
+
+2. Added internal preprocessor including deskewing, balancing,
+thresholding and interpolation (by Giulio Lunati).
+
+3. Packaged for NetBSD (thanks Thomas Klausner).
+
+4. Various new features: border path computing, barcode search,
+detection of extremities, PAGE only mode, the flea, the spyhole,
+instant threshold, per-depth optimized X code, etc.
+
+5. Many bugfixes and interface enhancements.
+
+6. Documentation updated (but not finished). Glossary added.
+
+Obs:
+
+* The CHANGELOG is available at http://www.claraocr.org/CHANGELOG
+
+* The FAQ is available at http://www.claraocr.org/FAQ.html
+
+* The archives of the list claraocr-devel can be acessed through
+the SmartList native features (visit
+http://www.claraocr.org/lists.html for details).
+
+* Once a week the development files are copied to the net and
+made available through FTP. News are posted to the lists
+claraocr-devel and claraocr-announce on a weekly basis.
+
+
+-------------------------------------------------------------
+
+ANNOUNCE of version 0.9.8:
+
+Clara OCR 0.9.8
+---------------
+
+Clara OCR version 0.9.8 is available. Clara OCR is designed to
+OCR old books. It's available under the terms of the GPL.
+
+Clara OCR features a GUI and a web interface. It also features a
+command-line interface, but X Windows is always required both to
+compile and run. The development effort is using Intel 32-bits
+boxes running various Linux distributions and *BSD.
+
+Clara OCR can be found at http://www.claraocr.org
+
+New in 0.9.8
+------------
+
+1. Thresholding facility added
+
+Now the binarization of grayscale images can be automatically
+tuned by the selthresh script. Read the section "A first OCR
+project" of the Advanced User's Guide for details.
+
+2. New classifier and new skeleton-computing heuristics.
+
+A third classifier (called "pixel distance") was created. Two new
+skeleton-computing heuristics (#5 and #6) were added.
+
+3. The Advanced User's Guide (partially finished) was carefully
+updated.
+
+4. FreeBSD supported.
+
+5. Various small enhancements. In particular, the features to
+organize the various fonts used along one same book (see the
+CHANGELOG).
+
+6. Various bugfixes.
+
+7. Skeleton code is about 40%-50% faster.
+
+Obs:
+
+* The CHANGELOG is available at http://www.claraocr.org/CHANGELOG
+
+* The FAQ is available at http://www.claraocr.org/FAQ.html
+
+* The archives of the list claraocr-devel archives can be acessed
+through the SmartList native features (visit
+http://www.claraocr.org/lists.html for details).
+
+* Once a week the development files are copied to the net and
+made available through FTP. News are posted to the lists
+claraocr-devel and claraocr-announce on a weekly basis.
+
+-------------------------------------------------------------
+
+ANNOUNCE of version 0.9.7:
+
+Clara OCR - powerful free/open-source OCR program
+-------------------------------------------------
+
+The Clara OCR Project is proud to announce the availability of
+its new version 0.9.7, associated with a new web site and mailing
+lists.
+
+Clara OCR is an Optical Character Recognition (OCR) program. It
+features both a powerful GUI for the X Window System, and a web
+interface. The web interface is able to collect revision efforts
+from the Internet, using a simple revision model.
+
+Clara OCR is intended to be used in the cooperative optical
+recognition of old books. It tries to facilitate fine-tuning, so
+an optical recognition project is enabled to invest resources in
+tuning the OCR, in order to achieve better recognition results
+for one specific book, and reduce the overall revision cost.
+
+Clara OCR is distributed under the terms of the GNU General
+Public License.
+
+The development started in the second half of 1999. After two
+years of intensive work, it is currently close to the 1.0
+version. In some cases, the current beta version could actually
+be used for production.
+
+The documentation is almost complete. We already have a FAQ, a
+Tutorial, and preliminary versions of the Advanced User's Manual
+and the Developer's Guide.
+
+The development effort is using Intel 32-bit boxes and various
+different distributions of GNU/Linux.
+
+Clara OCR can be found at http://www.claraocr.org.

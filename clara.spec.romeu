@@ -1,0 +1,60 @@
+%define 	name	clara
+%define 	version	0.9.7
+%define 	release	1
+%define 	prefix	/usr
+
+Summary: 	OCR for systems that support the C library and the X windows system
+Name:		%{name}
+Version:	%{version}
+Release:	%{release}
+Copyright:	GPL
+Group:		X11/Utilities
+Provides:	clara
+Autoreqprov:	on
+Url:		http://www.claraocr.org/
+Vendor:		Ricardo Ueda Karpischek (ueda@ime.usp.br)
+Distribution:	Contribution
+Source:		ftp://carroll.cac.psu.edu/%{name}-%{version}.tar.gz
+Packager:	Romeu Mantovani Junior <rmantojr@ig.com.br>
+BuildRoot:	/var/tmp/%{name}-%{version}-root
+Requires:	perl
+
+%description
+Clara OCR is intended for large scale digitalization projects. It features a powerful GUI and a web interface for cooperative digitalization of books. Clara OCR development started in 1999 and we're approaching production quality.
+
+Authors:
+--------
+    Ricardo Ueda Karpischek (ueda@ime.usp.br)
+
+-------------------------------------------------------------------------------
+%prep
+%setup -q
+
+%build
+make all
+
+%install
+[ -d $RPM_BUILD_ROOT ] && rm -rf $RPM_BUILD_ROOT;
+mkdir -p $RPM_BUILD_ROOT%{prefix}/bin
+mkdir -p $RPM_BUILD_ROOT%{prefix}/man/man1
+mkdir -p $RPM_BUILD_ROOT%{prefix}/doc/%{name}-%{version}
+install -c -s -m 755 clara $RPM_BUILD_ROOT%{prefix}/bin
+install -c -m 644 doc/clara*.1 $RPM_BUILD_ROOT%{prefix}/man/man1
+gzip $RPM_BUILD_ROOT%{prefix}/man/man1/*
+
+%clean
+[ -d $RPM_BUILD_ROOT ] && rm -rf $RPM_BUILD_ROOT;
+
+%files
+%defattr(-,root,root)
+%doc ANNOUNCE CHANGELOG COPYING FAQ INSTALL 
+%doc doc/clara-tut.html doc/clara-dev.html doc/clara-adv.html 
+%doc doc/clara-faq.html doc/README
+%{prefix}/bin/clara
+%{prefix}/man/man1/clara*.1.gz
+
+%changelog -n clara
+* Thu Oct 04 2001 ...
+$Id: clara.spec,v 0.2 2001/10/04 mm Exp $
+* Wed Oct 03 2001 ...
+$Id: clara.spec,v 0.1 2001/10/03 mm Exp $

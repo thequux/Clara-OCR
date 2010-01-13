@@ -1,0 +1,601 @@
+#!/usr/bin/perl
+#
+
+#
+# Remark: the following notes apply to selthresh_fidian.pl (by Tyler Akins):
+#
+
+#
+# selthresh_fidian: Select best thesholds.
+#    ala Fidian
+#
+# Note:  Try to make this script "left-happy" to find the smallest threshold
+# that would work the best.
+#
+# selthresh_fidian [options] <filename> [filename [filename ...]]
+#     This is the greatly modified selthresh script.  It has been
+#     altered to no longer need the upper and lower limits.  It also should
+#     be a little faster, caches the images, and has a different searching
+#     method.  It tries near the last threshold used (the first file uses
+#     the value from -t, if specified), and will slowly grow the scan
+#     area until the best threshold should be inside it.  The script proceeds
+#     to shrink the scan area until it is found.  It doesn't read the .out
+#     file anymore, but that can be reimplemented later.
+#     -y resolution        (defaults to 600)
+#     -t threshold         (defaults to 0.5)
+#     -l links_factor      (defaults to 5)
+#     -w work_directory    (defaults to current directory)
+#     -d                   (debug mode)
+#     -s script_name       (writes a bash script to convert .pgm to .pbm)
+#     -sd                  (delete file ... see below)
+#     The -t option specifies the threshold to start scanning at.  It is
+#     really only used for the first file.  Subsequent files start scanning
+#     at the threshold for the file before it.  -l is used in the formula
+#     (bookfont + (links * links_factor)) to calculate the score.  If -sd
+#     is used and if the -s option is used, the script will contain lines
+#     that will remove the original file once it has been converted to .pbm.
+#
+
+#
+# Obs. the following notes apply to selthresh:
+#
+
+#
+# Simple script to choose the "best" threshold when converting
+# PGM to PBM.
+#
+# Usage:
+#
+#     selthres [-y res] [-w path] [-l ll rl] file1.pgm [file2.pgm ...]
+#
+# where
+#
+#     res is the resolution (defaults to 600 dpi)
+#     path is the path of the work directory (defaults to "./")
+#     [ll,lr] is the interval to analyse (defaults to [0.4,0.6])
+#
+# BUGS:
+#
+# 1. won't distinguish two files with identical names but on
+# different directories. Example:
+#
+#     selthresh /home/foo/foo.pgm /tmp/foo.pgm
+#
+# WARNINGS:
+#
+# 1. selthresh destroys the file selthresh.tem.pbm on the work
+# directory (if one such file exists), without asking confirmation!
+#
+# 2. Make sure that clara, pnmenlarge and pgmtopbm are on the
+# current path.
+#
+# 3. Write permission on the work directory is required. Two files
+# will be created there (selthresh.out and selthresh.temp.pbm). The
+# file selthresh.out contains all results, please do not remove
+# it.
+#
+# 4. The paths of file1.pgm, file2.pgm, etc, must be relative to
+# the work directory.
+#
+# 5. The results are affected by MD (see the -P flag), more than
+# should be. So the threshold quality measured by selthresh is
+# somewhat "unstable".
+#
+
+use strict;
+
+# threshold
+# my($t);
+
+# PGM input file and PBM output file
+# my($b,$g,$gn,$f);
+
+# interval to search
+# my($ll,$rl);
+
+# other
+# my($i,$some,$wd,$badl,$badr);
+my ($i, $wd, $lastFactor, $some, $cmd);  # temp, Work directory, last results,
+# whether to keep processing arguments, command for shell script generation
+
+# density
+# my($DENSITY,$N);
+my ($Density, $ScaleFactor, $LinksFactor);
+
+# results
+# my(%BS,%BT);
+my (%ResultCache, %FileCache, $ScriptName, $ScriptDel);
+
+# strategies
+# my($clean,$small);
+my ($debug);
+
+my ($LastFile);
+
+#
+# display a message and exit cleanly.
+#
+sub fatal
+{
+    CleanFiles();
+    if ($_[0] ne '') {
+        print(STDERR "$_[0]\n");
+    }
+    close(O);
+    exit(1);
+}
+
+
+sub CleanFiles() {
+    unlink("selthresh.pbm");
+    unlink("selthresh.pnm");
+}
+
+#
+# Handles Control-C. Note that most Control-C's will be catched
+# by the subprocesses, not by selthresh. The mysystem sub will
+# take care of Control-C's catched by subprocesses.
+#
+sub handle_int
+{
+    fatal();
+}
+
+#
+# diagnosed system.
+#
+sub mysystem
+{
+    my($rc);
+
+    $rc = 0xffff & system($_[0]);
+    if ($rc == 0) {
+        return(0);
+    }
+    if ($rc == 0xff00) {
+        print("STDERR command failed: $!\n");
+    }
+    elsif (($rc & 0xff) == 0) {
+        $rc >>= 8;
+        return($rc);
+    }
+    else {
+        if ($rc & 0x80) {
+            $rc &= ~0x80;
+        }
+        print(STDERR "command received signal $rc\n");
+    }
+
+    fatal();
+}
+
+#
+# try a threshold.
+#
+sub try_thresh
+{
+    my ($File, $Thresh) = @_;
+    my ($NewFile, $TimeStart, $r, $d, $n, $l, $cmd);
+    
+    if ($Thresh > 0.75 || $Thresh < 0.15) {
+	if ($debug) {
+	    print(O "eliminating $File, threshold $Thresh (result " . 
+		  $ResultCache{"$File,$Thresh"} . ")\n");
+	}
+	return 999999;
+    }
+    
+    #
+    # already computed
+    #
+    if ($ResultCache{"$File,$Thresh"} ne '') {
+	if ($debug) {
+	    print(O "skipping $File, threshold $Thresh (result " . 
+		  $ResultCache{"$File,$Thresh"} . ")\n");
+	}
+        return($ResultCache{"$File,$Thresh"});
+    }
+
+    if ($File != $LastFile) {
+	if ($ScaleFactor > 1) {
+	    $r = mysystem("pnmenlarge $ScaleFactor $File > selthresh.pnm");
+	    if ($r != 0) {
+		fatal("pnmenlarge failed.  Do you have it?");
+	    }
+	} else {
+	    $r = mysystem("cp $File selthresh.pnm");
+	    if ($r != 0) {
+		fatal("Can't copy file!");
+	    }
+	}
+	$LastFile = $File;
+    }
+
+    #
+    # Build font using threshold $t and fat skeletons.
+    #
+    $TimeStart = time();
+    $r = mysystem("pgmtopbm -threshold -value $Thresh selthresh.pnm > " .
+		  "selthresh.pbm");
+    if ($r != 0) {
+	fatal("pgmtopbm failed (do you have it?)");
+    }
+
+    $d = $ScaleFactor * $Density;
+    $r = `clara -b -y $d -a 1,0,1 -X 0 -T -f selthresh.pbm`;
+    ($n,$l) = ($r =~ /bookfont size is ([\-0-9]+), ([0-9]+) links/s);
+    chomp($n);
+
+    if ($n eq '') {
+        fatal("clara failed");
+    }
+
+    $TimeStart = time() - $TimeStart;
+
+    $ResultCache{"$File,$Thresh"} = $n + $l * $LinksFactor;
+    print O "File $File th $Thresh bf $n l $l score " .
+      ($n + $l * $LinksFactor) . " ($TimeStart sec)\n";
+    
+    return($n + $l * $LinksFactor);
+}
+
+
+sub find_threshold {
+    my ($File, $lastFactor) = @_;
+    my ($step, $a, $a_pos, $b, $b_pos, $c, $c_pos, $test, $test_pos, $again);
+    
+    if ($FileCache{$File} ne '') {
+	return $FileCache{$File};
+    }
+    
+    $step = 0.01;
+    $again = 1;
+    
+    $a_pos = $lastFactor - $step;
+    $b_pos = $lastFactor;
+    $c_pos = $lastFactor + $step;
+    
+    do {
+	$again = 0;
+	$a = try_thresh($File, $a_pos);
+	$b = try_thresh($File, $b_pos);
+	
+	if ($a <= $b) {
+	    # No need to use C yet
+	    if ($debug) {
+		print(O "Shift left   a[$a_pos] = $a   b[$b_pos] = $b" .
+		      "   ($step)\n");
+	    }
+	    $step = $step * 2;
+	    while ($b_pos - ($step * 2) <= 0.1 && $step >= 0.01) {
+		$step = $step / 2;
+	    }
+	    if ($step >= 0.01) {
+		$c_pos = $b_pos;
+		$b_pos = $c_pos - $step;
+		$a_pos = $b_pos - $step;
+		$again = 1;
+	    }
+	    else {
+		fatal("Weird error.  Fell off the small side of the world.");
+	    }
+	}
+	else {
+	    $c = try_thresh($File, $c_pos);
+	    
+	    if ($b >= $c) {
+		if ($debug) {
+		    print(O "Shift right   b[$b_pos] = $a   " .
+			  "c[$c_pos] = $c   ($step)\n");
+		}
+		# Shift larger
+		$step = $step * 2;
+		while ($b_pos + ($step * 2) > 0.75 && $step >= 0.01) {
+		    $step = $step / 2;
+		}
+		if ($step >= 0.01) {
+		    $a_pos = $b_pos;
+		    $b_pos = $a_pos + $step;
+		    $c_pos = $b_pos + $step;
+		    $again = 1;
+		}
+		else {
+		    fatal("Weird error.  Fell off the big side of the " .
+			  "world.");
+		}
+	    }
+	    
+	    if (! $again && $debug) {
+		print(O "Scan area is large enough\n");
+	    }
+	}
+    } while ($again);
+    
+    while ($step > 0.01) {
+	$step = $step / 2;
+    
+	if ($debug) {
+	    print(O "a[$a_pos] = $a   b[$b_pos] = $b   " .
+		  "c[$c_pos] = $c   ($step)\n");
+	}
+	
+	$test_pos = $b_pos - $step;
+	$test = try_thresh($File, $test_pos);
+	
+	if ($test < $a && $test < $b) {
+	    if ($debug) {
+		print(O "Shrunk scan area (small side)\n");
+	    }
+	    $c_pos = $b_pos;
+	    $c = $b;
+	    $b_pos = $test_pos;
+	    $b = $test;
+	}
+	else {
+	    $test_pos = $b_pos + $step;
+	    $test = try_thresh($File, $test_pos);
+	    
+	    if ($test < $b && $test < $c) {
+		if ($debug) {
+		    print(O "Shrunk scan area (big side)\n");
+		}
+		$a_pos = $b_pos;
+		$a = $b;
+		$b_pos = $a_pos + $step;
+		$b = try_thresh($File, $b_pos);
+	    }
+	    else {
+		if ($debug) {
+		    print(O "Shrunk scan area (middle)\n");
+		}
+		$a_pos = $b_pos - $step;
+		$c_pos = $b_pos + $step;
+		$a = try_thresh($File, $a_pos);
+		$c = $test;
+	    }
+	}
+    }
+    
+    if ($debug) {
+	print(O "Final:  a[$a_pos] = $a   b[$b_pos] = $b   " .
+	      "c[$c_pos] = $c   ($step)\n");
+    }
+    
+    return $b_pos;
+}
+
+#
+# THE PROGRAM BEGINS HERE
+#
+# $f = '';
+# $clean = 1;
+# $small = 0;
+
+#
+# Install handlers.
+#
+$SIG{INT} = \&handle_int;
+
+#
+# prepare
+#
+$Density = 0;
+$lastFactor = 0.5;
+$some = 1;
+$wd = '';
+$debug = 0;
+$LinksFactor = 5;
+$ScriptName = '';
+$ScriptDel = 0;
+$LastFile = "";
+
+#
+# command-line parameters
+#
+do {
+
+    # resolution
+    if ($ARGV[0] eq '-y') {
+
+        if ($#ARGV < 1) {
+            fatal('-y requires one parameter');
+        }
+
+        shift(@ARGV);
+        $Density = $ARGV[0];
+        shift(@ARGV);
+
+        if ($Density < 100) {
+            fatal("cannot handle resolution $Density");
+        }
+    }
+
+    # threshold
+    if ($ARGV[0] eq '-t') {
+
+        if ($#ARGV < 1) {
+            fatal('-t requires one parameter');
+        }
+
+        shift(@ARGV);
+        $lastFactor = $ARGV[0];
+        shift(@ARGV);
+
+        if ($lastFactor > 0.75 || $lastFactor < 0.1) {
+            fatal("Threshold $lastFactor must be between 0.1 and 0.75");
+        }
+    }
+
+    # Links factor
+    if ($ARGV[0] eq '-l') {
+
+        if ($#ARGV < 1) {
+            fatal('-l requires one parameter');
+        }
+
+        shift(@ARGV);
+        $LinksFactor = $ARGV[0];
+        shift(@ARGV);
+
+        if ($LinksFactor <= 0) {
+            fatal("Links factor $lastFactor must be a positive number");
+        }
+    }
+
+    # work directory
+    elsif ($ARGV[0] eq '-w') {
+
+        if ($#ARGV < 1) {
+            fatal('-w requires one parameter');
+        }
+
+        shift(@ARGV);
+        $wd = $ARGV[0];
+        shift(@ARGV);
+    }
+    
+    # debug
+    elsif ($ARGV[0] eq '-d') {
+	shift(@ARGV);
+	$debug = 1;
+    }
+
+    # Write to script
+    elsif ($ARGV[0] eq '-s') {
+        if ($#ARGV < 1) {
+            fatal('-s requires one parameter');
+        }
+
+	shift(@ARGV);
+	$ScriptName = shift(@ARGV);
+    }
+
+    elsif ($ARGV[0] eq '-sd') {
+	shift(@ARGV);
+	$ScriptDel = 1;
+    }
+
+    else {
+        $some = 0;
+    }
+
+} while ($some);
+
+#
+# default density
+#
+if ($Density == 0) {
+    print(STDERR "selthresh: no resolution informed, assuming 600 dpi\n");
+    $Density = 600;
+}
+
+#
+# change to the work directory.
+#
+if ($wd ne '') {
+    if (chdir($wd) == 0) {
+        fatal("could not chdir to $wd\n");
+    }
+}
+
+#
+# parse results (maybe later)
+#
+# if (-e 'selthresh.out') {
+#     my ($t,$n);
+# 
+#     open(O,'selthresh.out') || fatal("could not open selthresh.out");
+#     while (<O>) {
+# 
+#         if (($gn,$t,$n) = (/bookfont size for ([^ ]+) with threshold ([^ ]+) is ([^ ]+),/)) {
+#             $BS{"$gn,$t"} = $n;
+#         }
+#         elsif (($gn,$t) = (/best threshold for ([^ ]+) over .* is ([\.0-9]+)\n$/)) {
+#             $BT{"$gn"} = $t;
+#         }
+#         # Added by Fidian
+#         elsif (($gn,$t) = (/best threshold for ([^ ]+) is ([\.0-9]+)\n$/)) {
+#             $BT{"$gn"} = $t;
+#         }
+#     }
+# }
+
+#
+# prepare output.
+#
+if ($debug == 0) {
+    open(O,'>>selthresh.out') || fatal("could not append to selthresh.out");
+}
+else {
+    open(O, '>>/dev/stdout') || fatal("couldn't output log to stdout");
+}
+select(O);
+$| = 1;
+select(STDOUT);
+$| = 1;
+
+#
+# argument to pnmenlarge
+#
+$ScaleFactor = 600 / $Density;
+if ($ScaleFactor - int($ScaleFactor) > 0.5) {
+    $ScaleFactor = int($ScaleFactor) + 1;
+}
+else {
+    $ScaleFactor = int($ScaleFactor);
+}
+if ($ScaleFactor == 0) {
+    $ScaleFactor = 1;
+}
+if ($ScaleFactor != 1) {
+    print(STDERR "selthresh: scaling $ScaleFactor times\n");
+}
+
+#
+# Main loop
+#
+for ($i=0; $i<=$#ARGV; ++$i) {
+    my ($File);
+    
+    $File = $ARGV[$i];
+    
+    $lastFactor = find_threshold($File, $lastFactor);
+    print(O "Best threshold for $File is $lastFactor\n");
+    $FileCache{$File} = $lastFactor;
+    CleanFiles();
+}
+
+close(O);
+
+#
+# Outputs all best thresholds.  Maybe writes the script.
+#
+if ($ScriptName ne "") {
+    open(O, ">$ScriptName") || fatal("Can't open script file $ScriptName");
+    print O "#!/bin/bash\n";
+}
+print("Best thresholds:\n");
+foreach $i (sort keys %FileCache) {
+    print "$i $FileCache{$i}\n";
+    if ($ScriptName ne "") {
+	$cmd = "pgmtopbm -threshold -value " . $FileCache{$i};
+	if ($ScaleFactor > 1) {
+	    $cmd = "pnmenlarge $ScaleFactor $i | $cmd";
+	} else {
+	    $cmd .= " $i";
+	}
+	print O "$cmd > " . $i . ".pbm\n";
+	if ($ScriptDel) {
+	    print O "rm $i\n";
+	}
+    }
+}
+
+if ($ScriptName ne "") {
+    close(O);
+}
+
+if ($debug) {
+    print scalar(keys(%ResultCache)) . " tests ran to find the best " .
+      "thresholds for " . scalar(keys(%FileCache)) . " files.\n";
+}

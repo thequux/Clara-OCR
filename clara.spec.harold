@@ -1,0 +1,66 @@
+%define name	clara
+%define version 0.9.8
+%define release 1
+%define rc_name	%{name}-%{version}
+
+Name: 		%{name}
+Version: 	%{version}
+Release: 	%{release}
+
+Summary: 	An OCR (Optical Character Recognition) program
+URL: 		http://www.calraocr.org
+Source: 	ftp://ftp.proxad.net/pub/Distributions_Linux/Mandrake-devel/projects/claraocr/%{rc_name}.tar.gz
+Patch0:		clara-0.9.7.makefile.patch.bz2
+Patch1:		clara-0.9.8.sigfpe.patch
+License: 	GPL
+Group: 		Applications/Publishing
+Buildroot: 	%{_tmppath}/%{name}-%{version}-build
+
+%description
+Clara OCR is intended for large scale digitalization projects. 
+It features a powerful GUI and a web interface for cooperative 
+digitalization of books. Clara OCR development started in 1999 
+and we're approaching production level.
+
+%prep
+%setup -q -n %{rc_name}
+%patch0 -p1 -b .makefile
+%patch1 -p1 -b .sigfpe
+
+%build
+#%make
+# Les droles types de mandrake utilisent leurs propres macros
+# qui fait que leurs `fichier spec' ne marchent pas chez les 
+# autres distro comme redhat et suse. Merci les mecs !
+# Vive la cooperation ..
+# /var/tmp/rpm-tmp.39: fg: no job control
+#%make doc
+
+make
+make doc
+
+%install
+mkdir -p $RPM_BUILD_ROOT%{_bindir}
+cp clara $RPM_BUILD_ROOT%{_bindir}
+
+mkdir -p $RPM_BUILD_ROOT%{_mandir}/man1
+install -m 644 doc/clara.1 $RPM_BUILD_ROOT%{_mandir}/man1
+install -m 644 doc/clara-dev.1 $RPM_BUILD_ROOT%{_mandir}/man1
+install -m 644 doc/clara-adv.1 $RPM_BUILD_ROOT%{_mandir}/man1
+
+%files
+%defattr(-,root,root)
+%doc doc/*html doc/FAQ doc/README
+%{_mandir}/man1/clara*
+%{_bindir}/*
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%changelog
+* Sun Oct 21 2001 <clara@lanceerplaats.nl>
+- Upgrade, fix SIGFPE, `de-mandrakize' spec file
+
+* Mon Jul 23 2001 Yves Duret <yduret@mandrakesoft.com> 0.9.7-1mdk
+- first MandrakeSoft package
+

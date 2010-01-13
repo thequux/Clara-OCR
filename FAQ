@@ -1,0 +1,267 @@
+The Clara OCR FAQ
+-----------------
+
+WELCOME
+
+These are the Clara OCR Frequently Asked Questions. They're
+useful for a first contact with Clara OCR. If you're looking for
+information on how to use Clara OCR, please try the Clara OCR
+Tutorial instead. Clara OCR can be found at http://www.claraocr.org/.
+
+CONTENTS
+
+1. What is Clara OCR?
+2. Why is Clara a "cooperative OCR"?
+3. Is Clara OCR Free? Open Source?
+4. Is Clara OCR a GNU program?
+5. On which platforms does Clara OCR run?
+6. Does Clara OCR have a command-line interface?
+7. Does Clara OCR run on KDE? GNOME?
+8. Which languages are supported by Clara OCR?
+9. Does Clara OCR support Unicode?
+10. Is Clara OCR omnifont?
+11. How does Clara differ from other OCRs?
+12. What is PBM/PGM/PPM/PNM?
+13. How can I scan paper documents using Clara OCR?
+14. I've tried Clara OCR, but the results disappointed me
+15. How can I get support on Clara OCR?
+16. Does Clara OCR induce to Copyright Law infringements?
+17. How can I help the Clara OCR development effort?
+
+1. What is Clara OCR?
+
+Clara is an OCR program. OCR stands for "Optical Character
+Recognition". An OCR program tries to recognize the characters
+from the digital image of a paper document. The name Clara stands
+for "Cooperative Lightweight chAracter Recognizer".
+
+
+2. Why is Clara a "cooperative OCR"?
+
+Clara is a cooperative OCR because it offers an web interface for
+training and revision, so these tasks can benefit from the
+revision effort of many people across the Internet. However,
+Clara OCR also offers a powerful X-based GUI for standalone
+usage.
+
+
+3. Is Clara OCR Free? Open Source?
+
+Clara OCR is distributed within the terms of the Gnu Public
+License (GPL) version 2. Yes, Clara OCR is Free. Yes, Clara OCR
+is Open Source. Clara OCR is not "Shareware", nor "Public
+Domain".
+
+
+4. Is Clara OCR a GNU program?
+
+Clara OCR is unrelated to the GNU Project but its development is
+strongly based on GNU programs (GCC, Emacs and others), as well
+as on other free softwares, like the Linux kernel and XFree86.
+
+Clara OCR is free software because we agree on the free software
+ideal as stated by the GPL. To make this agreement explicit we
+also adopted some suggestions from the Free Software
+Foundation. These suggestions apply to the Clara OCR
+documentation:
+
+(a) GPL programs are referred as "free software", not "open
+source".
+
+(b) The term "GNU/Linux (operating system)" is used rather
+than "Linux (operating system)".
+
+(c) We do not recommend non-free softwares and do not refer
+the user to non-free documentation for free softwares.
+
+Furthermore, Clara OCR will support Guile as an extension
+language in the near future.
+
+Remark: We write "free software" instead of "open source"
+just for coherence. We dislike antagonisms between the various
+initiatives created along the years to freely produce, use,
+change and distribute software.
+
+
+5. On which platforms does Clara OCR run?
+
+Clara OCR is being developed on 32-bit Intel running GNU/Linux.
+Currently Clara OCR won't run on big-endian CPUs (e.g. Sparc) nor
+on systems lacking X windows support (e.g. MS-Windows). A
+relatively fast CPU (300MHz or more) is recommended. There is a
+port initiative to MS-Windows being worked. See also the next
+question.
+
+
+6. Does Clara OCR have a command-line interface?
+
+Yes, but the X Windows headers and libraries are required anyway
+to compile the source code, and the X Windows libraries are
+required to run even the Clara OCR command-line interface. Unless
+someone reworks the code, it's not possible to detach the GUI in
+order to compile Clara OCR on systems that do not support X
+Windows.
+
+
+
+7. Does Clara OCR run on KDE? GNOME?
+
+Clara OCR will hopefully run on any graphic environment based on
+Xwindows, including KDE, GNOME, CDE, WindowMaker and
+others. Clara OCR depends only on the X library, and does not
+require GTK, Qt or Motif to run. Clara OCR does not use the X
+Toolkit (aka "Xt"). Clara OCR has been successfully tested on
+X11R5 and X11R6 environments with twm, fvwm, mwm and others.
+
+
+8. Which languages are supported by Clara OCR?
+
+As a generic recogniser, Clara OCR may be tried with any language
+and any alphabet. However, there are some restrictions. Currently
+Clara OCR expects the words to be written horizontally, and there
+are some heuristics that suppose some geometric relationships
+typical for the Latin Alphabet and the accents used by most
+european languages. Support for language-specific spell checking
+is expected to be added soon.
+
+
+9. Does Clara OCR support Unicode?
+
+No, Clara OCR does not support Unicode, and the support to the
+ISO-8859 charsets is partial.
+
+
+10. Is Clara OCR omnifont?
+
+No, Clara OCR is not omnifont. Clara OCR implements an OCR model
+based on training. This model makes training and revision one
+same thing, making possible to reuse training and revision
+information (see also the next question).
+
+
+11. How does Clara differ from other OCRs?
+
+This is a quote from the Clara Advanced User's Manual:
+
+Clara differs from other OCR softwares in various aspects:
+
+1. Most known OCRs are non-free and Clara is free. Clara focus
+the X windows system. Clara offers batch processing, a web
+interface and supports cooperative revision effort.
+
+2. Most OCR softwares focus omnifont technology disregarding
+training. Clara does not implement omnifont techniques and
+concentrate on building specialized fonts (some day in the
+future, however, maybe we'll try classification techniques that
+do not require training).
+
+3. Most OCR softwares make the revision of the recognized text a
+process totally separated from the recognition. Clara
+pragmatically joins the two processes, and makes training and
+revision parts of one same thing. In fact, the OCR model
+implemented by Clara is an interactive effort where the usage of
+the heuristics alternates with revision and fine-tuning of the
+OCR, guided by the user experience and feeling.
+
+4. Clara allows to enter the transliteration of each pattern
+using an interface that displays a graphic cursor directly over
+the image of the scanned page, and builds and maintains a mapping
+between graphic symbols and their transliterations on the OCR
+output. This is a potentially useful mechanism for documentation
+systems, and a valuable tool for typists and reviewers. In fact,
+Clara OCR may be seen as a productivity tool for typists.
+
+5. Most OCR softwares are integrated to scanning tools offerring
+to the user an unified interface to execute all steps from
+scanning to recognition. Clara does not offer one such integrated
+interface, so you need a separate software (e.g. SANE) to
+perform scanning.
+
+6. Most OCR softwares expect the input to be a graphic file
+encoded in tiff or other formats. Clara supports only raw PBM
+and PGM.
+
+
+12. What is PBM/PGM/PPM/PNM?
+
+PBM, PGM and PPM are graphic file formats defined by Jef
+Poskanzer. PNM is not a graphic file format, but a generic
+reference to those three formats. In other words, to say that a
+program supports PNM means that it handles PBM, PGM and PPM.
+
+    PBM = Portable BitMap
+    PGM = Protable GrayMap
+    PPM = Portable PixMap
+    PNM = Portable aNyMap
+
+PBM files are black-and-white images, 1 bit per pixel. PGM files
+are grayscale images, 8 bits per pixel. PPM files are color
+images, 24 bits per pixel. Currently Clara OCR likes raw PBM and
+raw PGM files only. A scanned page stored in some format other
+than PBM or PGM can be converted to PBM or PGM using the netpbm
+tools, ImageMagick or others.
+
+PNM files may be "raw" or "plain". The plain versions are rarely
+used. Clara OCR does not support plain PBM nor plain PGM. To make
+sure about the file format, try the "file" utility, for instance
+
+    file test.pbm
+
+Remember that image conversion sometimes implies data loss. For
+instance, to convert a color image to black-and-white, each pixel
+must be mapped to either black or white, so the original color
+(say, red, lightblue, seagreen, tomato, mistyrose, etc) is
+dropped. Also, the conversion process should decide for each
+pixel if it will be mapped to black or to white. Generally, the
+program that performs the conversion offers a variety of
+different mapping criteria. The OCR results depend strongly on
+the criterion chosen.
+
+
+13. How can I scan paper documents using Clara OCR?
+
+You cannot. Clara OCR includes no support for scanners. To scan
+paper documents, use another software, like the one bundled with
+your scanner, or SANE (http://www.mostang.com/sane/). The
+development tests are using SANE.
+
+
+14. I've tried Clara OCR, but the results disappointed me
+
+All OCR programs will disappoint you depending on the texts
+you're trying to recognize. If you're a developer, join the Clara
+OCR development effort and try to make it behave better on your
+texts. If your are not a developer, wait a new version and try
+again.
+
+
+15. How can I get support on Clara OCR?
+
+If the documentation did not solve your problems, try the
+discussion list.
+
+
+16. Does Clara OCR induce to Copyright Law infringements?
+
+No. Clara OCR is just a tool for character recognition like many
+others that can be purchased or are bundled with scanners. The
+Clara OCR Project claims all users to be aware about the
+Copyrigth Law and not infringe it. The Clara OCR Project
+abominates any try to infringe the legitimate laws of any
+country.
+
+Nonetheless, the Clara OCR Project supports the free and public
+availability of materials produced to be free, or of materials
+out of copyright due to its age. The Clara OCR Project recognizes
+the right of anyone to produce free or non-free materials.
+
+
+17. How can I help the Clara OCR development effort?
+
+The best way is to use Clara OCR to recognize the texts you're
+interested on, and try to make it adapt better to them. The
+Developer's Guide should help in this case (C programming skills
+are required). The Clara OCR Project acknowledges all efforts to
+make Clara OCR more widely known and used.
+
+

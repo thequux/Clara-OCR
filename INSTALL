@@ -1,0 +1,29 @@
+Welcome to Clara OCR!
+
+To compile Clara OCR and install it, edit the Makefile manually (if
+required), and type
+
+    $ make
+
+Clara OCR is expected to compile and run with no or few changes on
+most little-endian Unix-like system with X11 support.
+
+The Clara OCR Advanced User's Manual contains some simple
+compilation hints.
+
+After the compilation, type "make install" or copy the just produced
+executable "clara" and selthresh to some directory of binaries:
+
+    $ cp clara selthresh /usr/local/bin
+
+To produce the nroff and html documentation, type
+
+    $ make doc
+
+Now it's time to read the tutorial. To read the tutorial in nroff
+format without installing it, type
+
+    $ nroff -man doc/clara-tut.1 | less
+
+Optionally, the HTML version can be read using a web browser (just
+load the file doc/clara-tut.html).

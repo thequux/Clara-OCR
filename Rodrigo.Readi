@@ -1,0 +1,192 @@
+These are suggestions/remarks sent by Rodrigo Readi.
+
+---
+
+You write, Clara OCR may be seen as a productivity tool for typists. I think
+here may play a comfortable graphic interface a big role, and the simple in
+outlook, the better in my opinion. It was not the unnecessary scrolling 
+welcome what convinced me of how efficient is clara. I also hold the 
+"auto pop-up" item in "Options" menu, "fonts" and "hide scrolbars" items
+in "view" menu for unnecessary, perhaps is a configuration file a better
+place for changing these defaults. A disturbing thing is the blink of the
+image of the scanned page after entering the transliteration of a pattern, 
+specially disturbing when ones eyes are concentrated on the text arround 
+the cursor, I was after a time tired because of it. I think it would be 
+enough if the typed transcription appears written somewhere. The name 
+"indo-arabic numbers" is not only too long: it sounds ideological. The 
+decimal system is indian, but the number characters used in the west are 
+arabic, usually one says "arabic numeral", "cipher" or "cypher" (an arabic
+word). The system of the greek alphabet, even the name of the letters and 
+their order in the alphabet, are phoenician, the characters of the alphabet 
+are greek, one does not say "punico-greek alphabet". 
+
+There is a lot of places for specifying alphabets. The tab "pattern (types)",
+the menu "alphabets" (for what is it?), the buttons on the left and the item 
+"set pattern type" in the edit menu (are they for the same purpose?). I was
+not able to specify a pattern type in the "pattern (types)" tab, and my changes
+in the parameters "ascent", "descent", DD were ignored, reset to "-1" after
+reentering clara. I think this tab is the place for specifying if the font
+is "latin type" (with three levels, base, ascent, descent), "arabic type"
+(with much more levels and cursive). Perhaps "the "number of levels",
+their heigh, the length of words, the fonts name is better data to specify
+for each font, and not "latin", "greek", etc. For what is the account? What 
+is "sk", "bm", "pd", "QTY" (Hints on abrebiations would not be bad)? Note 
+that one needs much more characters than the ones appearing in the accounts: 
+ligatures, punctuation, etc. And perhaps one decides to use clara for a 
+completely unknown alphabet, for which there is no account :)
+
+The tab "page fatbits" is very good for measuring the book fonts. From
+there one can get numbers to put in the tab "pattern (types)", like
+descent, ascent, DD, XH, etc. It would be nice to have the possibility to
+put rulers, as much as one want, for example at the base line, descent line.
+Also to have a way for measuring distances and angles by clicking. What you 
+call zoom is in reality not a zoom: it doesnt go from a general view to a
+detail view in the scanned text/fatbits. 
+
+In automatic entering of the transliteration, the patterns are set on the 
+upper link corner. How to distinguish "P" from "p" here? When entering
+transliteration of the german Fraktur I had a lot of other problems here.
+The context is at this place necessary. I think also this transliteration
+could be given in the tab "page": after giving a transliteration, the cursor
+could directly jump to the next pattern for which a transliteration is
+demanded, instead to the next at the right. It would also be nice to have
+the possibility to enter transliterations in the tab "patterns (list)"
+directly, but a little of context, perhaps the "web clip" would be, as 
+noted, necessary. Also the possibility to change data (like transliteration,
+and type), as well to delete a pattern directly in "patterns (list)" would
+be a nice thing.
+
+My atempts to change parameters in the tab "tune (skeleton)" were also ignored
+and reset to the old values after reentering clara. I couldnt reclasify symbols
+after adding new patterns, although I selected "Re-scan all patterns" in 
+"Edit" menu. It would be nice to have the possibility to force a classification
+without using a pattern and without using the symbol as pattern: for example to
+tell clara that a symbol is "d", although it appears to be a perfect "a". In
+general one cannot distinguish very well if clara is dealing with a pattern or
+with a symbol. The following question has in my oppinion now answer:
+
+    "click on better alternative"
+     r    "b" (pattern)
+     4    "4" (symbol)
+    
+    both are "b"
+    both are "4"
+    symbol is "4", pattern "b"
+
+What is the best??? There should be a way to directly say what is the
+pattern and what is the symbol, without "multiple choice". Sometimes there 
+does not appear any pattern in this questions. -- The information in the
+last window in "page" tab is not understandable: what does mean
+"best match 3160, shape status 1 (best match 3268)"? After clicking on
+3160 one gets "pattern 3268 (id 3377), from act 3494", and after clicking
+3494 one gets "symbol 25". Too much unexplained numbers and IDs!
+    
+
+I think that making tools for "Computing Aided Revision" of scanned and
+OCRed text is also a challenge. Someone asked a scientist at the University
+of Tuebingen to correct a latin text that lied in ASCII, the scientist 
+answered that he preffers to type the whole text than to read and find the 
+errors. He typed the text, then it was compared with the original one, and the 
+places where this two texts differed, were corrected. This is the origin
+of a technik used by those that let text be typed in China or Rumenia:
+the text is typed twice and the two versions compared. If you have two 
+good classification criteria and dont want to mix them, you can make 
+clara give, after batch OCR, a "clickable" report with the places where 
+both clasifiers differ. Another idea is the following: after clicking 
+a classified symbol in the image of the scanned text, appears a black
+elipse arround the symbol, and grey elipses arround the ones classified
+with the same pattern, at this point one should able to change the 
+transliteration of the pattern and of some symbols without altering the
+pattern. We can call this symbols as checked. When one clicks another symbol, 
+the checked ones become unmarked and new ones are marked. Well, the idea would 
+be to select a "revision mode" in a menu, so that the checked symbols
+become marked as "checked", at best presented with a very light grey tone,
+to show that one has not anymore to care of these symbols (but not to 
+confuse with the unclassified ones that also appear with a light gray tone). 
+The game would be to revise all symbols, but no one more tham once.
+
+When OCRing a "?" symbol, what should show the "status line" when the
+symbol was succesfully classified and the transliteration (=?) found?
+Unfortunately the symbol "?" is used for the untransliterated patterns!
+Please, think on the possibility of other accents, like the german Umlaut
+(two points over a, o or u, in TeX \"{a}, \"{o}, \"{u}). Another issue
+are the "text-glosses": They are words or sentences in a very small
+fontsize between the lines of texts, for making commentaries or translations
+of the main text. When I use the right-arrow-key to navigate on
+the image of the scanned text, the cursor jumps from the main text to
+the glosses, and then comes again down to the main text (and forget what
+was in between). Something similar happens when I have an "i" and a letter
+with accent: it moves through the accents and comes down again. What should
+happen in the output? (I was not able to get a readable output, it ommits 
+a lot).
+
+I would be interested in having the possibility to decide how the
+output looks like, for later processing the output with a script.
+I use for example tcl and CoSt for processing SGML files, and a
+SGML output in a way that I specify would be interesting, and not
+TeX or HTML.
+
+The Idea of integrating clara with GUILE is excellent, specially if it
+allows to easily program new OCR strategies, perhaps text-dependent
+strategies. I was thinking the whole time on "classification strategies",
+perhaps I write you later some ideas. I would be glad if I hear from you
+how to change the tuning parameters, as said, it doesnt work. I would like 
+to experiment with it.
+
+---
+
+(1) Instead of checking that the skeleton of the pattern is in the symbol
+   and that the skeleton of the symbol is in the pattern, one could check 
+   that the skeleton of the pattern is in the symbol and that both, pattern
+   an symbol are (almost) equally big. The idea is: if the set A is included
+   in B and both, A and B, have the same number of elements, then A and B
+   are equal. This would allow to explicitely define skeletons, without
+   functions that calculate them. The functions are necessary because you
+   calculate the skeletons of the symbols to be automatically classified.
+   Of course, training could mean to compute a skeleton with an algorithm 
+   on the basis of symbols told the computer to be equal, but also modifying 
+   the computed skeleton, or just directly entering the skeleton.
+
+(2) Well, one can not only check if a pattern is included in the symbol, 
+   but also that a set of forbidden bits are 0.
+
+(3) One can make (2) smooth. We can characterize a pattern (mean as a muster
+   symbol) with a "reward measure", a "punishment measure" and two 
+   numbers "a" and "b". Each of these measures consists of a number 
+   between 0 and 1 for each point in the bitmap. The reward measure has 
+   higher values at points that we wish to be black, the punishment at     
+   those we wish white. We can consider the symbol and both measures as 
+   a vector. The reward for the symbol is the scalar product of the 
+   symbols vector with the reward measure. The punishment the scalar 
+   product with the punishment measure. The task is to find the measures,  
+   a and b for a pattern, so that a symbol corresponds to the pattern if
+   and only if the punishment is below a and the reward over b. Of course,
+   if we are working with grayscale, we must "normalize" the symbol (divide
+   by the norm/ a norm). The measures could be calculated by taking the
+   arithmetical mean of the bits (and their complements for the punishment)
+   of some symbols the user tell the computer to belong to a pattern.
+
+(4) As I came to (3), I noted that this is a statistical thema. I dont
+   have much idea on statistics, I never liked it. I asked someone about,
+   he told me that this kind of classification strategies are studied
+   under the thema "multivariates methods". There are strategies for
+   finding the groups and for deciding what bolongs to a group.
+
+(5) Note that I am far away from your original strategy. You select patterns
+   from the scanned text, I propose to use scanned symbols to create 
+   "artificial" patterns, they are nowhere in the scanned text, furthermore,
+   they are not  bitmaps, but measures, numbers that can also be modified
+   by the user. Of course, for the symbol "a" we can still have many patterns,
+   it is the user who says what is similar to what. I think it would be
+   interesting to have programming tools for easily experimenting with OCR 
+   strategies, among them tools for managing databases of symbols clasiffied 
+   by the user.
+
+---
+
+Another thought is to try to characterize patterns by many kinds
+of measures, not only height and width, but also centre of mass
+(also useful for identifying points of two symbols) and anything
+we can imagine.
+
+---

@@ -1,0 +1,503 @@
+#!/usr/bin/perl
+
+#
+#  Copyright (C) 1999-2001 Ricardo Ueda Karpischek
+#
+#  This is free software; you can redistribute it and/or modify
+#  it under the terms of the version 2 of the GNU General Public
+#  License as published by the Free Software Foundation.
+#
+#  This software is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this software; if not, write to the Free Software
+#  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307,
+#  USA.
+#
+
+#
+# selthresh: Select best thesholds.
+#
+
+#
+# Simple script to choose the "best" threshold when converting
+# PGM to PBM.
+#
+# Usage:
+#
+#     selthres [-y res] [-w path] [-l ll rl] file1.pgm [file2.pgm ...]
+#
+# where
+#
+#     res is the resolution (defaults to 600 dpi)
+#     path is the path of the work directory (defaults to "./")
+#     [ll,lr] is the interval to analyse (defaults to [0.4,0.6])
+#
+# BUGS:
+#
+# 1. won't distinguish two files with identical names but on
+# different directories. Example:
+#
+#     selthresh /home/foo/foo.pgm /tmp/foo.pgm
+#
+# WARNINGS:
+#
+# 1. selthresh destroys the file selthresh.tem.pbm on the work
+# directory (if one such file exists), without asking confirmation!
+#
+# 2. Make sure that clara, pnmenlarge and pgmtopbm are on the
+# current path.
+#
+# 3. Write permission on the work directory is required. Two files
+# will be created there (selthresh.out and selthresh.temp.pbm). The
+# file selthresh.out contains all results, please do not remove
+# it.
+#
+# 4. The paths of file1.pgm, file2.pgm, etc, must be relative to
+# the work directory.
+#
+# 5. The results are affected by MD (see the -P flag), more than
+# should be. So the threshold quality measured by selthresh is
+# somewhat "unstable".
+#
+# 6. Floating comparisons '<=' and '>=' include a 0.001 delta to
+# avoid failures due to the inexact binary representation of
+# some thresholds.
+#
+
+use strict;
+
+# threshold
+my($t);
+
+# PGM input file and PBM output file
+my($b,$g,$gn,$f);
+
+# interval to search
+my($ll,$rl);
+
+# other
+my($i,$some,$wd,$badl,$badr);
+
+# density
+my($DENSITY,$N);
+
+# results
+my(%BS,%BT);
+
+# strategies
+my($clean,$small);
+
+#
+# display a message and exit cleanly.
+#
+sub fatal
+{
+    if ($_[0] ne '') {
+        print(STDERR "$_[0]\n");
+    }
+    if ($f ne '') {
+        system("rm -f $f");
+    }
+    close(O);
+    exit(1);
+}
+
+#
+# Handles Control-C. Note that most Control-C's will be catched
+# by the subprocesses, not by selthresh. The mysystem sub will
+# take care of Control-C's catched by subprocesses.
+#
+sub handle_int
+{
+    fatal();
+}
+
+#
+# diagnosed system.
+#
+sub mysystem
+{
+    my($rc);
+
+    $rc = 0xffff & system($_[0]);
+    if ($rc == 0) {
+        return(0);
+    }
+    if ($rc == 0xff00) {
+        print("STDERR command failed: $!\n");
+    }
+    elsif (($rc & 0xff) == 0) {
+        $rc >>= 8;
+        return($rc);
+    }
+    else {
+        if ($rc & 0x80) {
+            $rc &= ~0x80;
+        }
+        print(STDERR "command received signal $rc\n");
+    }
+
+    fatal();
+}
+
+#
+# try the current threshold.
+#
+sub try_ct
+{
+    my($l,$n,$e,$r,$d);
+
+    #
+    # already computed
+    #
+    if ($BS{"$gn,$t"} ne '') {
+        print(O "skipping $g, threshold $t (result " . $BS{"$gn,$t"} . ")\n");
+        return($BS{"$gn,$t"});
+    }
+
+    #
+    # Build font using threshold $t and fat skeletons.
+    #
+    $e = time();
+    if ($N > 1) {
+        $r = mysystem("pnmenlarge $N $g | pgmtopbm -threshold -value $t >$f");
+        if ($r != 0) {
+            fatal("pnmenlarge or pgmtopbm failed (do you have them?)");
+        }
+    }
+    else {
+        $r = mysystem("pgmtopbm -threshold -value $t $g >$f");
+        if ($r != 0) {
+            fatal("pgmtopbm failed (do you have it?)");
+        }
+    }
+
+    $d = $N * $DENSITY;
+    $r = `clara -b -y $d -a 1,0,1 -X 0 -T -f $f`;
+    ($n,$l) = ($r =~ /bookfont size is ([\-0-9]+), ([0-9]+) links/s);
+    chomp($n);
+
+    if ($n eq '') {
+        fatal("clara failed");
+    }
+
+    $e = time() - $e;
+
+    $BS{"$gn,$t"} = $n;
+    print(O "bookfont size for $b.pgm with threshold $t is $n, $l links ($e seconds elapsed)\n");
+
+    return($n);
+}
+
+#
+# THE PROGRAM BEGINS HERE
+#
+$f = '';
+$clean = 1;
+$small = 0;
+
+#
+# Install handlers.
+#
+$SIG{INT} = \&handle_int;
+
+#
+# prepare
+#
+$ll = 0.4;
+$rl = 0.6;
+$DENSITY = 0;
+$some = 1;
+$wd = '';
+
+#
+# command-line parameters
+#
+$some = 1;
+do {
+
+    # limits
+    if ($ARGV[0] eq '-l') {
+
+        if ($#ARGV < 2) {
+            fatal('-l requires two parameters');
+        }
+
+        shift(@ARGV);
+        $ll = $ARGV[0];
+        shift(@ARGV);
+        $rl = $ARGV[0];
+        shift(@ARGV);
+        if (($ll <= 0) || ($ll >= 1) ||
+            ($rl <= 0) || ($rl >= 1) ||
+            ($ll > $rl)) {
+
+            fatal("invalid interval [$ll,$rl]\n");
+        }
+    }
+
+    # resolution
+    elsif ($ARGV[0] eq '-y') {
+
+        if ($#ARGV < 1) {
+            fatal('-y requires one parameter');
+        }
+
+        shift(@ARGV);
+        $DENSITY = $ARGV[0];
+        shift(@ARGV);
+
+        if ($DENSITY < 100) {
+            fatal("cannot handle resolution $DENSITY");
+        }
+    }
+
+    # work directory
+    elsif ($ARGV[0] eq '-w') {
+
+        if ($#ARGV < 1) {
+            fatal('-w requires one parameter');
+        }
+
+        shift(@ARGV);
+        $wd = $ARGV[0];
+        shift(@ARGV);
+    }
+
+    else {
+        $some = 0;
+    }
+
+} while ($some);
+
+#
+# default density
+#
+if ($DENSITY == 0) {
+    print(STDERR "selthresh: no resolution informed, assuming 600 dpi\n");
+    $DENSITY = 600;
+}
+
+#
+# change to the work directory.
+#
+if ($wd ne '') {
+
+    if (chdir($wd) == 0) {
+        fatal("could not chdir to $wd\n");
+    }
+}
+
+#
+# parse results
+#
+if (-e 'selthresh.out') {
+    my ($t,$n);
+
+    open(O,'selthresh.out') || fatal("could not open selthresh.out");
+    while (<O>) {
+
+        if (($gn,$t,$n) = (/bookfont size for ([^ ]+) with threshold ([^ ]+) is ([^ ]+),/)) {
+            $BS{"$gn,$t"} = $n;
+        }
+        elsif (($gn,$t) = (/best threshold for ([^ ]+) over .* is ([\.0-9]+)\n$/)) {
+            $BT{"$gn"} = $t;
+        }
+    }
+}
+
+#
+# prepare output.
+#
+open(O,'>>selthresh.out') || fatal("could not append to selthresh.out");
+select(O);
+$| = 1;
+select(STDOUT);
+$| = 1;
+
+#
+# argument to pnmenlarge
+#
+$N = 600 / $DENSITY;
+if ($N - int($N) > 0.5) {
+    $N = int($N) + 1;
+}
+else {
+    $N = int($N);
+}
+if ($N == 0) {
+    $N = 1;
+}
+print(STDERR "selthresh: scaling $N times\n");
+
+#
+# Main loop
+#
+for ($i=0; $i<=$#ARGV; ++$i) {
+    my($m,$n,$bt,$fbt);
+
+    $badl = 0;
+    $badr = 0;
+
+    $g = $ARGV[$i];
+    ($gn = $g) =~ s/^.*\///;
+    #($f = $gn) =~ s/pgm$/pbm/;
+    $f = 'selthresh.temp.pbm';
+    ($b = $gn) =~ s/.pgm$//;
+
+    if ($BT{"$gn"} ne '') {
+        print(O "skipping $gn (result $BT{$gn})\n");
+        next;
+    }
+
+    print(O "analysing $g from $ll to $rl\n");
+
+    $m = 0;
+    $bt = 0;
+    for ($t=$ll; ($t-0.001)<=$rl; $t+=0.03) {
+
+        #
+        # Is the current bookfont size the smallest until now?
+        #
+        $n = &try_ct;
+        if ($n < 0) {
+            if ($bt > 0) {
+                print(O "giving up from trying larger thresholds\n");
+                $t = $rl + 0.1;
+            }
+        }
+        elsif (($n < $m) || ($m == 0)) {
+            $m = $n;
+            $bt = $t;
+        }
+    }
+
+    if (($bt > 0) && ($clean)) {
+        my($c);
+
+        # best threshold reached topmost coordinate
+        if (($bt + 0.03) > $rl) {
+            $badr = 1;
+        }
+
+        # best threshold reached bottommost coordinate
+        if ($bt == $ll) {
+            $badl = 1;
+        }
+
+        # reduce threshold using the already computed sizes
+        for ($t=$bt, $c=1; (($t+0.001)>=$ll) && ($c); $t-=0.03) {
+
+            $n = &try_ct;
+            $c = 0;
+            if ($n < 0) {
+                $t = $ll - 0.01;
+            }
+            elsif ((abs($n-$m)/$m) < 0.1) {
+                $fbt = $t;
+                $c = 1;
+            }
+        }
+
+        #
+        # avoid burning CPU if the interval is bad
+        #
+        if ($badr == 0) {
+
+            #
+            # compute new sizes.
+            #
+            print(O "now refining from $fbt\n");
+            for ($t=$fbt-0.01, $c=1; (($t-0.001)>=$ll) && ($c); $t-=0.01) {
+        
+                #
+                # Is the current bookfont size the smallest until now?
+                #
+                $n = &try_ct;
+                $c = 0;
+                if ($n < 0) {
+                    $t = $ll - 0.01;
+                }
+                elsif ((abs($n-$m)/$m) < 0.1) {
+                    $bt = $t;
+                    $c = 1;
+                }
+            }
+        }
+    }
+
+    elsif (($bt > 0) && ($small)) {
+
+        $fbt = $bt;
+
+        print(O "now refining\n");
+
+        #
+        # try thresholds around $bt
+        #
+        for ($t=$fbt-0.02; ($t-0.001)<=($fbt+0.02); $t+=0.01) {
+        
+            if ($t != $fbt) {
+
+                #
+                # Is the current bookfont size the smallest until now?
+                #
+                $n = &try_ct;
+                if ($n < 0) {
+                    $t = $fbt + 0.02 + 0.1;
+                }
+                elsif ($n < $m) {
+                    $m = $n;
+                    $bt = $t;
+                }
+            }
+        }
+
+        # best threshold reached topmost coordinate
+        if ($bt == $ll) {
+            $badl = 1;
+        }
+
+        # best threshold reached bottommost coordinate
+        if ($bt == $rl) {
+            $badr = 1;
+        }
+    }
+
+    # remove the just created session files
+    system("rm -f $f $b.html $b.session patterns acts");
+    if ($badl) {
+        my($nl);
+
+        $nl = ($ll > 0.5) ? ($ll - 0.05) : 0.1;
+        printf(O "best threshold for $gn over [$ll,$rl] is $bt (bad interval, try -l $nl $rl)\n");
+        $BT{"$gn"} = "$bt (bad interval, try -l $nl $rl)";
+    }
+    elsif ($badr) {
+        my($nr);
+
+        $nr = ($rl < 0.95) ? ($rl + 0.05) : 0.99;
+        printf(O "best threshold for $gn over [$ll,$rl] is $bt (bad interval, try -l $ll $nr)\n");
+        $BT{"$gn"} = "$bt (bad interval, try -l $ll $nr)";
+    }
+    else {
+        printf(O "best threshold for $gn over [$ll,$rl] is $bt\n");
+        $BT{"$gn"} = $bt;
+    }
+}
+
+close(O);
+
+#
+# Outputs all best thresholds.
+#
+print("Best thresholds:\n");
+foreach $g (sort keys %BT) {
+
+    print "$g $BT{$g}\n";
+}
+

@@ -1,0 +1,21 @@
+
+RPM targets
+
+Currently there are three contributed specfiles to produce
+RPMs: Romeu Mantovani's specfile is reported to work on
+Conectiva Linux. Harold van Oostrom's specfile is reported
+to work on RedHat 7.1 and SuSE. R P Herrold's specfile is
+reported to work on RedHat 7.2.
+
+As I myself (Ricardo Ueda) cannot maintain a generic
+specfile, I've added all them to the distribution tarball,
+hoping that someone will support this stuff more
+carefully. Specifically, I'd like to integrate a script to
+generate a generic and updated specfile to the "mkdistrib"
+script. The mkdistrib script is used to generate the source
+and binary tarballs, the patchfile and to minimally test all
+those things.
+
+Romeu's specfile can be found as clara.spec.romeu. Harold's
+specfile can be found as clara.spec.harold. R P Herrold's
+specfile can be found as clara.spec.herrold.
