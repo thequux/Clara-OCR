@@ -481,7 +481,7 @@ void review_merge(adesc *a)
     curr_mc = t;
 
     /* must refresh the window */
-    redraw_dw = 1;
+    redraw_document_window();
 }
 
 /*
@@ -587,7 +587,7 @@ void review_dis(adesc *a)
     for (i=1; i<mc[k].ncl; ++i)
         ps[++topps] = mc[k].cl[i];
 
-    redraw_dw = 1;
+    redraw_document_window();
 
 }
 
@@ -719,6 +719,7 @@ the submitted transliteration and the default reviewer info.
 */
 void gen_tr(char *tr)
 {
+#if 0
     adesc *a;
     char *ttr;
     int s;
@@ -741,7 +742,7 @@ void gen_tr(char *tr)
     a->mc = s ? curr_mc : ((cdfc<0) ? -1 : pattern[cdfc].id);
 
     /* properties */
-    a->a  = inv_balpha[(int)(button[balpha])];
+    // UNPATCHED: a->a  = inv_balpha[(int)(button[balpha])];
     a->f = ((button[bbad]) ? F_BAD : 0);
     /*
     a->f |= ((button[bitalic]) ? F_ITALIC : 0);
@@ -788,6 +789,8 @@ void gen_tr(char *tr)
 
     /* reviewer data */
     reviewer_data(a);
+#endif
+    UNIMPLEMENTED();
 }
 
 /*
@@ -992,7 +995,7 @@ void next_symb(void)
         untransliterated pattern.
     */
     if (dw[PATTERN].v) {
-        right();
+            // UNPATCHED: right();
         return;
     }
 
@@ -1061,7 +1064,7 @@ void next_symb(void)
         check_dlimits(1);
         CDW = cur_dw;
     }
-    redraw_dw = 1;
+    redraw_document_window();
 
 }
 
@@ -1345,7 +1348,7 @@ int from_gui(void)
         if (nopropag) {
             nopropag = 0;
             mb[0] = 0;
-            redraw_inp = 1;
+            // UNPATCHED: redraw_inp = 1;
         }
 
         /*
@@ -1380,7 +1383,8 @@ int from_gui(void)
         if (cdfc < 0)
             cdfc = topp;
         else
-            right();
+                ;
+                // UNPATCHED: right();
     }
 
     /* prepare to merge fragment to symbol */

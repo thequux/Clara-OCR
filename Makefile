@@ -42,9 +42,9 @@ DOCDIR=$(DESTDIR)/usr/share/doc/clara
 #
 # Configure these variables accordingly to your system:
 #
-INCLUDE = -I/usr/X11R6/include
-LIBPATH = -L/usr/X11R6/lib
 CC = gcc
+
+
 
 #
 # Now choose the Clara OCR compilation options:
@@ -88,21 +88,24 @@ COPTS = -DHAVE_POPEN -DMEMCHECK -DFUN_CODES -DHAVE_SIGNAL -DTEST -DNO_RINTF
 #
 # Add or remove flags if necessary:
 #
-CFLAGS = $(INCLUDE) -g -Wall $(COPTS) -O3 -march=native -ffast-math -mfused-madd
+CFLAGS = -g -Wall $(COPTS) -O0
+#CFLAGS = -g -Wall $(COPTS) -O3 -march=native -ffast-math -mfused-madd
 #CFLAGS = $(INCLUDE) -g -Wall -pedantic $(COPTS)
 #CFLAGS = $(INCLUDE) -g -O2 -Wall $(COPTS)
 #CFLAGS = $(INCLUDE) -g -O2 -pedantic $(COPTS)
 #CFLAGS = $(INCLUDE) -g -O2 $(COPTS)
 
+CFLAGS += $(shell pkg-config --cflags gtk+-2.0 )
+
 #
 # Add or remove flags if necessary:
 #
-LDFLAGS = -g
-
+LDFLAGS = -g -rdynamic
+LDFLAGS += $(shell pkg-config --libs gtk+-2.0 )
 #
 # If your system requires additional libs, please add them:
 #
-LINKLIB = $(LIBPATH) -lX11 -lm
+LINKLIB = -lm
 
 #
 # CONFIGURATION SECTION - END
@@ -111,12 +114,12 @@ LINKLIB = $(LIBPATH) -lX11 -lm
 DFLAGS = -web
 
 OBJS = clara.o skel.o event.o symbol.o pattern.o pbm2cl.o cml.o\
-       welcome.o redraw.o html.o alphabet.o revision.o build.o\
-       consist.o pgmblock.o preproc.o obd.o
+       welcome.o util.o alphabet.o revision.o build.o\
+       consist.o pgmblock.o preproc.o obd.o html.o redraw.o
+# removed: html.o redraw.o
 
-SRC = book.c clara.c skel.c event.c symbol.c pattern.c pbm2cl.c cml.c\
-       welcome.c redraw.c html.c alphabet.c revision.c build.c\
-       consist.c pgmblock.c preproc.c obd.c
+
+SRC = book.c $(OBJS:%.o=%.c)
 
 #
 # The programs.
@@ -196,6 +199,9 @@ clean:
 
 stats:
 	wc *.c *.h *.pl Makefile CHANGELOG | sort -n
+
+TAGS: $(SRC)
+	etags $(SRC)
 
 #
 # Module dependencies.

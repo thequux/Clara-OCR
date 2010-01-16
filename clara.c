@@ -1,3 +1,4 @@
+/* -*- mode: c; c-basic-offset: 4 -*- */
 /*
   Copyright (C) 1999-2002 Ricardo Ueda Karpischek
 
@@ -24,7 +25,7 @@ clara.c: Startup and OCR run control
 
 /* version number */
 char *version = "20031214";
-
+int finish = 0;
 /* system headers */
 #include <stdio.h>
 #include <stdlib.h>
@@ -147,8 +148,8 @@ the symbol to be revised and its context (the word that surrounds
 it), in order to dumped to disk or exhibit it on the display.
 
 */
-int RWX=200,RWY=50,RCX=50,RCY=50;
-unsigned char *rw=NULL,*rc=NULL;
+//int RWX=200,RWY=50,RCX=50,RCY=50;
+//unsigned char *rw=NULL,*rc=NULL;
 
 
 /* (book)
@@ -371,7 +372,6 @@ int dls = 0, npages, cpage;
 
 /* session flags */
 int dontblock = 1;
-int finish;
 int sess_changed = 0;
 int font_changed = 0;
 int hist_changed = 0;
@@ -510,7 +510,6 @@ small tour. It expects to find the file "imre.pbm" on the current
 directory (or that one informed through -f).
 
 */
-int pmode=0,allow_pres=0;
 #ifdef FUN_CODES
 int fun_code=0;
 #endif
@@ -2210,16 +2209,6 @@ int checkvar(char *c)
     else if (strcmp(id,"patterns") == 0)
         criticize_str(val,(char *)(&(bfp[0])),1,MAXFNL);
 
-    /* display options */
-    else if (strcmp(id,"dmmode") == 0)
-        criticize_int(val,&dmmode,0,1);
-    else if (strcmp(id,"RW") == 0)
-        criticize_int(val,&RW,-30,30);
-#ifdef HAVE_SIGNAL
-    else if (strcmp(id,"allow_pres") == 0)
-        criticize_int(val,&allow_pres,0,2);
-#endif
-
     /* book geometry */
     else if (strcmp(id,"LW") == 0)
         criticize_float(val,&LW,0,50.0);
@@ -2294,11 +2283,6 @@ void process_cl(int argc,char *argv[])
     /* maximum number of web doubts to generate */
     max_doubts = 30;
 
-    /* window geometry and display to connect */
-    WW = WH = 0;
-    WX = WY = -1;
-    displayname = NULL;
-
     /* density */
     DENSITY = 600;
 
@@ -2324,16 +2308,8 @@ void process_cl(int argc,char *argv[])
 
         for (i=0; i<argc; ++i) {
 
-            /* adhere to widely-used names */
-            if (strcmp(argv[i],"-display") == 0) {
-                a = "-D";
-            }
-            if (strcmp(argv[i],"-geometry") == 0) {
-                a = "-g";
-            }
-
             /* check if it's a variable definition */
-            else if (checkvar(argv[i])) {
+            if (checkvar(argv[i])) {
                 a = NULL;
             }
 
@@ -2366,7 +2342,7 @@ void process_cl(int argc,char *argv[])
     /* parse command-line parameters */
     e = 0;
     while (e == 0) {
-        c = getopt(largc,largv,"a:bc:dD:e:F:f:g:hik:m:N:o:p:P:R:rTtuU:vVw:WX:y:zZ:");
+        c = getopt(largc,largv,"a:bde:f:hik:m:N:o:p:P:R:rTtuU:vVw:WX:y:zZ:");
 
         /* (book)
 
@@ -2419,87 +2395,7 @@ void process_cl(int argc,char *argv[])
         */
         else if (c == 'b') {
             batch_mode = 1;
-            use_xb = 0;
-        }
-
-        /* (book)
-
-            -c N|c|black,gray,white,darkgray,vdgray
-
-            Choose the number of gray levels or the colors to be used
-            by the GUI. To choose the number the colors AND the colors,
-            this option must be used twice.
-
-            The Clara OCR GUI uses by
-            default only five colors, internally called "white",
-            "black", "gray", "darkgray" and "vdgray" ("very dark
-            gray"). There are two predefined schemes to map these
-            internal colors into RGB values: "c" (color) and
-            the default (grayscale). Alternatively, the mapping may
-            be explicited, informing the RGB values separated by commas.
-            The notation #RRGGBB is not supported; RGB values must be
-            specified through color names known by the xserver (e.g.
-            "brown", "pink", "navyblue", etc, see the file
-            /etc/X11R6/lib/X11/rgb.txt). The following example
-            specify the default mapping:
-
-                -c black,gray80,white,gray60,gray40
-
-            To simulate reverse video try:
-
-                -c white,gray40,black,gray60,gray80
-
-            However, when displaying graymaps, the GUI may use more
-            colors. On truecolor displays, the GUI uses by default
-            32 or 256 graylevels when displaying graymaps. On
-            pseudocolor displays, 4 graylevels are used (in fact,
-            the colors "black", "vdgray", "gray" and "white" are
-            used, so the "graylevels" are not necessarily "gray"). To
-            force only 4 graylevels on truecolor displays, use
-
-                -c 4
-
-            To force black-and-white, use
-
-                -c 2
-
-            (by now, '-c N' is useful mainly as a workaround for bad
-            behaviour of the GUI on some display).
-        */
-        else if (c == 'c') {
-            int i;
-
-            /* all digits? */
-            for (i=strlen(optarg)-1; (i>=0) && ('0'<=optarg[i]) && (optarg[i]<='9'); --i);
-
-            /* yes: it's the number of graylevels */
-            if (i < 0) {
-                glevels = atoi(optarg);
-
-                /* force 4 graylevels */
-                if ((glevels != 4) && (glevels != 2)) {
-                    warn("%d graylevels unsupported, resizing to 4",glevels);
-                    glevels = 4;
-                }
-            }
-
-            /* no: it's the color scheme */
-            else {
-                cschema = c_realloc(NULL,strlen(optarg)+1,NULL);
-                strcpy(cschema,optarg);
-            }
-        }
-
-        /* (book)
-
-            -D or -display
-
-            X Display to connect (by default read the environment
-            variable DISPLAY).
-        */
-        else if (c == 'D') {
-            displayname = c_realloc(displayname,strlen(optarg)+1,NULL);
-            strcpy(displayname,optarg);
+            // UNPATCHED: use_xb = 0;
         }
 
         /* (book)
@@ -2551,20 +2447,6 @@ void process_cl(int argc,char *argv[])
 
         /* (book)
 
-            -F fontname
-
-            The X font to use (must be a font with fixed column size,
-            e.g. "fixed" or "9x15").
-        */
-        else if (c == 'F') {
-            if (strlen(optarg) > MAXFNL) {
-                fatal(BO,"X font specification too long");
-            }
-            strncpy(xfont,optarg,MAXFNL);
-        }
-
-        /* (book)
-
             -f path
 
             Scanned page or page directory. Defaults
@@ -2589,89 +2471,6 @@ void process_cl(int argc,char *argv[])
             strncpy(f_arg,optarg,MAXFNL);
         }
 
-        /* (book)
-
-            -g wxh(+|-)x(+|-)y
-
-            X geometry.
-        */
-        else if (c == 'g') {
-            int i,p,v,s,l,c;
-
-            for (i=p=0; optarg[i] != 0; ) {
-
-                /* remember signal */
-                s = 1;
-                if ((c=optarg[i]) == '+')
-                    ++i;
-                else if (c == '-')
-                    ++i, s=-1;
-
-                /* decimal integer.. */
-                for (v=l=0; ('0'<=(c=optarg[i])) && (c<='9'); ++i,++l)
-                    v = v*10 + (c - '0');
-
-                /* ..and its signal */
-                if (s < 0)
-                    v = -v;
-
-                /* empty integer: error */
-                if (l == 0)
-                    p = -1;
-
-                /* terminator */
-                c = optarg[i];
-
-                /* begins with size or position? */
-                if (p == 0) {
-
-                    /* size */
-                    if (c == 'x')
-                        p = 1, ++i;
-
-                    /* position */
-                    else if ((c == '+') || (c == '-'))
-                        p = 3;
-
-                    /* none (error) */
-                    else
-                        p = -1;
-                }
-
-                /* just read the width */
-                if (p == 1) {
-                    if ((WW = v) < 0)
-                        p = -1;
-                }
-
-                /* height must terminate with 0, '+' or '-' */
-                else if (p == 2) {
-                    if (((WH = v) < 0) ||
-                        ((c != 0) && (c != '+') && (c != '-')))
-                        p = -1;
-                }
-
-                /* x position must terminate with 0, '+' or '-' */
-                else if (p == 3) {
-                    if ((abs(WX = v) > 16535) ||
-                        ((c != 0) && (c != '+') && (c != '-')))
-                        p = -1;
-                }
-
-                /* y position must terminate with 0 */
-                else if (p == 4) {
-                    if ((abs(WY = v) > 16535) || (c != 0))
-                        p = -1;
-                }
-
-                /* error detected */
-                if (p < 0)
-                    fatal(DI,"invalid geometry specification");
-
-                ++p;
-            }
-
-        }
 
         /* (book)
 
@@ -2861,16 +2660,6 @@ void process_cl(int argc,char *argv[])
         */
         else if (c == 't') {
             trace = 1;
-        }
-
-        /*
-
-            -u
-
-            Unbuffered X I/O (won't allocate memory on the X server).
-        */
-        else if (c == 'u') {
-            use_xb = 0;
         }
 
         /*
@@ -3106,6 +2895,7 @@ void process_cl(int argc,char *argv[])
 Register new GUI button.
 
 */
+#if 0
 void register_button(int b,char *l) {
 
     if (BUTT_PER_COL >= bl_sz) {
@@ -3118,7 +2908,7 @@ void register_button(int b,char *l) {
     button[BUTT_PER_COL] = 0;
     ++BUTT_PER_COL;
 }
-
+#endif
 /*
 
 Initialize main data structures
@@ -3134,6 +2924,7 @@ void init_ds(void)
 #endif
 
     /* register GUI buttons */
+    #if 0
     register_button(bzoom,"zoom");
     register_button(bzone,"zone");
     register_button(bocr,"OCR");
@@ -3143,7 +2934,7 @@ void init_ds(void)
     register_button(bbad,"bad");
     if (pp_test)
         register_button(btest,"test");
-
+    #endif
     /* alphabets data */
     init_alphabet();
 
@@ -3493,7 +3284,7 @@ int step_2(int reset)
 
         /* finished reading */
         if (r == 0) {
-            redraw_dw = 1;
+            redraw_document_window();
         }
         else
             myreset = 0;
@@ -3683,7 +3474,7 @@ int step_5(int reset)
 
         /* finished reading */
         if (r == 0) {
-            redraw_dw = 1;
+            redraw_document_window();
         }
         else
             myreset = 0;
@@ -3734,8 +3525,9 @@ int step_7(int reset)
 
     /* wakeup */
     if (reset) {
-        show_hint(1,"starting OCR");
-        redraw_stline = 1;
+        show_message("starting OCR");
+        // show_hint(1,"starting OCR");
+        //redraw_stline = 1;
         st = 1;
 
         if (symbols != 0)
@@ -4041,7 +3833,7 @@ int step_11(int reset)
         /* ready to start next step */
         dw[PAGE_OUTPUT].rg = 1;
         dw[PAGE_SYMBOL].rg = 1;
-        redraw_dw = 1;
+        redraw_document_window();
         return(0);
     }
 
@@ -4486,7 +4278,7 @@ int step_15(int reset)
                 else if (thresh_val > 256)
                     thresh_val = 256;
                 st = 1;
-                redraw_dw = 1;
+                redraw_document_window();
                 return(1);
             }
         }
@@ -4555,6 +4347,15 @@ int step_15(int reset)
     return(0);
 }
 
+gboolean continue_ocr_thunk(gpointer data) {
+        continue_ocr();
+        if (!ocring)
+                return FALSE;
+        else
+                return TRUE;
+}
+
+
 /* (devel)
 
 The function start_ocr
@@ -4600,10 +4401,11 @@ void start_ocr(int p,int s,int r)
         ocring = 1;
         onlystep = s;
 
-        if ((onlystep != OCR_SAVE) && (onlystep != OCR_LOAD)) {
-            button[bocr] = 1;
-            redraw_button = bocr;
-        }
+        g_idle_add(continue_ocr_thunk, NULL);
+        //if ((onlystep != OCR_SAVE) && (onlystep != OCR_LOAD)) {
+            // UNPATCHED: button[bocr] = 1;
+            //         redraw_button = bocr;
+        //}
         if (p == -1)
             ocr_all = 1;
         else {
@@ -4614,6 +4416,7 @@ void start_ocr(int p,int s,int r)
         to_tr[0] = 0;
     }
 }
+
 
 /*
 
@@ -4659,7 +4462,8 @@ void continue_ocr(void)
             ((cpage < 0) || (npages <= cpage))) {
 
             show_hint(1,"Please load a page before trying to OCR");
-            ocring = button[bocr] = 0;
+            // UNPATCHED: button[bocr] = 0;
+            ocring = 0;
             recomp_cl = 0;
             return;
         }
@@ -4691,15 +4495,16 @@ void continue_ocr(void)
         operation is stopped.
     */
     if ((stop_ocr) && (!cannot_stop)) {
-        ocring = button[bocr] = 0;
+        ocring = 0;
         recomp_cl = 0;
         waiting_key = 0;
         ocr_all = -1;
-        redraw_dw = 1;
-        strcpy(mb,"OCR stopped");
-        redraw_stline = 1;
-        button[bstop] = 0;
-        redraw_button = -1;
+        if (batch_mode == 0) {
+                // redraw_dw = 1;
+                show_message("OCR stopped");
+                gtk_widget_set_sensitive(btnOcr, TRUE);
+                gtk_widget_set_sensitive(btnStop, FALSE);
+        }
         stop_ocr = 0;
     }
 
@@ -4882,7 +4687,8 @@ void continue_ocr(void)
                 /* just processed the last page */
                 if (to_ocr == fp) {
                     ocr_all = 0;
-                    ocring = button[bocr] = 0;
+                    // UNPATCHED: button[bocr] = 0;
+                    ocring  = 0;
                     recomp_cl = 0;
 
                     /* save session if batch mode */
@@ -4890,7 +4696,9 @@ void continue_ocr(void)
                         start_ocr(cpage,OCR_SAVE,0);
                     }
 
+                    
                     /* enter three-state PAGE */
+#if 0
                     if ((!lcr) && (cl_ready) && (*cm_o_pgo == 'X')) {
                         *cm_o_pgo = ' ';
                         opage_j1 = page_j1 = PT+TH+(PH-TH)/3;
@@ -4898,9 +4706,9 @@ void continue_ocr(void)
                         setview(PAGE);
                         check_dlimits(0);
                     }
-
+#endif
                     dw[PAGE_LIST].rg = 1;
-                    redraw_dw = 1;
+                    redraw_document_window();
                 }
 
                 else
@@ -4909,9 +4717,10 @@ void continue_ocr(void)
 
             /* reset statuses */
             else {
-                ocring = button[bocr] = 0;
+                ocring = 0;
+                // UNPATCHED: button[bocr] = 0;
                 recomp_cl = 0;
-
+#if 0
                 /* enter three-state PAGE */
                 if ((!lcr) && (cl_ready) && (*cm_o_pgo == 'X')) {
                     *cm_o_pgo = ' ';
@@ -4920,7 +4729,7 @@ void continue_ocr(void)
                     setview(PAGE);
                     check_dlimits(0);
                 }
-
+#endif
                 /* prepare to quit if batch mode and already saved sesseion */
                 if (batch_mode && (onlystep == OCR_SAVE)) {
                     finish = 1;
@@ -4960,7 +4769,7 @@ void continue_ocr(void)
             if ((no_pattern) || (cdfc != last_cdfc)) {
                 edit_pattern(0);
             }
-            redraw_dw = 1;
+            redraw_document_window();
         }
 
         reset = 1;
@@ -5037,7 +4846,7 @@ void handle_alrm(int p)
 
            /* continue */
            if (dw[WELCOME].v) {
-               redraw_dw = 1;
+               redraw_document_window();
                new_alrm(50000,1);
            }
 
@@ -5063,7 +4872,7 @@ void handle_alrm(int p)
                        curr_fp = 0;
                    new_alrm(50000,3);
                }
-               redraw_flea = 1;
+               redraw_flea();
            }
 
            break;
@@ -5077,7 +4886,7 @@ void handle_alrm(int p)
             "presentation".
         */
         case 2:
-           cpresentation(0);
+            UNIMPLEMENTED();
            break;
 
     }
@@ -5101,6 +4910,12 @@ int main(int argc,char *argv[])
     /*
         Process command-line parameters.
     */
+
+    if (!gtk_parse_args(&argc,&argv)) {
+            fprintf(stderr, "GTK failed to initialize, for some reason. Bailing\n");
+            exit(1);
+    }
+
     process_cl(argc,argv);
 
     /*
@@ -5144,12 +4959,6 @@ int main(int argc,char *argv[])
             start_ocr(-1,-1,0);
     }
 
-#ifdef HAVE_SIGNAL
-    /* start presentation automatically */
-    if (allow_pres == 2) {
-        cpresentation(1);
-    }
-#endif
 
     /* just perform a dictionary operation */
     if (dict_op != 0) {
@@ -5165,30 +4974,22 @@ int main(int argc,char *argv[])
         not true "threads", but ordinary subroutines).
 
     */
-    for (finish=0; finish != 1; ) {
-
-        /*
-            Event processing and display refresh.
-        */
-        if (batch_mode == 0) {
-            xevents();
-        }
-
-        /*
-            OCR.
-        */
-        if ((ocring) && (waiting_key == 0)) {
-            continue_ocr();
-        }
+    if (batch_mode == 0) {
+        g_idle_add(continue_ocr_thunk,NULL);
+            gtk_main();
+    } else {
+            while (ocring && !finish)
+                    continue_ocr();
     }
+
 
     if ((batch_mode) && (report)) {
         mk_page_list();
-        DFW = 6;
+        //DFW = 6;
         html2ge(text,0);
         write_report("report.txt");
         mk_pattern_list();
-        DFW = 6;
+        //DFW = 6;
         html2ge(text,0);
         write_report("classes.txt");
     }

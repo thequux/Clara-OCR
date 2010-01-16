@@ -1747,8 +1747,9 @@ int load_page(int p,int reset,int bin)
     }
 
     /* set the window title */
-    if (batch_mode == 0)
-        swn(pagebase);
+    if (batch_mode == 0) {
+            // UNPATCHED: swn(pagebase);
+    }
 
     /* list the preferred symbols */
     make_pmc();

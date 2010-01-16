@@ -35,8 +35,6 @@ preproc.c: Deskewing, balancing, thresholding  routines.
 #define CKP(M) fprintf(stderr,"[CKP %d OK!]\n",M) 
 
 #define DIV(a,b) (((a)+abs(b)/((a)>0?2:-2))/(b))
-#define MIN(A,B) ((A)<(B)?(A):(B))
-#define MAX(A,B) ((A)>(B)?(A):(B))
 #define TRIM(X,A,B) MIN(MAX((X),(A)),(B))
 /* interpolation */
 #define ITP(A,B,R)  (1-R)*(A)+(R)*(float)(B)
@@ -512,8 +510,8 @@ void pre_balance()
   
 void balance()
 {
-#define FIXP *p=(*p<M*t+Q? 0 : MAXVAL)
-#define FIXP *p=TRIM(t,0,MAXVAL)
+        //#define FIXP *p=(*p<M*t+Q? 0 : MAXVAL)
+        //#define FIXP *p=TRIM(t,0,MAXVAL)
 #define FIXP t=M*l+Q; *p=TRIM( (((float)*p-t)/(l-t)/2+0.5)*MAXVAL , 0 , MAXVAL );
 
   float r,t,l, *r1, *r2;
@@ -550,7 +548,7 @@ void balance()
     l=r1[x];
     FIXP;
   }
-  redraw_dw=1;
+  redraw_document_window();
 }
 
 /***************************** HQ BINARIZATION STUFF *******************************/
@@ -612,7 +610,7 @@ void test()
   pp_thresh();
   avoid_links(100);
   hqbin();
-  redraw_dw=1;
+  redraw_document_window();
 }
 
 /*

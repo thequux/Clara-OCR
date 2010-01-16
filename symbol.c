@@ -573,8 +573,6 @@ Tries to compute the vertical alignment from
 the transliteration.
 
 */
-#define MIN(a,b) ((a<b)?a:b)
-#define MAX(a,b) ((a>b)?a:b)
 int tr_align(char *a)
 {
     int i,c,n,o;
@@ -3677,7 +3675,7 @@ void p_spl_comp(c) {
     
     d=DD*DENSITY/25.4;  /* dot dimension in pixel */
 
-    /*if (c==5) for (i=0; i<w; i++) printf("%d %d\n",i,P_SPL[i]); /*debug*/
+    /*if (c==5) for (i=0; i<w; i++) printf("%d %d\n",i,P_SPL[i]); */ /*debug*/
     
     for (i=0,s=0; i<w; i++) {s+=P_SPL[i];}
     s/=w; s=MIN(s,3*d/2); /* threshold for splitting */
@@ -3960,12 +3958,12 @@ int classify(int c,int bmpcmp(int,int,int,int),int mode)
                 /* Enter MATCHES window if required */
                 if (CDW != PAGE_MATCHES) {
                     setview(PAGE_MATCHES);
-                    redraw_grid = 1;
+                    // UNPATCHED: redraw_grid = 1;
                 }
 
                 /* copy the work buffers to the display buffer */
                 bmpcmp(0,0,0,0);
-                redraw_dw = 1;
+                redraw_document_window();
 
                 /* must wait */
                 if (wait_key) {
@@ -4023,12 +4021,12 @@ int classify(int c,int bmpcmp(int,int,int,int),int mode)
                 /* Enter MATCHES window if required */
                 if (CDW != PAGE_MATCHES) {
                     setview(PAGE_MATCHES);
-                    redraw_grid = 1;
+                    // UNPATCHED: redraw_grid = 1;
                 }
 
                 /* copy the work buffers to the display buffer */
                 bmpcmp(0,0,0,0);
-                redraw_dw = 1;
+                redraw_document_window();
 
                 s = snprintf(stb,MMB,"%d/%d ",c,k);
                 s += snprintf(stb+s,MMB-s,"failed");

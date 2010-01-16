@@ -1,3 +1,4 @@
+/* -*- mode: c; c-basic-offset: 4 -*- */
 /*
   Copyright (C) 1999-2002 Ricardo Ueda Karpischek
 
@@ -2048,7 +2049,7 @@ int tune_skel(int p)
             if (*cm_v_st != ' ') {
                 dw[TUNE_PATTERN].rg = 1;
                 dw[TUNE_SKEL].rg = 1;
-                redraw_dw = 1;
+                redraw_document_window();
             }
         }
 
@@ -2144,7 +2145,7 @@ if using the default definition. Relaxed mode cannot be used if
 the caller wants to compute the border path.
 
 */
-int border_path(unsigned char *b,int w,int h,unsigned short *bp,int m,int u0,int v0,int relax)
+int border_path(unsigned char *b,int w,int h,short *bp,int m,int u0,int v0,int relax)
 {
     unsigned char *b2,*b3;
     int bpl,bs,ps;
@@ -2660,7 +2661,7 @@ If (i<0), this service do not perform quadrant conversion. In this
 case, the result will be in the range [0,PI[.
 
 */
-float s2a(float slxy,float sly,float slx,short *bp,int i,int j)
+float s2a(float slxy,float sly,float slx, short *bp,int i,int j)
 {
     float a,sl;
     int u,v;
@@ -4029,7 +4030,7 @@ int search_barcode(void)
         limits[6] = zr;
         limits[7] = zt;
 
-        redraw_zone = 1;
+        // TODO: redraw_zone = 1;
         snprintf(lb,MMB,"barcode found, sk=%3.2f rad, barlen=%3.2f mm",ms,ml);
 
         /* try to centralize */
@@ -4038,7 +4039,7 @@ int search_barcode(void)
             X0 = ((zl+zr) - HR) / 2;
             Y0 = ((zb+zt) - VR) / 2;
             check_dlimits(0);
-            redraw_dw = 1;
+            redraw_document_window();
         }
     }
     else
@@ -4705,6 +4706,6 @@ int dx(int k,int i0,int j0)
         }
     }
 
-    redraw_dw = 1;
+    redraw_document_window();
     return(n);
 }

@@ -1,3 +1,4 @@
+/* -*- mode: c; c-basic-offset: 4 -*- */
 /*
   Copyright (C) 1999-2002 Ricardo Ueda Karpischek
 
@@ -24,46 +25,43 @@ gui.h: Declarations that depend on X11
 
 #include <time.h>
 #include <sys/time.h>
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-
+#include <gtk/gtk.h>
+#include <glib.h>
 /*
 
 X display and contexts.
 
 */
 extern char *displayname;
-extern Display *xd;
-extern GC xgc;
+// extern Display *xd;
+// extern GC xgc;
 
 /* The application X window */
-extern Window XW;
-extern XID xw;
-extern Pixmap pm;
+// extern Window XW;
+// extern XID xw;
+// extern Pixmap pm;
 extern int have_xw,have_pm,use_xb;
 
 /* Xcolors */
-extern XColor white,black,gray,darkgray,vdgray;
+// extern XColor white,black,gray,darkgray,vdgray;
 
-/* number of gray levels */
-extern int glevels;
 
 /* default font */
-extern XFontStruct *dfont;
-extern int DFH,DFW,DFA,DFD;
+//extern XFontStruct *dfont;
+//extern int DFH,DFW,DFA,DFD;
 
 /* the event */
-extern int have_s_ev;
-extern XEvent xev;
+//extern int have_s_ev;
+//extern XEvent xev;
 
 /* some geometric parameters */
-extern int WW, WH;
+//extern int WW, WH;
 
 /* vertical separation between text lines */
-extern int VS;
+//extern int VS;
 
 /* redraw flags */
-extern int redraw_button,
+/*extern int redraw_button,
     redraw_bg,
     redraw_grid,
     redraw_stline,
@@ -77,7 +75,7 @@ extern int redraw_button,
     redraw_j2,
     redraw_map,
     redraw_flea;
-
+*/
 /*
 
 Graphic elements
@@ -272,10 +270,10 @@ extern int wx0,wx1,wy0,wy1;
 extern char *tabl[];
 
 /* geometry */
-extern int WH,WW,WX,WY,PH,PW;
-extern int BW,MRF,TW,TH,PM,PT;
-extern int RW;
-extern int MH;
+//extern int WH,WW,WX,WY,PH,PW;
+//extern int BW,MRF,TW,TH,PM,PT;
+//extern int RW;
+//extern int MH;
 
 /*
 
@@ -292,7 +290,7 @@ The flag associated with a menu item (if any). This flag in
 fact is the second character of the label.
 
 */
-#define F(i) (mid(i)->l + (i&CM_IT_M)*(MAX_MT+1) + 1)
+//#define F(i) (mid(i)->l + (i&CM_IT_M)*(MAX_MT+1) + 1)
 
 /*
 
@@ -339,6 +337,11 @@ int page_j1,page_j2,opage_j1,opage_j2;
 /* current color */
 extern int COLOR;
 
+/* Various GUI elements... */
+GtkWidget *btnOcr, *btnStop,
+        *mnuPage, *mnuFatbits, 
+        *mainwin;
+
 /* services */
 void edit_pattern(int change);
 cmdesc *addmenu(int a,char *tt,int m);
@@ -367,3 +370,7 @@ void mk_tune_skel(void);
 
 /* other */
 void redraw_inp_str(void);
+
+void redraw_document_window(void);
+void redraw_flea(void);
+void show_message(const char* msg);

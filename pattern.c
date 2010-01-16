@@ -639,7 +639,6 @@ void update_pattern_raw(int new,int an,int mc,char *tb,char a,short ft,short fs,
     }
 
     /* success message */
-    redraw_stline = 1;
     font_changed = 1;
     dw[PATTERN_LIST].rg = 1;
 }
@@ -973,7 +972,7 @@ int prepare_patterns(int reset)
                 cdfc = c;
                 dw[TUNE_SKEL].rg = 1;
                 dw[TUNE_PATTERN].rg = 1;
-                redraw_dw = 1;
+                redraw_document_window();
             }
 
             /* prepare the next */

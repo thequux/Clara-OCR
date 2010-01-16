@@ -1063,7 +1063,6 @@ extern char to_tr[MFTL+1];
 extern int nopropag;
 extern int to_rev;
 extern int to_arg;
-extern int pmode,allow_pres;
 extern int ocr_other;
 #ifdef FUN_CODES
 extern int fun_code;
@@ -1124,7 +1123,7 @@ extern int weak_match[];
 Session flags.
 
 */
-extern int finish;
+//extern int finish;
 extern int sess_changed;
 extern int font_changed;
 extern int hist_changed;
@@ -1137,7 +1136,6 @@ extern int batch_mode;
 extern int nullifying;
 extern int dkeys;
 extern int zsession;
-extern int dmmode;
 extern int report;
 extern int searchb;
 extern int djvu_char;
@@ -1300,9 +1298,8 @@ extern char mb[],mba[];
 geometry.
 
 */
-extern int WH,WW,PH,PW;
-extern int BW,BH,MRF,TW,TH,PM,PT;
-extern int RW;
+// extern int WH,WW,PH,PW;
+// extern int BW,BH,MRF,TW,TH,PM,PT;
 
 /* (devel)
 
@@ -1355,9 +1352,9 @@ the button state, it must request redraw. Example:
       redraw_button = bfoo;
 
 */
-extern int BUTT_PER_COL,bl_sz;
-extern char *button,**BL;
-extern int nalpha;
+//extern int BUTT_PER_COL,bl_sz;
+//extern char *button,**BL;
+//extern int nalpha;
 
 
 /*
@@ -1390,7 +1387,7 @@ extern int tab;
 #define TABN 3
 
 /* context menus */
-extern int CX0,CY0,CX0_orig,CY0_orig,CW,CH;
+//extern int CX0,CY0,CX0_orig,CY0_orig,CW,CH;
 
 /* indexes of the menus */
 extern int CM_F,
@@ -1452,8 +1449,6 @@ The currently active menu (cmenu), the array of menus (CM, TOP_CM
 and CM_SZ), and the menu clip flag.
 
 */
-extern cmdesc *cmenu;
-extern cmdesc *CM;
 extern int TOP_CM,CM_SZ;
 extern int mclip;
 
@@ -1689,7 +1684,8 @@ The service "pixel" can be used instead of the macro "pix".
 This is the flea path.
 
 */
-extern unsigned short fp[];
+/* TODO: fp was originally unsigned. Why? */
+extern short fp[];
 extern float fsl[],fpp[];
 extern int topfp,fpsz,curr_fp,last_fp;
 
@@ -1988,17 +1984,15 @@ int snbp(int s,int *bp,int *sp);
 /* major gui services */
 void xevents(void);
 void set_alpha(void);
-void swn(char *n);
 void set_xfont(void);
 void xpreamble();
 void comp_wnd_size(int ww,int wh);
-void cmi(void);
-void cpresentation(int reset);
+void cmi(void) __attribute__((deprecated));
 int mb_item(int x,int y);
 void init_welcome(void);
-void right(void);
-void prior(void);
-void get_pointer(int *x,int *y);
+//void right(void);
+//void prior(void);
+void get_pointer(int *x,int *y) __attribute__((deprecated));
 void set_xfont(void);
 void init_dws(int m);
 void setview(int mode);
@@ -2044,7 +2038,7 @@ int geo_align(int c,int dd,int as,int xh,int bl,int ds);
 /* barcode stuff */
 int closure_border_slines(int e,int t,int crit,float val,short *res,int mr,int bar);
 int closure_border_path(int t);
-int border_path(unsigned char *b,int w,int h,unsigned short *bp,int m,int u0,int v0,int relax);
+int border_path(unsigned char *b,int w,int h,short *bp,int m,int u0,int v0,int relax);
 int dist_bar(int i,int j);
 int search_barcode(void);
 int isbar(int k,float *sk,float *bl);
@@ -2099,4 +2093,4 @@ void write_report(char *fn);
 char *mkpath(char *d,char *a,char *b);
 void build_internal_patterns(void);
 int obd_main (int argc, char **argv);
-
+void UNIMPLEMENTED();

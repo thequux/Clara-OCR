@@ -1245,9 +1245,9 @@ int blockfind(int reset,int pc) {
         limits[15] = t0;
 
         zones = 2;
-
-        redraw_dw = 1;
-        redraw_zone = 1;
+        
+        redraw_document_window();
+        // UNPATCHED: redraw_zone = 1;
 
         /* finished */
         show_hint(0,"finished");

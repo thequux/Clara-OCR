@@ -1,3 +1,4 @@
+/* -*- mode: c; c-basic-offset: 4 -*- */
 /*
   Copyright (C) 1999-2002 Ricardo Ueda Karpischek
 
@@ -216,6 +217,7 @@ Menu availability flags.
 #define CMA_ABSENT   32
 #define CMA_NCL      64
 
+GtkWidget *menubar, *sbStatus;
 /*
 
 Menu help message and failure warning.
@@ -271,20 +273,6 @@ reflect the progress of some slow operation. By now, the
 progress bar is unused.
 
 */
-int redraw_button,
-    redraw_bg,
-    redraw_grid,
-    redraw_stline,
-    redraw_dw,
-    redraw_inp,
-    redraw_tab,
-    redraw_zone,
-    redraw_menu,
-    redraw_j1,
-    redraw_j2,
-    redraw_pbar=0,
-    redraw_map,
-    redraw_flea;
 
 /*
 
@@ -298,11 +286,7 @@ char cfont[4*FS*4*FS];
 char mb[MMB+1],mba[MMB+1];
 
 /* font used to display text messages, its height and width */
-XFontStruct *dfont = NULL;
-int DFH,DFW,DFA,DFD;
 
-/* vertical separation between text lines */
-int VS = 2;
 
 /*
 
@@ -331,8 +315,6 @@ int CDW=-1;
 int PAGE_CM=PAGE,PATTERN_CM=PATTERN,TUNE_CM=TUNE;
 
 /* Xcolors */
-XColor white,black,gray,darkgray,vdgray;
-int glevels=-1;
 
 /*
 
@@ -344,17 +326,12 @@ to the symbol pixels and gray to the pattern skeleton
 pixels. When 1, swap these colors.
 
 */
-int dmmode=1;
+//int dmmode=1;
 
 /* the event */
-XEvent xev;
-XButtonEvent *bev;
 int have_s_ev;
 
 /* Context */
-char *displayname = NULL;
-Display *xd=NULL;
-GC xgc;
 char *cschema;
 int mclip = 0;
 
@@ -363,11 +340,6 @@ int mclip = 0;
 The window and its buffer.
 
 */
-Window XW;
-XID xw;
-Pixmap pm;
-int pmw,pmh;
-int have_xw=0,have_pm=0,use_xb=1;
 
 /* default name for each tab */
 char *tabl[] = {"page","patterns","tune","history"};
@@ -451,7 +423,8 @@ int inp_str_ps;
 This is the flea path.
 
 */
-unsigned short fp[2*sizeof(short)*FS*FS];
+// TODO: This was unsigned originally. Why?
+short fp[2*sizeof(short)*FS*FS];
 float fsl[3*FS*FS],fpp[FS*FS];
 int topfp,fpsz,curr_fp=0,last_fp=-1;
 
@@ -471,6 +444,7 @@ the menu is added to the menu bar. If a==2, it must be activated by
 some special action, like clicking the mouse button 3 somewhere.
 
 */
+#if 0
 cmdesc *addmenu(int a,char *tt,int m)
 {
     /* enlarge CM */
@@ -561,7 +535,7 @@ int additem(cmdesc *m,char *t,int p,int g,int d,char *h,int f)
     ++(m->n);
     return(id);
 }
-
+#endif
 /* (devel)
 
 The function show_hint
@@ -597,7 +571,7 @@ void show_hint(int f,char *s, ...)
     va_start(args,s);
 
     if (f == 3) {
-        redraw_stline = 1;
+        // UNPATCHED: redraw_stline = 1;
         mb[0] = 0;
         fixed = 0;
     }
@@ -608,7 +582,7 @@ void show_hint(int f,char *s, ...)
             mb[0] = 0;
         else if ((trace) && (mb[0]!=0))
             tr(mb);
-        redraw_stline = 1;
+        // UNPATCHED: redraw_stline = 1;
         fixed = f;
     }
 
@@ -622,7 +596,7 @@ void show_hint(int f,char *s, ...)
             if (s[0] != 0) {
                 if (vsnprintf(mb,MMB,s,args) < 0)
                     mb[0] = 0;
-                redraw_stline = 1;
+                // UNPATCHED: redraw_stline = 1;
                 fixed = 0;
             }
         }
@@ -634,7 +608,7 @@ void show_hint(int f,char *s, ...)
         else if ((fixed == 0) && (strcmp(mb,s) != 0)) {
             if (vsnprintf(mb,MMB,s,args) < 0)
                 mb[0] = 0;
-            redraw_stline = 1;
+            // UNPATCHED: redraw_stline = 1;
         }
     }
 
@@ -714,110 +688,7 @@ void enter_wait(char *s,int f,int m)
     inp_str_ps = strlen(inp_str);
 }
 
-/*
-
-Step right the current window.
-
-*/
-void step_right(void)
-{
-    if (CDW == PAGE) {
-        X0 += FS;
-        check_dlimits(0);
-        redraw_dw = 1;
-    }
-    else if (CDW == PAGE_FATBITS) {
-        ++X0;
-        check_dlimits(0);
-        RG = 1;
-        redraw_dw = 1;
-    }
-    else if (HTML) {
-        X0 += DFW;
-        check_dlimits(0);
-        redraw_dw = 1;
-    }
-}
-
-/*
-
-Step left the current window.
-
-*/
-void step_left(void)
-{
-    if (CDW == PAGE) {
-        X0 -= FS;
-        check_dlimits(0);
-        redraw_dw = 1;
-    }
-    else if (CDW == PAGE_FATBITS) {
-        --X0;
-        check_dlimits(0);
-        RG = 1;
-        redraw_dw = 1;
-    }
-    else if (HTML) {
-        if (X0 > 0) {
-            X0 -= DFW;
-            if (X0 < 0)
-                X0 = 0;
-            redraw_dw = 1;
-        }
-    }
-}
-
-/*
-
-Step up the current window.
-
-*/
-void step_up(void)
-{
-    if (CDW == PAGE) {
-        Y0 -= FS;
-        check_dlimits(0);
-        redraw_dw = 1;
-    }
-    else if (CDW == PAGE_FATBITS) {
-        --Y0;
-        check_dlimits(0);
-        RG = 1;
-        redraw_dw = 1;
-    }
-    else if (HTML) {
-        if (Y0 >= DFW) {
-            Y0 -= DFW;
-            redraw_dw = 1;
-        }
-    }
-}
-
-/*
-
-Step down the current window.
-
-*/
-void step_down(void)
-{
-    if (CDW == PAGE) {
-        Y0 += FS;
-        check_dlimits(0);
-        redraw_dw = 1;
-    }
-    else if (CDW == PAGE_FATBITS) {
-        ++Y0;
-        check_dlimits(0);
-        RG = 1;
-        redraw_dw = 1;
-    }
-    else if (HTML) {
-        Y0 += DFW;
-        check_dlimits(0);
-        redraw_dw = 1;
-    }
-}
-
+#if 0
 /*
 
 Context-dependent "right" action.
@@ -863,7 +734,7 @@ void right(void)
             /* ..and recompute skeleton */
             dw[TUNE_PATTERN].rg = 1;
             dw[TUNE_SKEL].rg = 1;
-            redraw_dw = 1;
+            redraw_document_window();
         }
     }
 
@@ -879,7 +750,7 @@ void right(void)
             check_dlimits(1);
             if (dw[PAGE_SYMBOL].v)
                 dw[PAGE_SYMBOL].rg = 1;
-            redraw_dw = 1;
+            redraw_document_window();
         }
     }
 
@@ -893,7 +764,7 @@ void right(void)
         else
             cpt = 1;
         dw[PATTERN_TYPES].rg = 1;
-        redraw_dw = 1;
+        redraw_document_window();
     }
 
     /* scroll right PAGE_FATBITS window */
@@ -901,14 +772,14 @@ void right(void)
         ++X0;
         check_dlimits(0);
         RG = 1;
-        redraw_dw = 1;
+        redraw_document_window();
     }
 
     /* next revision act */
     else if (CDW == TUNE_ACTS) {
         if (curr_act+1 <= topa) {
             ++curr_act;
-            redraw_dw = 1;
+            redraw_document_window();
             dw[TUNE_ACTS].rg = 1;
         }
     }
@@ -925,7 +796,7 @@ void right(void)
             *cm_g_vocab = ' ';
         }
         dw[DEBUG].rg = 1;
-        redraw_dw = 1;
+        redraw_document_window();
     }
 
     /* scroll right HTML documents */
@@ -983,7 +854,7 @@ void left(void)
             /* ..and recompute skeleton */
             dw[TUNE_PATTERN].rg = 1;
             dw[TUNE_SKEL].rg = 1;
-            redraw_dw = 1;
+            redraw_document_window();
         }
     }
 
@@ -999,7 +870,7 @@ void left(void)
             check_dlimits(1);
             if (dw[PAGE_SYMBOL].v)
                 dw[PAGE_SYMBOL].rg = 1;
-            redraw_dw = 1;
+            redraw_document_window();
         }
     }
 
@@ -1013,7 +884,7 @@ void left(void)
         else
             cpt = toppt;
         dw[PATTERN_TYPES].rg = 1;
-        redraw_dw = 1;
+        redraw_document_window();
     }
 
     /* scroll right PAGE_FATBITS window */
@@ -1021,7 +892,7 @@ void left(void)
         if (X0 > 0) {
             --X0;
             RG = 1;
-            redraw_dw = 1;
+            redraw_document_window();
         }
     }
 
@@ -1029,7 +900,7 @@ void left(void)
     else if (CDW == TUNE_ACTS) {
         if (curr_act > 0) {
             --curr_act;
-            redraw_dw = 1;
+            redraw_document_window();
             dw[TUNE_ACTS].rg = 1;
         }
     }
@@ -1046,7 +917,7 @@ void left(void)
             *cm_g_vocab = ' ';
         }
         dw[DEBUG].rg = 1;
-        redraw_dw = 1;
+        redraw_document_window();
     }
 
     /* scroll left HTML documents */
@@ -1071,7 +942,7 @@ void up(void)
             cmenu->c = cmenu->n - 1;
         if (cmenu->c >= 0) {
             set_mclip(1);
-            redraw_menu = 1;
+            // UNPATCHED: redraw_menu = 1;
         }
         else
             cmenu->c = -1;
@@ -1089,7 +960,7 @@ void up(void)
             check_dlimits(1);
             if (dw[PAGE_SYMBOL].v)
                 dw[PAGE_SYMBOL].rg = 1;
-            redraw_dw = 1;
+            redraw_document_window();
         }
     }
 
@@ -1099,7 +970,7 @@ void up(void)
             Y0 -= (DFH+VS);
             if (Y0 < 0)
                 Y0 = 0;
-            redraw_dw = 1;
+            redraw_document_window();
         }
     }
 
@@ -1125,7 +996,7 @@ void down(void)
             ++(cmenu->c);
         if (cmenu->c < cmenu->n) {
             set_mclip(1);
-            redraw_menu = 1;
+            // UNPATCHED: // UNPATCHED: redraw_menu = 1;
         }
         else
             cmenu->c = -1;
@@ -1143,7 +1014,7 @@ void down(void)
             check_dlimits(1);
             if (dw[PAGE_SYMBOL].v)
                 dw[PAGE_SYMBOL].rg = 1;
-            redraw_dw = 1;
+            redraw_document_window();
         }
     }
 
@@ -1151,7 +1022,7 @@ void down(void)
     else if (HTML) {
         Y0 += DFH+VS;
         check_dlimits(0);
-        redraw_dw = 1;
+        redraw_document_window();
     }
 
     /* scroll up PAGE_FATBITS window */
@@ -1172,7 +1043,7 @@ void prior(void)
     if (CDW == PAGE) {
         Y0 -= VR;
         check_dlimits(0);
-        redraw_dw = 1;
+        redraw_document_window();
     }
 
     else if (HTML) {
@@ -1181,14 +1052,14 @@ void prior(void)
         d *= (DFH+VS);
         Y0 -= d;
         check_dlimits(0);
-        redraw_dw = 1;
+        redraw_document_window();
     }
 
     else if (CDW == PAGE_FATBITS) {
         Y0 -= FS;
         check_dlimits(0);
         RG = 1;
-        redraw_dw = 1;
+        redraw_document_window();
     }
 }
 
@@ -1204,7 +1075,7 @@ void next(void)
     if (CDW == PAGE) {
         Y0 += VR;
         check_dlimits(0);
-        redraw_dw = 1;
+        redraw_document_window();
     }
 
     else if (HTML) {
@@ -1213,17 +1084,17 @@ void next(void)
         d *= (DFH+VS);
         Y0 += d;
         check_dlimits(0);
-        redraw_dw = 1;
+        redraw_document_window();
     }
 
     else if (CDW == PAGE_FATBITS) {
         Y0 += FS;
         check_dlimits(0);
         RG = 1;
-        redraw_dw = 1;
+        redraw_document_window();
     }
 }
-
+#endif
 /*
 
 Check menu item availability.
@@ -1302,6 +1173,7 @@ short help if the item is available, or a diagnostic
 otherwise).
 
 */
+#if 0
 int cma(int it,int check)
 {
     /*
@@ -1382,7 +1254,7 @@ int cma(int it,int check)
         /* toggle */
         s = cmenu->l + a*(MAX_MT+1)+1;
         *s = (*s == ' ') ? 'X' : ' ';
-        redraw_menu = 1;
+        // UNPATCHED: redraw_menu = 1;
     }
 
     /*
@@ -1565,7 +1437,6 @@ int cma(int it,int check)
             set_xfont();
 
             /* recompute window size and components placement */
-            comp_wnd_size(-1,-1);
             set_mclip(0);
 
             /* recompute the placement of the windows */
@@ -1616,11 +1487,11 @@ int cma(int it,int check)
 
             if (curr_mc >= 0) {
                 dw[PAGE_SYMBOL].rg = 1;
-                redraw_dw = 1;
+                redraw_document_window();
             }
             if ((0<=cdfc) && (cdfc<=topp)) {
                 dw[PATTERN].rg = 1;
-                redraw_dw = 1;
+                redraw_document_window();
             }
             new_mclip = 0;
         }
@@ -1641,7 +1512,7 @@ int cma(int it,int check)
         else if  (it == CM_V_CC) {
 
             new_mclip = 0;
-            redraw_dw = 1;
+            redraw_document_window();
         }
 
         /* toggle show skeleton tuning */
@@ -1721,7 +1592,7 @@ int cma(int it,int check)
             (it == CM_G_SUM)) {
 
             new_mclip = 0;
-            redraw_dw = 1;
+            redraw_document_window();
         }
 
         /* clear matches */
@@ -1738,7 +1609,7 @@ int cma(int it,int check)
 
             dw[DEBUG].rg = 1;
             new_mclip = 0;
-            redraw_dw = 1;
+            redraw_document_window();
         }
 
         /* enter debug window */
@@ -1935,23 +1806,23 @@ int cma(int it,int check)
                  (it == CM_D_PTYPE)) {
 
             new_mclip = 0;
-            redraw_dw = 1;
+            redraw_document_window();
         }
 
         /* report scale */
         else if (it == CM_D_RS) {
 
             new_mclip = 0;
-            redraw_tab = 1;
+            // UNPATCHED: redraw_tab = 1;
         }
 
         /* display box instead of symbol */
         else if (it == CM_D_BB) {
 
             new_mclip = 0;
-            redraw_tab = 1;
+            // UNPATCHED: redraw_tab = 1;
             if (dw[PAGE].v)
-                redraw_dw = 1;
+                redraw_document_window();
         }
 
     }
@@ -2192,7 +2063,7 @@ int cma(int it,int check)
     else if (cmenu-CM == CM_A) {
 
         set_bl_alpha();
-        redraw_map = 1;
+        // UNPATCHED: redraw_map = 1;
     }
 
     /* must dismiss the context menu */
@@ -2208,12 +2079,13 @@ int cma(int it,int check)
         force_redraw();
     }
     else {
-        redraw_menu = 1;
+        // UNPATCHED: redraw_menu = 1;
     }
 
     return(1);
 }
-
+#endif
+#if 0
 /*
 
 Press key (for presentations).
@@ -2231,71 +2103,6 @@ int press(char c,int *delay)
     return(0);
 }
 
-/*
-
-Click menu item (for presentations).
-
-*/
-int mselect(int item,int *delay)
-{
-    int m,x,y=MH/2,px,py;
-    XButtonEvent *be;
-
-    m = item >> CM_IT_WD;
-    x = ((CM[m].p*DFW) + ((CM[m].p+strlen(CM[m].tt))*DFW)) / 2;
-
-    /* get pointer coordinates */
-    get_pointer(&px,&py);
-
-    /* go to menu */
-    if (((cmenu == NULL) || ((cmenu-CM) != m)) &&
-         ((px != x) || (py != y))) {
-
-        XWarpPointer(xd,None,XW,0,0,0,0,x,y);
-        *delay = 1000000;
-        return(1);
-    }
-
-    /* open menu */
-    else if (cmenu == NULL) {
-
-        xev.type = ButtonPress;
-        xev.xbutton.x = px;
-        xev.xbutton.y = py;
-        be = (XButtonEvent *) &xev;
-        be->button = Button1;
-        have_s_ev = 1;
-        *delay = 500000;
-        return(1);
-    }
-
-    /* no item selected */
-    else if ((cmenu->c < 0) ||
-             ((cmenu->c + ((cmenu-CM) << CM_IT_WD)) != item)) {
-
-        int i;
-
-        i = item & CM_IT_M;
-        x = CX0 + CW - 10;
-        y = i * (DFH + VS) + 5 + CY0 + DFH;
-        XWarpPointer(xd,None,XW,0,0,0,0,x,y);
-        *delay = 2000000;
-        return(1);
-    }
-
-    /* click it */
-    else {
-
-        xev.type = ButtonPress;
-        xev.xbutton.x = px;
-        xev.xbutton.y = py;
-        be = (XButtonEvent *) &xev;
-        be->button = Button1;
-        have_s_ev = 1;
-        *delay = 100000;
-        return(0);
-    }
-}
 
 /*
 
@@ -2517,12 +2324,13 @@ int fselect(char *p,int *delay)
         }
     }
 }
-
+#endif
 /*
 
 Process keyboard events.
 
 */
+#if 0
 void kactions(void)
 {
     /* statuses */
@@ -2536,8 +2344,8 @@ void kactions(void)
 
     /* Buffers required by the KeyPress event */
     unsigned char buffer[101];
-    KeySym ks;
-    XComposeStatus cps;
+    //KeySym ks;
+    //XComposeStatus cps;
 
     /*
         We're waiting any keyboard event.
@@ -2550,7 +2358,7 @@ void kactions(void)
             return;
     }
 
-    n = XLookupString(&(xev.xkey),(char *)buffer,100,&ks,&cps);
+    //n = XLookupString(&(xev.xkey),(char *)buffer,100,&ks,&cps);
 
     /*
         We're waiting ENTER or ESC keypresses. Discard anything else.
@@ -2559,7 +2367,7 @@ void kactions(void)
         if ((ks == 0xff0d) || (ks == 0xff1b)) {
             waiting_key = 0;
             mb[0] = 0;
-            redraw_stline = 1;
+            // UNPATCHED: redraw_stline = 1;
             key_pressed = (ks == 0xff0d);
         }
         return;
@@ -2573,7 +2381,7 @@ void kactions(void)
         if ((ks == 'y') || (ks == 'Y') || (ks == 'n') || (ks == 'N')) {
             waiting_key = 0;
             mb[0] = 0;
-            redraw_stline = 1;
+            // UNPATCHED: redraw_stline = 1;
             key_pressed = ((ks == 'y') || (ks == 'Y'));
         }
         return;
@@ -2586,13 +2394,13 @@ void kactions(void)
         if ((ks == '>') || (ks == '<') || (ks == '+') || (ks == '-')) {
             waiting_key = 0;
             mb[0] = 0;
-            redraw_stline = 1;
+            // UNPATCHED: redraw_stline = 1;
             key_pressed = ks;
         }
         else if ((ks == 0xff0d) || (ks == 0xff1b)) {
             waiting_key = 0;
             mb[0] = 0;
-            redraw_stline = 1;
+            // UNPATCHED: redraw_stline = 1;
             key_pressed = 0;
         }
         return;
@@ -2712,7 +2520,7 @@ void kactions(void)
         if (nopropag) {
             nopropag = 0;
             mb[0] = 0;
-            redraw_stline = 1;
+            // UNPATCHED: redraw_stline = 1;
         }
     }
     else if (waiting_key == 4)
@@ -2731,7 +2539,7 @@ void kactions(void)
             if ((ls=strlen(c->txt)) > 0)
                 (c->txt)[ls-1] = 0;
 
-            redraw_inp = 1;
+            // UNPATCHED: redraw_inp = 1;
             form_changed = 1;
         }
         else {
@@ -2767,7 +2575,7 @@ void kactions(void)
                     l = -1;
                 }
             }
-            redraw_inp = 1;
+            // UNPATCHED: redraw_inp = 1;
             form_changed = 1;
         }
 
@@ -2855,7 +2663,7 @@ void kactions(void)
         /* show the GPL */
         else if (v && ((l=='l') || (l=='L')) && (CDW == WELCOME)) {
             setview(GPL);
-            redraw_dw = 1;
+            redraw_document_window();
             l = -1;
         }
     }
@@ -2948,7 +2756,7 @@ void kactions(void)
             else {
 
                 button[bbad] ^= 1;
-                redraw_button = bbad;
+                // UNPATCHED: redraw_button = bbad;
                 form_changed = 1;
                 form_auto_submit();
 
@@ -2977,63 +2785,7 @@ void kactions(void)
             break;
     }
 }
-
-/*
-
-Select the window where the mouse pointer is.
-
-*/
-void select_dw(int x,int y)
-{
-    int a,last_dw;
-
-    get_pointer(&x,&y);
-
-    /* loop all active windows */
-    last_dw = CDW;
-
-    if (*cm_v_hide == ' ')
-        a = 10+RW;
-    else
-        a = 0;
-
-    for (CDW=0; CDW<=TOP_DW; ++CDW) {
-        if ((dw[CDW].v) &&
-            (DM-10 <= x) && (x < DM+DW+(DS?a:10)) &&
-            (DT-10 <= y) && (y < DT+DH+(DS?a:10))) {
-
-            if (CDW != last_dw) {
-                redraw_tab = 1;
-            }
-            return;
-        }
-    }
-
-    /* no one was selected */
-    CDW = last_dw;
-}
-
-/*
-
-Detect the item from the menu bar currently under the pointer.
-
-*/
-int mb_item(int x,int y)
-{
-    if ((0 < y) && (y < MH)) {
-        int i;
-
-        for (i=0; i<=TOP_CM; ++i) {
-            if ((CM[i].a == 1) &&
-                (CM[i].p * DFW <= x) &&
-                (x <= (CM[i].p+strlen(CM[i].tt)) * DFW)) {
-                    return(i);
-            }
-        }
-        return(-2);
-    }
-    return(-1);
-}
+#endif
 
 /*
 
@@ -3041,6 +2793,7 @@ This is mostly a trigger to execute actions when a menu is
 opened. Anyway, it also initializes some variables.
 
 */
+#if 0
 void open_menu(int x,int y,int m)
 {
     CX0 = x;
@@ -3048,9 +2801,11 @@ void open_menu(int x,int y,int m)
     if (cmenu == NULL)
         form_auto_submit();
     cmenu = CM + m;
-    redraw_menu = 1;
+    // UNPATCHED: redraw_menu = 1;
     show_hint(3,NULL);
+    
 }
+#endif
 
 /*
 
@@ -3212,7 +2967,7 @@ int spyhole(int x,int y,int op,int et)
         if (*cm_g_lb != ' ') {
             if (CDW != PAGE)
                 setview(PAGE);
-            redraw_dw = 1;
+            redraw_document_window();
         }
 
         return(0);
@@ -3911,7 +3666,7 @@ int spyhole(int x,int y,int op,int et)
             show_hint(2,"could not find a useful threshold");
 
         /* must refresh the display */
-        redraw_dw = 1;
+        redraw_document_window();
     }
 
     /* accumulate tries */
@@ -3926,6 +3681,7 @@ int spyhole(int x,int y,int op,int et)
 Mouse actions activated by mouse button 1.
 
 */
+#if 0
 int mactions_b1(int help,int x,int y)
 {
     int i,j,c,sb;
@@ -3964,7 +3720,6 @@ int mactions_b1(int help,int x,int y)
     }
 
     /* change to selected window */
-    select_dw(x,y);
 
     /*
 
@@ -4176,12 +3931,12 @@ int mactions_b1(int help,int x,int y)
 
             if (fun_code == 0) {
                 fun_code = 1;
-                redraw_dw = 1;
+                redraw_document_window();
                 new_alrm(50000,1);
             }
             else if (fun_code == 1) {
                 fun_code = 0;
-                redraw_dw = 1;
+                redraw_document_window();
             }
 
             return(0);
@@ -4220,7 +3975,7 @@ int mactions_b1(int help,int x,int y)
                     button[bzone] = 0;
                     ++zones;
                     sess_changed = 1;
-                    redraw_zone = 1;
+                    // UNPATCHED: redraw_zone = 1;
                 }
                 lb[MMB] = 0;
                 s = snprintf(lb,MMB,"limits:");
@@ -4306,7 +4061,7 @@ int mactions_b1(int help,int x,int y)
 
             COLOR = BLACK;
             pp(i,j);
-            redraw_dw = 1;
+            redraw_document_window();
         }
 
         /* clear pixel */
@@ -4319,7 +4074,7 @@ int mactions_b1(int help,int x,int y)
 
             COLOR = WHITE;
             pp(i,j);
-            redraw_dw = 1;
+            redraw_document_window();
         }
 
         /* fill region with current color */
@@ -4337,7 +4092,7 @@ int mactions_b1(int help,int x,int y)
                 cfont[i+j*FS] = c;
                 pr(i,j,c);
             }
-            redraw_dw = 1;
+            redraw_document_window();
         }
 
         /* clear region with current color */
@@ -4355,7 +4110,7 @@ int mactions_b1(int help,int x,int y)
                 cfont[i+j*FS] = c;
                 pr(i,j,c);
             }
-            redraw_dw = 1;
+            redraw_document_window();
         }
 
         /* go to hyperref */
@@ -4518,7 +4273,7 @@ int mactions_b1(int help,int x,int y)
             else if ((curr_mc = k) >= 0) {
                 dw[PAGE_SYMBOL].rg = 1;
                 symb2buttons(curr_mc);
-                redraw_dw = 1;
+                redraw_document_window();
             }
         }
     }
@@ -4605,7 +4360,7 @@ int mactions_b1(int help,int x,int y)
                         dw[PATTERN_ACTION].rg = 1;
                         dw[PAGE_SYMBOL].rg = 1;
                         dw[PAGE_DOUBTS].rg = 1;
-                        redraw_dw = 1;
+                        redraw_document_window();
                     }
                 }
             }
@@ -4619,7 +4374,7 @@ int mactions_b1(int help,int x,int y)
                     return(1);
                 }
                 X0 = 0;
-                redraw_dw = 1;
+                redraw_document_window();
             }
             */
 
@@ -4632,7 +4387,7 @@ int mactions_b1(int help,int x,int y)
                     return(1);
                 }
                 Y0 = 0;
-                redraw_dw = 1;
+                redraw_document_window();
             }
             */
 
@@ -4809,7 +4564,7 @@ int mactions_b1(int help,int x,int y)
                 if (++button[balpha] >= nalpha)
                     button[balpha] = 0;
                 redraw_button = balpha;
-                redraw_map = 1;
+                // UNPATCHED: redraw_map = 1;
                 set_alpha();
                 */
                 /*
@@ -4840,7 +4595,7 @@ int mactions_b1(int help,int x,int y)
         sliding = 3;
 
         /* must redraw to clear the ellipses */
-        redraw_dw = 1;
+        redraw_document_window();
     }
 
     /* second resize area */
@@ -4858,7 +4613,7 @@ int mactions_b1(int help,int x,int y)
         sliding = 4;
 
         /* must redraw to clear the ellipses */
-        redraw_dw = 1;
+        redraw_document_window();
     }
 
     /* vertical scrollbar */
@@ -4954,6 +4709,7 @@ int mactions_b1(int help,int x,int y)
 
     return(0);
 }
+#endif
 
 /*
 
@@ -4962,15 +4718,7 @@ Get pointer coordinates.
 */
 void get_pointer(int *x,int *y)
 {
-    Window root,child;
-    int rx,ry,cx,cy;
-    unsigned mask;
-
-    /* get pointer coordinates */
-    rx = ry = -1;
-    XQueryPointer(xd,XW,&root,&child,&rx,&ry,&cx,&cy,&mask);
-    *x = cx;
-    *y = cy;
+    UNIMPLEMENTED();
 }
 
 /*
@@ -4984,6 +4732,7 @@ you move the pointer across the Clara X window.
 In some cases (as for HTML anchors) the element changes color.
 
 */
+#if 0
 void show_info(void) {
     int m,n,px,py;
 
@@ -5061,7 +4810,8 @@ void show_info(void) {
     else if (!m)
         show_hint(0,"");
 }
-
+#endif
+#if 0
 /*
 
 Mouse actions activated by mouse button 3.
@@ -5098,12 +4848,12 @@ void mactions_b3(int help,int x,int y)
         /* steppers */
         if (y <= DT+RW) {
             Y0 = 0;
-            redraw_dw = 1;
+            redraw_document_window();
         }
         else if (y >= DT+DH-RW) {
             if ((GRY - VR) >= 0)
                 Y0 = GRY - VR;
-            redraw_dw = 1;
+            redraw_document_window();
         }
 
         /* page down */
@@ -5122,12 +4872,12 @@ void mactions_b3(int help,int x,int y)
         /* steppers */
         if (x <= DM+RW) {
             X0 = 0;
-            redraw_dw = 1;
+            redraw_document_window();
         }
         else if (x >= DM+DW-RW) {
             if ((GRX - HR) >= 0)
                 X0 = GRX - HR;
-            redraw_dw = 1;
+            redraw_document_window();
         }
 
         /* page right */
@@ -5137,7 +4887,7 @@ void mactions_b3(int help,int x,int y)
                 X0 = XRES-HR;
             if (CDW == PAGE_FATBITS)
                 RG = 1;
-            redraw_dw = 1;
+            redraw_document_window();
         }
 
         return;
@@ -5159,7 +4909,7 @@ void mactions_b3(int help,int x,int y)
             if (i == earrow) {
                 if ((XRES - HR) >= 0)
                     X0 = XRES - HR;
-                redraw_dw = 1;
+                redraw_document_window();
             }
             */
 
@@ -5168,7 +4918,7 @@ void mactions_b3(int help,int x,int y)
             else if (i == barrow) {
                 if ((YRES - VR) >= 0)
                     Y0 = YRES - VR;
-                redraw_dw = 1;
+                redraw_document_window();
             }
             */
 
@@ -5210,7 +4960,7 @@ void mactions_b3(int help,int x,int y)
                         dw[PATTERN_ACTION].rg = 1;
                         dw[PAGE_SYMBOL].rg = 1;
                         dw[PAGE_DOUBTS].rg = 1;
-                        redraw_dw = 1;
+                        redraw_document_window();
                     }
                 }
             }
@@ -5224,7 +4974,7 @@ void mactions_b3(int help,int x,int y)
             else if (i == bzone) {
                 if (zones > 0) {
                     zones = 0;
-                    redraw_dw = 1;
+                    redraw_document_window();
                     for (i=0; i<=tops; ++i)
                         mc[i].c = -1;
                     sess_changed = 1;
@@ -5375,13 +5125,14 @@ void mactions_b2(int help,int x,int y)
                         dw[PATTERN_LIST].rg = 1;
                         dw[PATTERN_TYPES].rg = 1;
                         dw[PAGE_SYMBOL].rg = 1;
-                        redraw_dw = 1;
+                        redraw_document_window();
                     }
                 }
             }
         }
     }
 }
+#endif
 
 /*
 
@@ -5389,22 +5140,8 @@ Get the menu item under the pointer.
 
 */
 int get_item(int x,int y) {
-    int j;
-
-    if ((cmenu != NULL) &&
-        (CX0 <= x) && (x <= CX0+CW) &&
-        (CY0 <= y) && (y <= CY0+CH)) {
-
-        /* compute action */
-        j = (y - CY0 - 5) / (DFH + VS);
-        if (j < 0)
-            j = 0;
-        else if (j >= cmenu->n)
-            j = cmenu->n - 1;
-        j += ((cmenu-CM) << CM_IT_WD);
-        return(j);
-    }
-    return(-1);
+    UNIMPLEMENTED(); // removed
+    return 0;
 }
 
 /*
@@ -5418,6 +5155,7 @@ Remark: The flag have_s_ev must be cleared only when returning from
 this service.
 
 */
+#if 0
 void xevents(void)
 {
     int no_ev;
@@ -5588,7 +5326,7 @@ void xevents(void)
                 j &= CM_IT_M;
             if (j != cmenu->c) {
                 cmenu->c = j;
-                redraw_menu = 1;
+                // UNPATCHED: redraw_menu = 1;
             }
         }
     }
@@ -5637,7 +5375,7 @@ void xevents(void)
                         X0 = 0;
                     if (CDW == PAGE_FATBITS)
                         RG = 1;
-                    redraw_dw = 1;
+                    redraw_document_window();
                 }
             }
 
@@ -5646,7 +5384,7 @@ void xevents(void)
                 prior();
 
             if (curr_mc >= 0)
-                redraw_dw = 1;
+                redraw_document_window();
         }
         sliding = 0;
     }
@@ -5683,13 +5421,14 @@ void xevents(void)
 
     have_s_ev = 0;
 }
-
+#endif
 /*
 
 Synchronize the variables alpha, alpha_sz and alpha_cols with
 the current status of the alphabet selection button.
 
 */
+#if 0
 void set_alpha(void)
 {
     int i;
@@ -5729,23 +5468,8 @@ void set_alpha(void)
     else
         alpha = NULL;
 }
-
-/*
-
-Set the application window name.
-
-*/
-void swn(char *n)
-{
-    char *list[2];
-    XTextProperty xtp;
-
-    list[0] = n;
-    list[1] = NULL;
-    XStringListToTextProperty(list,1,&xtp);
-    XSetWMName(xd,XW,&xtp);
-}
-
+#endif
+#if 0
 /*
 
 Set the default font. Clara uses one same font for all (menus,
@@ -5753,6 +5477,7 @@ button labels, HTML rendering, etc. The font to be set is
 obtained from the Options menu status.
 
 */
+
 void set_xfont(void)
 {
     XCharStruct *x;
@@ -5801,7 +5526,7 @@ void set_xfont(void)
     DFH = (DFA=x->ascent) + (DFD=x->descent);
     DFW = x->width;
 }
-
+#endif
 /*
 
 Reset the parameters of all windows.
@@ -5809,6 +5534,7 @@ Reset the parameters of all windows.
 */
 void init_dws(int m)
 {
+#if 0
     int i;
 
     for (i=0; i<=TOP_DW; ++i) {
@@ -5841,6 +5567,8 @@ void init_dws(int m)
     */
     dw[TUNE].hm = DFW;
     dw[PATTERN_TYPES].hm = DFW;
+#endif
+    UNIMPLEMENTED();
 }
 
 /*
@@ -5848,7 +5576,8 @@ void init_dws(int m)
 Context menu initializer.
 
 */
-void cmi(void)
+/* orig: cmi */
+static void init_context_menus(void)
 {
     cmdesc *c;
 
@@ -5860,7 +5589,56 @@ void cmi(void)
         This menu is activated from the menu bar on the top of the
         application X window.
     */
-    c = addmenu(1,"File",0);
+
+    GtkWidget 
+        *submenu,
+        *mi;
+    GSList *group;
+
+    menubar = gtk_menu_bar_new();
+
+
+#define MENU(title)                                                     \
+    do {                                                                \
+        mi = gtk_menu_item_new_with_label(text);                        \
+        submenu = gtk_menu_new();                                       \
+        gtk_menu_item_set_submenu(GTK_MENU_ITEM(mi),submenu);           \
+        gtk_menu_shell_append(GTK_MENU_SHELL(menubar),mi);              \
+        group = NULL;                                                   \
+    } while (0)
+
+#define MENUFLOAT(var)                          \
+    do {                                        \
+        var = submenu = gtk_menu_new();             \
+        group = NULL;                           \
+    } while(0)
+#define MITEM(text)                                             \
+    do {                                                        \
+        mi = gtk_menu_item_new_with_label(text);                \
+        gtk_menu_shell_append(GTK_MENU_SHELL(submenu),mi);      \
+    } while(0)
+#define MCHECK(text)                                       \
+    do {                                                   \
+        mi = gtk_check_menu_item_new_with_label(text);     \
+        gtk_menu_shell_append(GTK_MENU_SHELL(submenu),mi); \
+    } while(0)
+#define MRADIO_START()  group = NULL
+#define MRADIO(text)                                                    \
+    do {                                                                \
+        mi = gtk_radio_menu_item_new_with_label(group,text);            \
+        if (group == NULL)                                              \
+            group = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(mi)); \
+        gtk_menu_shell_append(GTK_MENU_SHELL(submenu),mi);              \
+    } while(0)
+    
+#define MSEP()                                                  \
+    do {                                                        \
+        group = NULL;                                           \
+        mi = gtk_separator_menu_item_new();                     \
+        gtk_menu_shell_append(GTK_MENU_SHELL(submenu),mi);      \
+    } while(0)
+
+    MENU("File");
 
     /* (book)
 
@@ -5868,9 +5646,7 @@ void cmi(void)
 
         Enter the page list to select a page to be loaded.
     */
-    CM_F_LOAD = additem(c,"Load page",CM_TA,0,-1,
-                        "",0);
-
+    MITEM("Load page"); //CM_F_LOAD, 0 A
 
     /* (book)
 
@@ -5879,8 +5655,7 @@ void cmi(void)
         Save on disk the page session (file page.session), the patterns
         (file "pattern") and the revision acts (file "acts").
     */
-    CM_F_SAVE = additem(c,"Save session",CM_TA,0,-1,
-                        "",CMA_PAGE);
+    MITEM("Save session"); // CM_F_SAVE, CMA_PAGE A
 
     /* (book)
 
@@ -5888,8 +5663,7 @@ void cmi(void)
 
         Save on disk the first zone as the file zone.pbm.
     */
-    CM_F_SZ = additem(c,"Save first zone",CM_TA,0,-1,
-                      "",CMA_PAGE|CMA_ZONE);
+    MITEM("Save first zone"); // CM_F_SZ, CMA_PAGE|CMA_ZONE A
 
     /* (book)
 
@@ -5899,8 +5673,7 @@ void cmi(void)
         to achieve better compression rates (mostly to produce small
         web images).
     */
-    CM_F_SR = additem(c,"Save replacing symbols",CM_TA,0,-1,
-                      "",CMA_PAGE|CMA_CL);
+    MITEM("Save replacing symbols"); // CM_F_SR, CMA_PAGE|CMA_CL A
 
     /* (book)
 
@@ -5909,10 +5682,7 @@ void cmi(void)
         Save the contents of the PAGE LIST window to the file
         report.txt on the working directory.
     */
-    CM_F_REP = additem(c,"Write report",CM_TA,0,-1,
-                       "",0);
-
-    CM_F = c - CM;
+    MITEM("Write report"); // CM_F_REP, 0 A
 
     /* (book)
 
@@ -5921,9 +5691,8 @@ void cmi(void)
         Just quit the program (asking before if the session is to
         be saved.
     */
-    CM_F_QUIT = additem(c,"Quit",CM_TA,0,-1,
-                        "",0);
-    CM_F = c - CM;
+
+    MITEM("Quit"); // CM_F_QUIT, 0 A
 
     /* (book)
 
@@ -5933,7 +5702,7 @@ void cmi(void)
         This menu is activated from the menu bar on the top of the
         application X window.
     */
-    c = addmenu(1,"Edit",0);
+    MENU("Edit");
 
     /* (book)
 
@@ -5943,8 +5712,7 @@ void cmi(void)
         PATTERN or the PATTERN PROPS windows will move to the next
         or the previous untransliterated patterns.
     */
-    CM_E_DOUBTS = additem(c,"[ ] Only doubts",CM_TB,0,-1,
-                          "",0);
+    MCHECK("Only doubts"); // CM_E_DOUBTS, 0 B
 
     /* (book)
 
@@ -5955,8 +5723,7 @@ void cmi(void)
         to resolve the unclassified symbols using a second
         classification method.
     */
-    CM_E_RESCAN = additem(c,"[ ] Re-scan all patterns",CM_TB,0,-1,
-                          "",0);
+    MCHECK("Re-scan all patterns"); // CM_E_RESCAN, 0 B
 
     /* (book)
 
@@ -5967,9 +5734,9 @@ void cmi(void)
         "a" remain unclassified, training one of them will perhaps
         recognize some othersm helping to complete the recognition.
     */
-    CM_E_AC = additem(c,"[ ] Auto-classify",CM_TB,0,-1,
-                          "",0);
+    MCHECK("Auto-classify"); // CM_E_AC, 0 B
 
+    MSEP();
     /* (book)
 
         Fill region
@@ -5978,8 +5745,7 @@ void cmi(void)
         around one pixel on the pattern bitmap under edition on the
         font tab.
     */
-    CM_E_FILL = additem(c,"[ ] Fill region",CM_TR,1,-1,
-                        "",0);
+    MRADIO("Fill region"); // CM_E_FILL, 0 R
 
     /* (book)
 
@@ -5988,8 +5754,7 @@ void cmi(void)
         When selected, the mouse button 1 will paint individual
         pixels on the pattern bitmap under edition on the font tab.
     */
-    CM_E_PP = additem(c,"[ ] Paint pixel",CM_TR,0,-1,
-                      "",0);
+    MRADIO("Paint pixel"); // CM_E_PP, 0 R
 
     /* (book)
 
@@ -5999,8 +5764,7 @@ void cmi(void)
         around one pixel on the pattern bitmap under edition on the
         font tab.
     */
-    CM_E_FILL_C = additem(c,"[ ] Clear region",CM_TR,0,-1,
-                          "",0);
+    MRADIO("Clear region"); // CM_E_FILL_C, 0 R
 
     /* (book)
 
@@ -6009,8 +5773,7 @@ void cmi(void)
         When selected, the mouse button 1 will clear individual
         pixels on the pattern bitmap under edition on the font tab.
     */
-    CM_E_PP_C = additem(c,"[ ] Clear pixel",CM_TR,0,-1,
-                        "",0);
+    MRADIO("Clear pixel"); // CM_E_PP_C, 0 R
 
     /* (book)
 
@@ -6020,8 +5783,8 @@ void cmi(void)
         the patterns in blocks accordingly to their (page)
         sources.
     */
-    CM_E_SP = additem(c,"[ ] Sort patterns by page",CM_TB,1,-1,
-                      "",0);
+    MSEP();
+    MCHECK("Sort patterns by page"); // CM_E_SP, 0 B
 
     /* (book)
 
@@ -6031,8 +5794,7 @@ void cmi(void)
         first criterion when sorting the patterns, the number of
         matches of each pattern.
     */
-    CM_E_SM = additem(c,"[ ] Sort patterns by matches",CM_TB,0,-1,
-                      "",0);
+    MCHECK("Sort patterns by matches"); // CM_E_SM, 0 B
 
     /* (book)
 
@@ -6042,8 +5804,7 @@ void cmi(void)
         second criterion when sorting the patterns, their
         transliterations.
     */
-    CM_E_ST = additem(c,"[ ] Sort patterns by transliteration",CM_TB,0,-1,
-                      "",0);
+    MCHECK("Sort patterns by transliteration"); // CM_E_ST, 0 B
 
     /* (book)
 
@@ -6053,8 +5814,7 @@ void cmi(void)
         third criterion when sorting the patterns, their
         number of pixels.
     */
-    CM_E_SN = additem(c,"[ ] Sort patterns by number of pixels",CM_TB,0,-1,
-                      "",0);
+    MCHECK("Sort patterns by number of pixels"); // CM_E_SN, 0 B
 
     /* (book)
 
@@ -6064,8 +5824,7 @@ void cmi(void)
         fourth criterion when sorting the patterns, their
         widths.
     */
-    CM_E_SW = additem(c,"[ ] Sort patterns by width",CM_TB,0,-1,
-                      "",0);
+    MCHECK("Sort patterns by width"); // CM_E_SW, 0 B
 
     /* (book)
 
@@ -6075,8 +5834,7 @@ void cmi(void)
         fifth criterion when sorting the patterns, their
         heights.
     */
-    CM_E_SH = additem(c,"[ ] Sort patterns by height",CM_TB,0,-1,
-                      "",0);
+    MCHECK("Sort patterns by height"); // CM_E_SH, 0 B
 
     /* (book)
 
@@ -6084,8 +5842,8 @@ void cmi(void)
 
         Remove from the font all untransliterated fonts.
     */
-    CM_E_DU = additem(c,"Del Untransliterated patterns",CM_TA,1,-1,
-                      "",0);
+    MSEP();
+    MITEM("Delete Untransliterated patterns"); // CM_E_DU, 0 A
 
     /* (book)
 
@@ -6093,8 +5851,7 @@ void cmi(void)
 
         Set the pattern type for all patterns marked as "other".
     */
-    CM_E_SETPT = additem(c,"Set pattern type",CM_TA,0,-1,
-                         "",0);
+    MITEM("Set pattern type"); //CM_E_SETPT, 0 A
 
     /* (book)
 
@@ -6102,8 +5859,7 @@ void cmi(void)
 
         Try to find a barcode on the loaded page.
     */
-    CM_E_SEARCHB = additem(c,"Search barcode",CM_TA,0,-1,
-                           "",0);
+    MITEM("Search barcode"); // CM_E_SEARCHB, 0 A
 
     /* (book)
 
@@ -6111,8 +5867,7 @@ void cmi(void)
 
         Perform on-the-fly global thresholding.
     */
-    CM_E_THRESH = additem(c,"Instant thresholding",CM_TA,0,-1,
-                          "",0);
+    MITEM("Instant thresholding"); // CM_E_THRESH, 0 A
 
 #ifdef PATT_SKEL
     /* (book)
@@ -6122,11 +5877,8 @@ void cmi(void)
         Reset the parameters for skeleton computation for all
         patterns.
     */
-    CM_E_RSKEL = additem(c,"Reset skeleton parameters",CM_TA,0,-1,
-                         "",0);
+    MITEM("Reset skeleton parameters"); // CM_E_RSKEL, 0 A
 #endif
-
-    CM_E = c - CM;
 
     /* (book)
 
@@ -6136,16 +5888,16 @@ void cmi(void)
         This menu is activated from the menu bar on the top of the
         application X window.
     */
-    c = addmenu(1,"View",0);
+    MENU("View");
 
+#if 0
     /* (book)
 
         Small font
 
         Use a small X font (6x13).
     */
-    CM_V_SMALL = additem(c,"[ ] Small font (6x13)",CM_TR,0,1,
-                         "",0);
+    MRADIO("Small font (6x13)"); // CM_V_SMALL, 0 R
 
     /* (book)
 
@@ -6153,8 +5905,7 @@ void cmi(void)
 
         Use the medium font (9x15).
     */
-    CM_V_MEDIUM = additem(c,"[ ] Medium font (9x15)",CM_TR,0,1,
-                          "",0);
+    MRADIO("Medium font (9x15)"); // CM_V_MEDIUM, 0 R
 
     /* (book)
 
@@ -6162,8 +5913,7 @@ void cmi(void)
 
         Use a large X font (10x20).
     */
-    CM_V_LARGE = additem(c,"[ ] Large font (10x20)",CM_TR,0,1,
-                         "",0);
+    MRADIO("Large font (10x20)"); // CM_V_LARGE, 0 R
 
     /* (book)
 
@@ -6172,8 +5922,7 @@ void cmi(void)
         Use the default font (7x13 or "fixed" or the one informed
         on the command line).
     */
-    CM_V_DEF = additem(c,"[ ] Default font",CM_TR,0,1,
-                       "",0);
+    MRADIO("Default font"); // CM_V_DEF, 0 R
 
     /* (book)
 
@@ -6182,8 +5931,9 @@ void cmi(void)
         Toggle the hide scrollbars flag. When active, this
         flag hides the display of scrolllbar on all windows.
     */
-    CM_V_HIDE = additem(c,"[ ] Hide scrollbars",CM_TB,0,1,
-                        "",0);
+    
+    MCHECK("Hide scrollbars"); // CM_V_HIDE, 0 B
+#endif
 
     /* (book)
 
@@ -6193,9 +5943,9 @@ void cmi(void)
         fragments won't be included on the list of
         patterns.
     */
-    CM_V_OF = additem(c,"[ ] Omit fragments",CM_TB,0,-1,
-                      "",0);
+    MCHECK("Omit fragments"); // CM_V_OF, 0 B
 
+#if 0
     /* (book)
 
         Show HTML source
@@ -6203,8 +5953,8 @@ void cmi(void)
         Show the HTML source of the document, instead of the
         graphic rendering.
     */
-    CM_V_VHS = additem(c,"[ ] Show HTML source",CM_TB,1,1,
-                       "",0);
+    MSEP();
+    MCHECK("Show HTML source"); // CM_V_VHS, 0 B
 
     /* (book)
 
@@ -6214,8 +5964,7 @@ void cmi(void)
         window will include the clip of the document around the
         current symbol that will be used through web revision.
     */
-    CM_V_WCLIP = additem(c,"[ ] Show web clip",CM_TB,0,1,
-                         "",0);
+    MCHECK("Show web clip"); // CM_V_WCLIP, 0 B
 
     /* (book)
 
@@ -6225,8 +5974,8 @@ void cmi(void)
         from Latin letters to the current alphabet will be
         displayed.
     */
-    CM_V_MAP = additem(c,"[ ] Show alphabet map",CM_TB,0,1,
-                       "",0);
+    MCHECK("Show alphabet map"); // CM_V_MAP, 0 B
+#endif
 
     /* (book)
 
@@ -6235,17 +5984,16 @@ void cmi(void)
         Identify the symbols on the current class using
         a gray ellipse.
     */
-    CM_V_CC = additem(c,"[ ] Show current class",CM_TB,0,-1,
-                      "",0);
+    MCHECK("Show current class"); // CM_V_CC, 0 B
 
+    MSEP();
     /* (book)
 
         Show matches
 
         Display bitmap matches when performing OCR.
     */
-    CM_V_MAT = additem(c,"[ ] Show matches",CM_TR,1,-1,
-                       "",0);
+    MRADIO("Show matches"); // CM_V_MAT, 0 R
 
     /* (book)
 
@@ -6253,8 +6001,7 @@ void cmi(void)
 
         Display all bitmap comparisons when performing OCR.
     */
-    CM_V_CMP = additem(c,"[ ] Show comparisons",CM_TR,0,-1,
-                       "",0);
+    MRADIO("Show comparisons"); // CM_V_CMP, 0 R
 
     /* (book)
 
@@ -6263,8 +6010,7 @@ void cmi(void)
         Display bitmap matches when performing OCR,
         waiting a key after each display.
     */
-    CM_V_MAT_K = additem(c,"[ ] Show matches and wait",CM_TR,0,-1,
-                         "",0);
+    MRADIO("Show matches and wait"); // CM_V_MAT_K, 0 R
 
     /* (book)
 
@@ -6273,8 +6019,7 @@ void cmi(void)
         Display all bitmap comparisons when performing OCR,
         waiting a key after each display.
     */
-    CM_V_CMP_K = additem(c,"[ ] Show comparisons and wait",CM_TR,0,-1,
-                         "",0);
+    MRADIO("Show comparisons and wait"); // CM_V_CMP_K, 0 R
 
     /* (book)
 
@@ -6283,20 +6028,7 @@ void cmi(void)
         Display each candidate when tuning the skeletons of the
         patterns.
     */
-    CM_V_ST = additem(c,"[ ] Show skeleton tuning",CM_TB,0,-1,
-                      "",0);
-
-    /* (book)
-
-        Presentation
-
-        Perform a presentation. This item is visible on the menu
-        only when the program is started with the -A option.
-    */
-    if (allow_pres)
-        CM_V_PRES = additem(c,"Presentation",CM_TA,1,1,
-                            "",0);
-    CM_V = c - CM;
+    MCHECK("Show skeleton tuning"); // CM_V_ST, 0 B
 
     /* (book)
 
@@ -6308,7 +6040,8 @@ void cmi(void)
         steps run in sequence when the OCR button is pressed).
 
     */
-    c = addmenu(0,"OCR operations",0);
+    
+    MENU("OCR");
 
     /* (book)
 
@@ -6316,8 +6049,7 @@ void cmi(void)
 
         Start preproc.
     */
-    CM_R_PREPROC = additem(c,"Preprocessing",CM_TA,0,-1,
-                          "",CMA_PAGE);
+    MITEM("Preprocessing"); // CM_R_PREPROC, CMA_PAGE A
 
     /* (book)
 
@@ -6326,8 +6058,7 @@ void cmi(void)
         Start detecting text blocks.
 
     */
-    CM_R_BLOCK = additem(c,"Detect blocks",CM_TA,0,-1,
-                         "",CMA_PAGE);
+    MITEM("Detect blocks"); // CM_R_BLOCK, CMA_PAGE A
 
     /* (book)
 
@@ -6335,8 +6066,7 @@ void cmi(void)
 
         Start binarization and segmentation.
     */
-    CM_R_SEG = additem(c,"Segmentation",CM_TA,0,-1,
-                       "",CMA_PAGE|CMA_NCL);
+    MITEM("Segmentation"); // CM_R_SEG, CMA_PAGE|CMA_NCL  A
 
     /* (book)
 
@@ -6345,8 +6075,7 @@ void cmi(void)
         All OCR data structures are submitted to consistency
         tests. This is under implementation.
     */
-    CM_R_CONS = additem(c,"Consist structures",CM_TA,0,-1,
-                        "",0);
+    MITEM("Consist structures"); // CM_R_CONS, 0 A
 
     /* (book)
 
@@ -6356,8 +6085,7 @@ void cmi(void)
         the achievement of best results by the classifier. Not
         fully implemented yet.
     */
-    CM_R_OPT = additem(c,"Prepare patterns",CM_TA,0,-1,
-                       "",0);
+    MITEM("Prepare patterns"); // CM_R_OPT, 0 A
 
     /* (book)
 
@@ -6366,8 +6094,7 @@ void cmi(void)
         Revision data from the web interface is read, and
         added to the current OCR training knowledge.
     */
-    CM_R_REV = additem(c,"Read revision data",CM_TA,0,-1,
-                       "",CMA_PAGE|CMA_CL);
+    MITEM("Read revision data"); // CM_R_REV, CMA_PAGE|CMA_CL A
 
     /* (book)
 
@@ -6380,8 +6107,7 @@ void cmi(void)
         corresponding item is selected on the Options menu.
 
     */
-    CM_R_CLASS = additem(c,"Classification",CM_TA,0,-1,
-                         "",CMA_PAGE|CMA_CL);
+    MITEM("Classification"); // CM_R_CLASS, CMA_PAGE|CMA_CL A
 
     /* (book)
 
@@ -6390,8 +6116,7 @@ void cmi(void)
         Merge closures on symbols depending on their
         geometry.
     */
-    CM_R_GEOMERGE = additem(c,"Geometric merging",CM_TA,0,-1,
-                            "",CMA_PAGE|CMA_CL);
+    MITEM("Geometric merging"); // CM_R_GEOMERGE, CMA_PAGE|CMA_CL A
 
     /* (book)
 
@@ -6403,8 +6128,7 @@ void cmi(void)
         the "Work on current page only" item of the Options menu.
 
     */
-    CM_R_BUILD = additem(c,"Build words and lines",CM_TA,0,-1,
-                         "",CMA_PAGE|CMA_CL);
+    MITEM("Build words and lines"); // CM_R_BUILD, CMA_PAGE|CMA_CL A
 
     /* (book)
 
@@ -6421,8 +6145,7 @@ void cmi(void)
         the "Work on current page only" item of the Options menu.
 
     */
-    CM_R_SPELL = additem(c,"Generate spelling hints",CM_TA,0,-1,
-                         "",CMA_PAGE|CMA_CL);
+    MITEM("Generate spelling hints"); // CM_R_SPELL, CMA_PAGE|CMA_CL A
 
     /* (book)
 
@@ -6432,8 +6155,7 @@ void cmi(void)
         "PAGE (output)" window. The output is also saved to the
         file page.html.
     */
-    CM_R_OUTP = additem(c,"Generate output",CM_TA,0,-1,
-                        "",CMA_PAGE|CMA_CL);
+    MITEM("Generate output"); // CM_R_OUTP, CMA_PAGE|CMA_CL A
 
     /* (book)
 
@@ -6444,10 +6166,8 @@ void cmi(void)
         the work directory. This step is performed only when
         Clara OCR is started with the -W command-line switch.
     */
-    CM_R_DOUBTS = additem(c,"Generate web doubts",CM_TA,0,-1,
-                          "",CMA_PAGE|CMA_CL);
+    MITEM("Generate web doubts"); // CM_R_DOUBTS, CMA_PAGE|CMA_CL A
 
-    CM_R = c - CM;
 
     /* (book)
 
@@ -6458,7 +6178,8 @@ void cmi(void)
         the PAGE window.
 
     */
-    c = addmenu(0,"PAGE",0);
+
+    MENUFLOAT(mnuPage);
 
     /* (book)
 
@@ -6466,8 +6187,7 @@ void cmi(void)
 
         Change to PAGE_FATBITS focusing this symbol.
     */
-    CM_D_FOCUS = additem(c,"See in fatbits",CM_TA,0,-1,
-                         "",CMA_CL);
+    MITEM("See in fatbits"); // CM_D_FOCUS, CMA_CL A
 
     /* (book)
 
@@ -6476,8 +6196,7 @@ void cmi(void)
         Scroll the window contents in order to the
         current pointer position become the bottom left.
     */
-    CM_D_HERE = additem(c,"Bottom left here",CM_TA,0,-1,
-                        "",0);
+    MITEM("Bottom left here"); // CM_D_HERE, 0 A
 
     /* (book)
 
@@ -6490,8 +6209,7 @@ void cmi(void)
         be compared, in order to test the classification routines.
 
     */
-    CM_D_TS = additem(c,"Use as pattern",CM_TA,0,-1,
-                      "",CMA_CL);
+    MITEM("Use as pattern"); // CM_D_TS, CMA_CL A
 
     /* (book)
 
@@ -6501,8 +6219,7 @@ void cmi(void)
         classification will re-scan all patterns even if the "re-scan
         all patterns" option is unselected.
     */
-    CM_D_OS = additem(c,"OCR this symbol",CM_TA,0,-1,
-                      "",CMA_CL);
+    MITEM("OCR this symbol"); // CM_D_OS, CMA_CL A
 
     /* (book)
 
@@ -6510,8 +6227,7 @@ void cmi(void)
 
         Merge this fragment with the current symbol.
     */
-    CM_D_ADD = additem(c,"Merge with current symbol",CM_TA,0,-1,
-                       "",CMA_CL);
+    MITEM("Merge with current symbol"); // CM_D_ADD, CMA_CL A
 
     /* (book)
 
@@ -6520,8 +6236,7 @@ void cmi(void)
         Create a symbol link from the current symbol (the one
         identified by the graphic cursor) to this symbol.
     */
-    CM_D_SLINK = additem(c,"Link as next symbol",CM_TA,0,-1,
-                         "",CMA_CL);
+    MITEM("Link as next symbol"); // CM_D_SLINK, CMA_CL A
 
     /* (book)
 
@@ -6530,8 +6245,7 @@ void cmi(void)
         Make the current symbol nonpreferred and each of its
         components preferred.
     */
-    CM_D_DIS = additem(c,"Disassemble symbol",CM_TA,0,-1,
-                       "",CMA_CL);
+    MITEM("Disassemble symbol"); // CM_D_DIS, CMA_CL A
 
     /* (book)
 
@@ -6540,8 +6254,7 @@ void cmi(void)
         Create an accent link from the current symbol (the one
         identified by the graphic cursor) to this symbol.
     */
-    CM_D_ALINK = additem(c,"Link as accent",CM_TA,0,-1,
-                         "",CMA_CL);
+    MITEM("Link as accent"); // CM_D_ALINK, CMA_CL A
 
     /* (book)
 
@@ -6552,8 +6265,7 @@ void cmi(void)
         This is useful to know why the OCR is not joining two
         symbols on one same word.
     */
-    CM_D_SDIAG = additem(c,"Diagnose symbol pairing",CM_TA,0,-1,
-                         "",CMA_CL);
+    MITEM("Diagnose symbol pairing"); // CM_D_SDIAG, CMA_CL A
 
     /* (book)
 
@@ -6564,8 +6276,7 @@ void cmi(void)
         on one same line. This is useful to know why the OCR is
         not joining two words on one same line.
     */
-    CM_D_WDIAG = additem(c,"Diagnose word pairing",CM_TA,0,-1,
-                         "",CMA_CL);
+    MITEM("Diagnose word pairing"); // CM_D_WDIAG, CMA_CL A
 
     /* (book)
 
@@ -6574,8 +6285,7 @@ void cmi(void)
         Run locally the line comparison heuristic to decide
         which is the preceding line.
     */
-    CM_D_LDIAG = additem(c,"Diagnose lines",CM_TA,0,-1,
-                         "",CMA_CL);
+    MITEM("Diagnose lines"); // CM_D_LDIAG, CMA_CL A
 
     /* (book)
 
@@ -6584,8 +6294,7 @@ void cmi(void)
         Run locally the geometrical merging heuristic to try
         to merge this piece to the current symbol.
     */
-    CM_D_GM = additem(c,"Diagnose merging",CM_TA,0,-1,
-                      "",CMA_CL);
+    MITEM("Diagnose merging"); // CM_D_GM, CMA_CL A
 
     /* (book)
 
@@ -6593,8 +6302,8 @@ void cmi(void)
 
         Present the coordinates and color of the current pixel.
     */
-    CM_D_PIXELS = additem(c,"[ ] Show pixel coords",CM_TR,1,1,
-                          "",0);
+    MSEP();
+    MRADIO("Show pixel coords"); // CM_D_PIXELS, 0 R
 
     /* (book)
 
@@ -6603,8 +6312,7 @@ void cmi(void)
         Identify the individual closures when displaying the
         current document.
     */
-    CM_D_CLOSURES = additem(c,"[ ] Show closures",CM_TR,0,1,
-                            "",0);
+    MRADIO("Show closures"); // CM_D_CLOSURES, 0 R
 
     /* (book)
 
@@ -6613,8 +6321,7 @@ void cmi(void)
         Identify the individual symbols when displaying the
         current document.
     */
-    CM_D_SYMBOLS = additem(c,"[ ] Show symbols",CM_TR,0,1,
-                           "",0);
+    MRADIO("Show symbols"); // CM_D_SYMBOLS, 0 R
 
     /* (book)
 
@@ -6623,8 +6330,7 @@ void cmi(void)
         Identify the individual words when displaying the
         current document.
     */
-    CM_D_WORDS = additem(c,"[ ] Show words",CM_TR,0,1,
-                         "",0);
+    MRADIO("Show words"); // CM_D_WORDS, 0 R
 
     /* (book)
 
@@ -6633,8 +6339,7 @@ void cmi(void)
         Display absent symbols on pattern type 0, to help
         building the bookfont.
     */
-    CM_D_PTYPE = additem(c,"[ ] Show pattern type",CM_TR,0,1,
-                         "",0);
+    MRADIO("Show pattern type"); // CM_D_PTYPE, 0 R
 
     /* (book)
 
@@ -6643,8 +6348,8 @@ void cmi(void)
         Report the scale on the tab when the PAGE window is
         active.
     */
-    CM_D_RS = additem(c,"[ ] Report scale",CM_TB,1,1,
-                      "",0);
+    MSEP();
+    MCHECK("Report scale"); // CM_D_RS, 0 B
 
     /* (book)
 
@@ -6654,10 +6359,7 @@ void cmi(void)
         the symbols themselves. This is useful when designing new
         heuristics.
     */
-    CM_D_BB = additem(c,"[ ] Display box instead of symbol",CM_TB,0,1,
-                      "",0);
-
-    CM_D = c - CM;
+    MCHECK("Display box instead of symbol"); // CM_D_BB, 0 B
 
     /* (book)
 
@@ -6668,7 +6370,7 @@ void cmi(void)
         the PAGE.
 
     */
-    c = addmenu(0,"PAGE_FATBITS",0);
+    MENUFLOAT(mnuFatbits);
 
     /* (book)
 
@@ -6677,8 +6379,7 @@ void cmi(void)
         Scroll the window contents in order to the
         current pointer position become the bottom left.
     */
-    CM_B_HERE = additem(c,"Bottom left here",CM_TA,0,-1,
-                        "",0);
+    MITEM("Bottom left here"); // CM_B_HERE, 0 A
 
     /* (book)
 
@@ -6687,8 +6388,7 @@ void cmi(void)
         Scroll the window contents in order to the
         centralize the closure under the pointer.
     */
-    CM_B_CENTRE = additem(c,"Centralize",CM_TA,0,-1,
-                          "",0);
+    MITEM("Centralize"); // CM_B_CENTRE, 0 A
 
     /* (book)
 
@@ -6696,8 +6396,7 @@ void cmi(void)
 
         Build the closure border path and activate the flea.
     */
-    CM_B_BP = additem(c,"Build border path",CM_TA,0,-1,
-                      "",0);
+    MITEM("Build border path"); // CM_B_BP, 0 A
 
     /* (book)
 
@@ -6706,8 +6405,7 @@ void cmi(void)
         Build the closure border path and search straight lines
         there using linear distances.
     */
-    CM_B_SLD = additem(c,"Search straight lines (linear)",CM_TA,0,-1,
-                       "",0);
+    MITEM("Search straight lines (linear)"); // CM_B_SLD, 0 A
 
     /* (book)
 
@@ -6716,8 +6414,7 @@ void cmi(void)
         Build the closure border path and search straight lines
         there using correlation.
     */
-    CM_B_SLC = additem(c,"Search straight lines (quadratic)",CM_TA,0,-1,
-                       "",0);
+    MITEM("Search straight lines (quadratic)"); // CM_B_SLC, 0 A
 
     /* (book)
 
@@ -6725,8 +6422,7 @@ void cmi(void)
 
         Apply the isbar test on the closure.
     */
-    CM_B_ISBAR = additem(c,"Is bar?",CM_TA,0,-1,
-                         "",0);
+    MITEM("Is bar?"); // CM_B_ISBAR, 0 A
 
     /* (book)
 
@@ -6734,8 +6430,7 @@ void cmi(void)
 
         Detect closure extremities.
     */
-    CM_B_DX = additem(c,"Detect extremities",CM_TA,0,-1,
-                      "",0);
+    MITEM("Detect extremities"); // CM_B_DX, 0 A
 
     /* (book)
 
@@ -6744,8 +6439,8 @@ void cmi(void)
         Show the skeleton on the windows PAGE_FATBITS. The
         skeletons are computed on the fly.
     */
-    CM_B_SKEL = additem(c,"[ ] Show skeletons",CM_TR,1,-1,
-                        "",0);
+    MSEP();
+    MRADIO("Show skeletons"); // CM_B_SKEL, 0 R
 
     /* (book)
 
@@ -6754,8 +6449,7 @@ void cmi(void)
         Show the border on the window PAGE_FATBITS. The
         border is computed on the fly.
     */
-    CM_B_BORDER = additem(c,"[ ] Show border",CM_TR,0,-1,
-                          "",0);
+    MRADIO("Show border"); // CM_B_BORDER, 0 R
 
     /* (book)
 
@@ -6764,8 +6458,7 @@ void cmi(void)
         For each symbol, will show the skeleton of its best match
         on the PAGE (fatbits) window.
     */
-    CM_B_HS = additem(c,"[ ] Show pattern skeleton",CM_TR,0,-1,
-                      "",0);
+    MRADIO("Show pattern skeleton"); // CM_B_HS, 0 R
 
     /* (book)
 
@@ -6774,10 +6467,8 @@ void cmi(void)
         For each symbol, will show the border of its best match
         on the PAGE (fatbits) window.
     */
-    CM_B_HB = additem(c,"[ ] Show pattern border",CM_TR,0,-1,
-                      "",0);
+    MRADIO("Show pattern border"); // CM_B_HB, 0 R
 
-    CM_B = c - CM;
 
     /* (book)
 
@@ -6787,7 +6478,7 @@ void cmi(void)
         This item selects the alphabets that will be available on the
         alphabets button.
     */
-    c = addmenu(1,"Alphabets",0);
+    MENU("Alphabets");
 
     /* (book)
 
@@ -6796,8 +6487,7 @@ void cmi(void)
         This is a provision for future support of Arabic
         alphabet.
     */
-    CM_A_ARABIC = additem(c,"[ ] Arabic",CM_TB,0,-1,
-                          "",CMA_ABSENT);
+    MCHECK("Arabic"); // CM_A_ARABIC, CMA_ABSENT B
 
     /* (book)
 
@@ -6806,8 +6496,7 @@ void cmi(void)
         This is a provision for future support of Cyrillic
         alphabet.
     */
-    CM_A_CYRILLIC = additem(c,"[ ] Cyrillic",CM_TB,0,-1,
-                            "",CMA_ABSENT);
+    MCHECK("Cyrillic"); // CM_A_CYRILLIC, CMA_ABSENT B
 
     /* (book)
 
@@ -6816,8 +6505,7 @@ void cmi(void)
         This is a provision for future support of Greek
         alphabet.
     */
-    CM_A_GREEK = additem(c,"[ ] Greek",CM_TB,0,-1,
-                         "",CMA_ABSENT);
+    MCHECK("Greek"); // CM_A_GREEK, CMA_ABSENT B
 
     /* (book)
 
@@ -6826,8 +6514,7 @@ void cmi(void)
         This is a provision for future support of Hebrew
         alphabet.
     */
-    CM_A_HEBREW = additem(c,"[ ] Hebrew",CM_TB,0,-1,
-                          "",CMA_ABSENT);
+    MCHECK("Hebrew"); // CM_A_HEBREW, CMA_ABSENT B
 
     /* (book)
 
@@ -6836,8 +6523,7 @@ void cmi(void)
         This is a provision for future support of Kana
         alphabet.
     */
-    CM_A_KANA = additem(c,"[ ] Kana",CM_TB,0,-1,
-                        "",CMA_ABSENT);
+    MCHECK("Kana"); // CM_A_KANA, CMA_ABSENT B
 
     /* (book)
 
@@ -6847,8 +6533,7 @@ void cmi(void)
         the languages of most Western European countries (English,
         German, French, Spanish, Portuguese and others).
     */
-    CM_A_LATIN = additem(c,"[ ] Latin",CM_TB,0,-1,
-                         "",0);
+    MCHECK("Latin"); // CM_A_LATIN, 0 B
 
     /* (book)
 
@@ -6857,8 +6542,8 @@ void cmi(void)
         Numbers like
         1234, +55-11-12345678 or 2000.
     */
-    CM_A_NUMBER = additem(c,"[ ] Numeric",CM_TB,1,-1,
-                          "",0);
+    MSEP();
+    MCHECK("Numeric"); // CM_A_NUMBER, 0 B
 
     /* (book)
 
@@ -6866,10 +6551,8 @@ void cmi(void)
 
         Ideograms.
     */
-    CM_A_IDEOGRAM = additem(c,"[ ] Ideograms",CM_TB,0,-1,
-                            "",CMA_ABSENT);
+    MCHECK("Ideograms"); // CM_A_IDEOGRAM, CMA_ABSENT B
 
-    CM_A = c - CM;
 
 #ifdef LANG_MENU
     /* (book)
@@ -6883,7 +6566,7 @@ void cmi(void)
         generating alternative transliterations or marking a
         word for future revision.
     */
-    c = addmenu(1,"Languages",0);
+    MENU("Languages");
 
     /* (book)
 
@@ -6892,8 +6575,7 @@ void cmi(void)
         Toggle American English spell checking for
         each word found on the page.
     */
-    CM_L_EN = additem(c,"[ ] English (USA)",CM_TB,0,-1,
-                      "",0);
+    MCHECK("English (USA)"); // CM_L_EN, 0 B
 
     /* (book)
 
@@ -6902,8 +6584,7 @@ void cmi(void)
         Toggle British English spell checking for
         each word found on the page.
     */
-    CM_L_UK = additem(c,"[ ] English (UK)",CM_TB,0,-1,
-                      "",0);
+    MCHECK("English (UK)"); // CM_L_UK, 0 B
 
     /* (book)
 
@@ -6912,8 +6593,7 @@ void cmi(void)
         Toggle French spell checking for
         each word found on the page.
     */
-    CM_L_FR = additem(c,"[ ] French",CM_TB,0,-1,
-                      "",0);
+    MCHECK("French"); // CM_L_FR, 0 B
 
     /* (book)
 
@@ -6922,8 +6602,7 @@ void cmi(void)
         Toggle german spell checking for
         each word found on the page.
     */
-    CM_L_DE = additem(c,"[ ] German",CM_TB,0,-1,
-                      "",0);
+    MCHECK("German"); // CM_L_DE, 0 B
 
     /* (book)
 
@@ -6932,8 +6611,7 @@ void cmi(void)
         Toggle greek spell checking for
         each word found on the page.
     */
-    CM_L_GR = additem(c,"[ ] Greek",CM_TB,0,-1,
-                      "",0);
+    MCHECK("Greek"); // CM_L_GR, 0 B
 
     /* (book)
 
@@ -6942,8 +6620,7 @@ void cmi(void)
         Toggle brazilian protuguese spell checking for
         each word found on the page.
     */
-    CM_L_BR = additem(c,"[ ] Portuguese (Brazil)",CM_TB,0,-1,
-                      "",0);
+    MCHECK("Portuguese (Brazil)"); // CM_L_BR, 0 B
 
     /* (book)
 
@@ -6952,8 +6629,7 @@ void cmi(void)
         Toggle Portuguese spell checking for
         each word found on the page.
     */
-    CM_L_PT = additem(c,"[ ] Portuguese (Portugal)",CM_TB,0,-1,
-                      "",0);
+    MCHECK("Portuguese (Portugal)"); // CM_L_PT, 0 B
 
     /* (book)
 
@@ -6962,10 +6638,8 @@ void cmi(void)
         Toggle Russian spell checking for
         each word found on the page.
     */
-    CM_L_RU = additem(c,"[ ] Russian",CM_TB,0,-1,
-                      "",0);
+    MCHECK("Russian"); // CM_L_RU, 0 B
 
-    CM_L = c - CM;
 #endif
 
     /* (book)
@@ -6973,8 +6647,8 @@ void cmi(void)
         Options menu
         ------------
     */
-    c = addmenu(1,"Options",0);
-
+    MENU("Options");
+    
     /* (book)
 
         Work on current page only
@@ -6982,8 +6656,7 @@ void cmi(void)
         OCR operations (classification, merge, etc) will be
         performed only on the current page.
     */
-    CM_O_CURR = additem(c,"[ ] Work on current page only",CM_TR,0,-1,
-                        "",0);
+    MRADIO("Work on current page only"); // CM_O_CURR, 0 R
 
     /* (book)
 
@@ -6993,8 +6666,7 @@ void cmi(void)
         OCR operations (classification, merge, etc) will be
         performed on all pages.
     */
-    CM_O_ALL = additem(c,"[ ] Work on all pages",CM_TR,0,-1,
-                       "",0);
+    MRADIO("Work on all pages"); // CM_O_ALL, 0 R
 
     /* (book)
 
@@ -7005,8 +6677,8 @@ void cmi(void)
         by default The emulation of deadkeys may be set on startup
         through the -i command-line switch.
     */
-    CM_O_DKEYS = additem(c,"[ ] Emulate deadkeys",CM_TB,1,-1,
-                         "",0);
+    MSEP();
+    MCHECK("Emulate deadkeys"); // CM_O_DKEYS, 0 B
 
     /* (book)
 
@@ -7016,8 +6688,7 @@ void cmi(void)
         menu bar will pop automatically when the pointer reaches
         the menu bar.
     */
-    CM_O_AMENU = additem(c,"[ ] Menu auto popup",CM_TB,0,-1,
-                         "",0);
+    MCHECK("Menu auto popup"); // CM_O_AMENU, 0 B
 
     /* (book)
 
@@ -7026,9 +6697,7 @@ void cmi(void)
         When selected, the PAGE tab will display only the PAGE window. The
         windows PAGE_OUTPUT and PAGE_SYMBOL will be hidden.
     */
-    CM_O_PGO = additem(c,"[ ] PAGE only",CM_TB,0,1,
-                       "",0);
-    CM_O = c - CM;
+    MCHECK("PAGE only"); // CM_O_PGO, CMA_Q_DISMISS B
 
     /* (book)
 
@@ -7036,7 +6705,7 @@ void cmi(void)
         ----------
 
     */
-    c = addmenu(1,"Debug",0);
+    MENU("Debug");
 
     /* (book)
 
@@ -7046,8 +6715,7 @@ void cmi(void)
         ellipses. This option overrides the "show current class"
         feature.
     */
-    CM_G_ALIGN = additem(c,"[ ] Show unaligned symbols",CM_TB,0,-1,
-                        "",0);
+    MCHECK("Show unaligned symbols"); // CM_G_ALIGN, 0 B
 
     /* (book)
 
@@ -7056,8 +6724,7 @@ void cmi(void)
         Display the progress of the extraction of symbols
         performed by the local binarizer.
     */
-    CM_G_LB = additem(c,"[ ] Show localbin progress",CM_TB,0,-1,
-                      "",0);
+    MCHECK("Show localbin progress"); // CM_G_LB, 0 B
 
     /* (book)
 
@@ -7071,8 +6738,7 @@ void cmi(void)
         the segmentation enters the zone.
 
     */
-    CM_G_ABAGAR = additem(c,"[ ] Activate Abagar",CM_TB,0,-1,
-                          "",0);
+    MCHECK("Activate Abagar"); // CM_G_ABAGAR, 0 B
 
     /* (book)
 
@@ -7081,8 +6747,7 @@ void cmi(void)
         Identify the lines (computed using geometrical criteria)
         when displaying the current document.
     */
-    CM_G_GLINES = additem(c,"[ ] Show lines (geometrical)",CM_TR,0,-1,
-                          "",0);
+    MRADIO("Show lines (geometrical)"); // CM_G_GLINES, 0 R
 
     /* (book)
 
@@ -7091,8 +6756,8 @@ void cmi(void)
         Restrict the show symbols or show words feature
         (PAGE menu) to bold symbols or words.
     */
-    CM_G_BO = additem(c,"[ ] Bold Only",CM_TR,1,-1,
-                      "",0);
+    MSEP();
+    MRADIO("Bold Only"); // CM_G_BO, 0 R
 
     /* (book)
 
@@ -7101,8 +6766,7 @@ void cmi(void)
         Restrict the show symbols or show words feature
         (PAGE menu) to bold symbols or words.
     */
-    CM_G_IO = additem(c,"[ ] Italic Only",CM_TR,0,-1,
-                      "",0);
+    MRADIO("Italic Only"); // CM_G_IO, 0 R
 
     /* (book)
 
@@ -7112,8 +6776,8 @@ void cmi(void)
         be used with the "Show comparisons and wait" option on
         to diagnose symbol comparison problems.
     */
-    CM_G_SUM = additem(c,"[ ] Search unexpected mismatches",CM_TB,1,-1,
-                       "",0);
+    MSEP();
+    MCHECK("Search unexpected mismatches"); // CM_G_SUM, 0 B
 
     /* (book)
 
@@ -7123,8 +6787,8 @@ void cmi(void)
         directory (if any) to the DEBUG window. Used to test the
         text analisys code.
     */
-    CM_G_VOCAB = additem(c,"[ ] Attach vocab.txt",CM_TR,1,-1,
-                         "",0);
+    MSEP();
+    MRADIO("Attach vocab.txt"); // CM_G_VOCAB, 0 R
 
     /* (book)
 
@@ -7133,8 +6797,7 @@ void cmi(void)
         Attach the contents of message log to the DEBUG window.
         Used to inspect the log.
     */
-    CM_G_LOG = additem(c,"[ ] Attach log",CM_TR,0,-1,
-                         "",0);
+    MRADIO("Attach log"); // CM_G_LOG, 0 R
 
     /* (book)
 
@@ -7143,25 +6806,23 @@ void cmi(void)
         Change to zero the cumulative matches field of all
         patterns.
     */
-    CM_G_CM = additem(c,"Reset match counters",CM_TA,1,-1,
-                      "",0);
+    MSEP();
+    MITEM("Reset match counters"); // CM_G_CM, 0 A
 
     /* (book)
 
         Enter debug window
 
     */
-    CM_G_DW = additem(c,"Enter debug window",CM_TA,0,-1,
-                          "",0);
+    MITEM("Enter debug window"); // CM_G_DW, 0 A
 
-    CM_G = c - CM;
 
     /*
 
         Assign menu flags to the menu labels.
 
     */
-
+#if 0
     /* edit menu */
     cm_e_od      = F(CM_E_DOUBTS);
     cm_e_rescan  = F(CM_E_RESCAN);
@@ -7236,7 +6897,8 @@ void cmi(void)
     cm_b_border   = F(CM_B_BORDER);
     cm_b_hs       = F(CM_B_HS);
     cm_b_hb       = F(CM_B_HB);
-
+#endif
+#if 0
     /* initial values */
     if (RW < 0) {
         *cm_v_hide = 'X';
@@ -7259,6 +6921,7 @@ void cmi(void)
     *cm_g_log        = 'X';
 
     *cm_e_rescan     = 'X';
+#endif
 }
 
 /*
@@ -7268,144 +6931,52 @@ GUI initialization.
 */
 void xpreamble()
 {
-    int xscreen;
-    Colormap cmap;
 
     /* X preamble */
     if ((batch_mode == 0) && (wnd_ready == 0)) {
-
-        /* connect to the X server */
-        if (displayname == NULL)
-            xd = XOpenDisplay("");
-        else
-            xd = XOpenDisplay(displayname);
-
-        if (xd == NULL) {
+        const char* displayname = gdk_get_display_arg_name();
+        GdkDisplay *dsp = gdk_display_open(displayname);
+        if (dsp == NULL) {
             if (displayname != NULL)
                 fatal(XE,"cannot connect display %s",displayname);
             else
                 fatal(XE,"cannot connect display");
         }
+        gdk_display_manager_set_default_display(gdk_display_manager_get(),
+                                                dsp);
     }
 
-    /* context menus initialization */
-    cmi();
-
-    /* set alphabets button label */
-    set_bl_alpha();
-
-    /* alloc X font */
-    if (batch_mode == 0)
-        set_xfont();
-
-    /* compute minimal window size */
-    comp_wnd_size(WW,WH);
-
+    if (batch_mode == 0) {
+        /* context menus initialization */
+        init_context_menus();
+        
+        /* set alphabets button label */
+        // UNPATCHED: set_bl_alpha();
+    }
+    
     /* buffers for revision bitmaps */
-    rw = c_realloc(NULL,sizeof(char)*RWX*RWY,NULL);
+    //UNPATCHED: rw = c_realloc(NULL,sizeof(char)*RWX*RWY,NULL);
 
     /* alloc colors and create application X window */
     if ((batch_mode == 0) && (wnd_ready == 0)) {
-        char *color[6];
-        int i,j,n,r,x,y;
-        XColor exact;
+        //int i,j,n,r,x,y;
 
-        /* get default screen */
-        xscreen = DefaultScreen(xd);
+        mainwin = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 
-        /* get colors */
-        cmap = DefaultColormap(xd,xscreen);
-        j = 0;
-        if ((cschema!=NULL) && ((n=strlen(cschema)) > 1)) {
-            color[0] = cschema;
-            for (i=0; i<n; ++i) {
-                if (cschema[i] == ',') {
-                    cschema[i++] = 0;
-                    if (j < 5)
-                        color[++j] = cschema + i;
-                }
-            }
-        }
-        if ((cschema!=NULL) && (strcmp(cschema,"c") == 0)) {
-            r = XAllocNamedColor(xd,cmap,"black",&black,&exact) &&
-                XAllocNamedColor(xd,cmap,"pink",&gray,&exact) &&
-                XAllocNamedColor(xd,cmap,"white",&white,&exact) &&
-                XAllocNamedColor(xd,cmap,"violet",&darkgray,&exact) &&
-                XAllocNamedColor(xd,cmap,"gray50",&vdgray,&exact);
-        }
-        else if (j == 4) {
-            r = XAllocNamedColor(xd,cmap,color[0],&black,&exact) &&
-                XAllocNamedColor(xd,cmap,color[1],&gray,&exact) &&
-                XAllocNamedColor(xd,cmap,color[2],&white,&exact) &&
-                XAllocNamedColor(xd,cmap,color[3],&darkgray,&exact) &&
-                XAllocNamedColor(xd,cmap,color[4],&vdgray,&exact);
-        }
-        else {
-            r = XAllocNamedColor(xd,cmap,"black",&black,&exact) &&
-                XAllocNamedColor(xd,cmap,"gray80",&gray,&exact) &&
-                XAllocNamedColor(xd,cmap,"white",&white,&exact) &&
-                XAllocNamedColor(xd,cmap,"gray60",&darkgray,&exact) &&
-                XAllocNamedColor(xd,cmap,"gray40",&vdgray,&exact);
+        // TODO: fix batch mode to use pixmaps as appropriate.
+        // xw = (use_xb) ? pm : XW;
+
+        // create the UI.
+        { 
+            GtkWidget *top = gtk_vbox_new(FALSE, 0);
+            gtk_box_pack_start(GTK_BOX(top),menubar,FALSE,FALSE,0);
+            gtk_box_pack_start(GTK_BOX(top),gtk_text_view_new(),TRUE,TRUE,0);
+            sbStatus = gtk_statusbar_new();
+            gtk_box_pack_start(GTK_BOX(top),sbStatus, FALSE,FALSE,0);
+            gtk_container_add(GTK_CONTAINER(mainwin),top);
         }
 
-        if ((!r) && verbose) {
-            warn("Clara OCR could not alloc some colors. If the\n");
-            warn("application window become unreadable, try to\n");
-            warn("close Clara OCR and some applications that alloc\n");
-            warn("many colors (e.g. Netscape), and start Clara OCR\n");
-            warn("again\n");
-        }
-
-        /*
-            Create window at (WX,WY), border width 2.
-        */
-        if (WX < 0)
-            x = y = 0;
-        else {
-            x = WX;
-            y = WY;
-        }
-        XW = XCreateSimpleWindow (xd,
-                DefaultRootWindow(xd),x,y,WW,WH,2,
-                white.pixel,darkgray.pixel);
-        xw = (use_xb) ? pm : XW;
-        have_xw = 1;
-
-        /*
-            Tell the WM about our positioning prefs
-        */
-        if (WX >= 0) {
-
-            /* pointer to the hints structure. */
-            XSizeHints* win_size_hints = XAllocSizeHints();
-            if (!win_size_hints) {
-                fatal(ME,"XAllocSizeHints");
-            }
-
-            /* the hints we want to fill in. */
-            win_size_hints->flags = USPosition;
-
-            /* the position */
-            win_size_hints->x = WX;
-            win_size_hints->y = WY;
-
-            /* pass the position hints to the window manager. */
-            XSetWMNormalHints(xd,xw,win_size_hints);
-            XFree(win_size_hints);
-        }
-
-        /* ask for events */
-        XSelectInput(xd,XW,evmasks);
-
-        /* pop this window up on the screen */
-        if (XMapRaised(xd,XW) == BadWindow) {
-            fatal(XE,"could not create window");
-        }
-
-        /* graphics context(s) */
-        if (!use_xb) {
-            xgc = XCreateGC(xd,xw,0,0);
-        }
+        gtk_widget_show_all(mainwin);
 
         /* window ready flag */
         wnd_ready = 1;
@@ -7415,15 +6986,11 @@ void xpreamble()
     init_dws(1);
 
     /* PAGE special settings */
-    dw[PAGE].rf = MRF;
+    //UNPATCHED: dw[PAGE].rf = MRF;
 
     /* set the window title */
     if (batch_mode == 0) {
-        char s[81];
-
-        snprintf(s,80,"Clara OCR");
-        s[80] = 0;
-        swn(s);
+        gtk_window_set_title(GTK_WINDOW(mainwin),"Clara OCR");
     }
 
 }
@@ -7609,480 +7176,12 @@ void copychar(void)
         }
     }
 
-    redraw_dw = 1;
-    redraw_grid = 1;
+    redraw_document_window();
+    // UNPATCHED: redraw_grid = 1;
     dw[PAGE_FATBITS].rg = 0;
 }
 
-/*
-
-comp_wnd_size: compute the application window size.
-
-This routine decides about the window size. The decision process
-is as follows:
-
-1. If a window size is specified through the parameters ww
-(width) and wh (height), these are mandatory.
-
-2. If the caller specify ww==0 and wh==0, then the routine
-computes the minimum width and height, and set the window size to
-these values.
-
-3. If ww==-1 and wh==-1, then the current window size is used, or
-enlarged if required.
-
-*/
-void comp_wnd_size(int ww,int wh)
-{
-    int i,dx,dy;
-    int w,h;
-    unsigned cww,cwh;
-    int old_pt,old_ph;
-
-    /* remember PT and PH */
-    old_pt = PT;
-    old_ph = PH;
-
-    /* tab height is compute from the font height */
-    TH = DFH + 6;
-
-    /* menu bar height */
-    MH = 2 + VS + DFH + VS + 2;
-
-    /*
-        Largest alphabet label size (currently hardcoded...)
-    */
-    BW = 8;
-
-    /*
-        Compute button width and height (the globals BW and BH)
-        from the button labels and the font size.
-    */
-    for (i=0; i<BUTT_PER_COL; ++i) {
-        int a,b;
-        char *bl;
-
-        bl = BL[i];
-        for (a=b=0; a >= 0; ++a) {
-            if ((bl[a] == ',') || (bl[a] == ':') || (bl[a] == 0)) {
-                if (a-b > BW)
-                    BW = a - b;
-                if (bl[a] == 0)
-                    a = -2;
-                else
-                    b = a;
-            }
-        }
-    }
-    BW += 1;
-    BW *= DFW;
-    BH = DFH + 4*VS;
-
-    /*
-        Compute minimum plate width and height.
-
-        The plate width and height are computed basically from FS
-        and ZPS, in order to the FSxFS grid fit in the plate.
-
-        In order to guarantee minimum visibility for the
-        pattern properties window, we add 30*DFW.
-
-        The clearance is 10. The plate height must include the
-        tab height (TH).
-
-        Remark: these formulae are inverted at the end of this
-             routine, so if you change them, please change that
-             code too.
-    */
-    PW = 10 + (FS * (ZPS+1) + 10 + 30*DFW + 10 + RW) + 10;
-    PH = TH + 10 + (FS * (ZPS+1) + 10 + RW) + 10;
-
-    /* plate horizontal and vertical margins */
-    PM = 10 + BW + (((cm_v_map == NULL) || (*cm_v_map == ' ')) ? 10 : 62);
-    PT = MH + 10;
-
-    /* get current width and height, if any */
-    if (have_xw) {
-        Window root;
-        int x,y;
-        unsigned b,d;
-
-        XGetGeometry(xd,XW,&root,&x,&y,&cww,&cwh,&b,&d);
-    }
-    else {
-        cww = 0;
-        cwh = 0;
-    }
-
-    /*
-        These are the expected differences (WH-PH) and (WW-PW)
-        between the total height and width and the plate height
-        and width.
-    */
-    dy = MH + 10 + 10 + DFH + 10;
-    dx = PM + 10;
-
-    /* oops.. requested height is mandatory */
-    if (wh > 0) {
-        WH = wh;
-
-        /* plate height */
-        PH = WH - dy;
-    }
-
-    /*
-        First we compute the minimum plate height, then we add
-        dy to obtain the total width.
-    */
-    {
-        int j;
-
-        /*
-            the buttons must not exceed the plate
-            vertical limits.
-        */
-        if (PH < (h=BUTT_PER_COL * (BH+4+VS)))
-            PH = h;
-
-        /*
-            the welcome window must fit vertically in the plate
-            (15*DFH is an approximation to its height.
-        */
-        if (PH < (h=15 * (DFH+VS)))
-            PH = h;
-
-        /*
-            the alphabet map must not exceed
-            the plate vertical limits.
-        */
-        if ((cm_v_map != NULL) && (*cm_v_map != ' ') && (PH < (h=16*max_sz)))
-            PH = h;
-
-        /*
-            if the caller requests to preserve the geometry,
-            then try not changing it.
-        */
-        if ((wh < 0) && (PH < (h=cwh-dy)))
-            PH = h;
-
-        /*
-           is there a large menu?
-        */
-        for (j=0; j<=TOP_CM; ++j) {
-            if (PH < (h=CM[j].n * (DFH+VS)))
-                PH = h;
-        }
-
-        /*
-           add vertical space to the menu bar, status line and
-           clearances
-        */
-        WH = PH + dy;
-    }
-
-    /* oops.. requested width is mandatory */
-    if (ww > 0) {
-        WW = ww;
-
-        /* plate width */
-        PW = WW - dx;
-    }
-
-    /*
-        First we compute the minimum plate width, then we add
-        dx to obtain the total width.
-    */
-    {
-        int a,i,lw;
-
-        /* must fit 80 characters horizontally (status line) */
-        if (PW < (w=80*DFW-dx))
-            PW = w;
-
-        /*
-            if the caller requests to preserve the geometry,
-            then try not changing it.
-        */
-        if ((ww < 0) && (PW < (w=cww-dx)))
-            PW = w;
-
-        /* minimum tab width */
-        for (i=0, lw=0; i<=TOP_DW; ++i)
-            if (lw < (a=DFW*strlen(dwname(i))))
-                lw = a;
-        if (PW < (w=((lw+20)+20)*TABN))
-            PW = w;
-
-        /*
-           add button width, alphabet map width (if visible) and
-           clearances
-        */
-        WW = PW + dx;
-    }
-
-    /* finally, try a nice 3/4 */
-    if ((ww == 0) && (wh == 0)) {
-
-        if (WW*3 < WH*4) {
-            WW = (WH*4) / 3;
-            PW = WW - dx;
-        }
-        else {
-            WH = (WW*3) / 4;
-            PH = WH - dy;
-        }
-    }
-
-    /* resize the window if the current geometry differs from (WW,WH) */
-    if (have_xw) {
-        if ((WW != cww) || (WH != cwh)) {
-            XResizeWindow(xd,XW,WW,WH);
-        }
-    }
-
-    /* alloc or reallocate the display pixmap */
-    if ((use_xb) && ((!have_pm) || (WW > pmw) || (WH > pmh))) {
-        int d;
-
-        /* free the current buffer (if any) */
-        if (have_pm) {
-            XFreeGC(xd,xgc);
-            XFreePixmap(xd,pm);
-        }
-
-        /* alloc a new one */
-        d = DefaultDepth(xd,DefaultScreen(xd));
-        pm = XCreatePixmap(xd,DefaultRootWindow(xd),WW,WH,d);
-
-        /* could not alloc: switch to unbuffered mode */
-        if (pm == BadAlloc) {
-            warn("could not alloc buffer, switching to unbuffered mode\n");
-            have_pm = 0;
-            use_xb = 0;
-            xw = XW;
-            if (have_xw) {
-                xgc = XCreateGC(xd,XW,0,0);
-            }
-        }
-
-        /* success */
-        else {
-            have_pm = 1;
-            pmw = WW;
-            pmh = WH;
-            xw = pm;
-            xgc = XCreateGC(xd,pm,0,0);
-        }
-    }
-
-    /* tab width */
-    TW = PW/TABN - 20;
-
-    /* choose (the best possible)/(a sane) ZPS */
-    {
-        int z,zx,zy;
-
-        zx = ((PW - 10 - 10 - 10 - 30*DFW - 10 - RW) / FS) - 1;
-        if ((zx & 1) == 0)
-            zx -= 1;
-        zy = ((PH - TH - 10 - 10 - 10 - RW) / FS) - 1;
-        if ((zy & 1) == 0)
-            zy -= 1;
-        if ((z=zx) > zy)
-            z = zy;
-
-        /* the best possible */
-        /*
-        if ((1 <= z) && (ZPS != z))
-            ZPS = z;
-        */
-
-        /* a sane */
-        if ((1 <= z) && (z < ZPS))
-            ZPS = z;
-    }
-
-    /*
-        PAGE special settings.
-
-        When resizing the window, we try to preserve the same
-        relative height for the windows PAGE, PAGE_OUTPUT and
-        PAGE_SYMBOL, that share one mode of the PAGE tab.
-
-        The height of these three windows is determined by
-        the variables page_j1 and page_j2 (first and second
-        junctions). So we need to recompute them.
-
-          +------------------------------------------+
-          | File Edit...                             |
-          +------------------------------------------+
-          | +------+   +----+ +--------+ +-------+   |
-          | | zoom |   |page| |patterns| | tune  |   |
-          | +------+ +-+    +-+        +-+       +-+ |
-          | +------+ | +-------------------------+ | |
-          | | zone | | | (PAGE)                  | | |
-          | +------+ | |                         | | |
-          | +------+ | +-------------------------+ | |
-          | | OCR  | |                             | | - page_j1
-          | +------+ | +-------------------------+ | |
-          | +------+ | | (PAGE_OUTPUT)           | | |
-          | | stop | | |                         | | |
-          | +------+ | +-------------------------+ | |
-          |     .    |                             | | - page_j2
-          |     .    | +-------------------------+ | |
-          |          | | (PAGE_SYMBOL)           | | |
-          |          | |                         | | |
-          |          | +-------------------------+ | |
-          |          +-----------------------------+ |
-          |                                          |
-          | (status line)                            |
-          +------------------------------------------+
-
-    */
-    if (page_j1 < 0) {
-        opage_j1 = page_j1 = PT+TH+(PH-TH)/3;
-        opage_j2 = page_j2 = PT+TH+2*(PH-TH)/3;
-    }
-    else {
-        float a;
-
-        a = ((float)(old_ph-TH)) / (page_j1-old_pt-TH);
-        page_j1 = PT+TH+(PH-TH)/a;
-        a = ((float)(old_ph-TH)) / (page_j2-old_pt-TH);
-        page_j2 = PT+TH+(PH-TH)/a;
-
-        /*
-           make sure that the height of PAGE_OUTPUT is
-           at least 4*RW.
-        */
-        if (page_j2 - page_j1 < 20+4*RW)
-            page_j1 = page_j2 - 20 - 4*RW;
-
-        /*
-            make sure that the height of PAGE is at least
-            4*RW.
-        */
-        if (page_j1-PT < TH+30+4*RW) {
-            page_j1 = PT+TH+30+4*RW;
-            page_j2 = page_j1+20+4*RW;
-        }
-
-        /*
-            make sure that the height of PAGE_SYMBOL is
-            at least 4*RW.
-        */
-        if (PT+PH-page_j2 <30+4*RW) {
-            page_j2 = PT+PH-30-4*RW;
-            page_j1 = page_j2-20-4*RW;
-        }
-
-        opage_j1 = page_j1;
-        opage_j2 = page_j2;
-    }
+void show_message(const char* msg) {
+    // set the status message of sbStatus to msg.
+    UNIMPLEMENTED();
 }
-
-#ifdef HAVE_SIGNAL
-/*
-
-This is a first draft for a presentation routine. By now it
-merely changes to large font, then to small font, returns to
-default font and stops.
-
-Remark: any call to new_alrm must be done just before returning from
-this service.
-
-*/
-void cpresentation(int reset)
-{
-    /* presentation and current state */
-    static int p,s;
-
-    if ((have_s_ev) || (ocring)) {
-        new_alrm(100000,2);
-        return;
-    }
-
-    /* initialize presentation */
-    if (reset) {
-        pmode = 1;
-        p = s = 0;
-        xev.type = FocusIn;
-        have_s_ev = 1;
-        new_alrm(100000,2);
-        return;
-    }
-
-    /*
-        Presentation 0: change font
-    */
-    if (p == 0) {
-        int delay;
-
-        if (s == 0) {
-
-            ++s;
-
-            if (!mselect(CM_V_LARGE,&delay))
-                ++s;
-        }
-
-        else if (s == 1) {
-            if (!mselect(CM_V_SMALL,&delay))
-                ++s;
-        }
-
-        else if (s == 2) {
-            if (!mselect(CM_V_DEF,&delay))
-                ++s;
-        }
-
-        else if (s == 3) {
-            if (!fselect("imre.pbm",&delay))
-                ++s;
-        }
-
-        else if (s == 4) {
-            if (!bselect(bocr,&delay))
-                ++s;
-        }
-
-        else if (s == 5) {
-            if (!sselect(5,&delay))
-                ++s;
-        }
-
-        else if (s == 6) {
-            if (!press('r',&delay))
-                ++s;
-        }
-
-        else if (s == 7) {
-            if (!sselect(235,&delay))
-                ++s;
-        }
-
-        else if (s == 8) {
-            if (!press('h',&delay))
-                ++s;
-        }
-
-        else if (s == 9) {
-            if (!bselect(bocr,&delay))
-                ++s;
-        }
-
-        else if (s == 10) {
-            pmode = 0;
-            if (allow_pres == 2)
-                finish = 1;
-        }
-
-        if (pmode) {
-            if (allow_pres == 2)
-                new_alrm(250000,2);
-            else
-                new_alrm(delay,2);
-        }
-    }
-}
-#endif

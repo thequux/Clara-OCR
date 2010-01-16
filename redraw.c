@@ -1,3 +1,4 @@
+/* -*- mode: c; c-basic-offset: 4 -*- */
 /*
   Copyright (C) 1999-2002 Ricardo Ueda Karpischek
 
@@ -103,7 +104,7 @@ char *cm_v_small = NULL,
      *cm_g_sum = NULL,
      *cm_g_vocab = NULL,
      *cm_g_log = NULL;
-
+#if 0
 /*
 
 Arrows used as labels in some buttons (deprecated).
@@ -312,6 +313,7 @@ using an "x" character. If p is 3, draw the button "checked" but
 building an "x" using XDrawLine.
 
 */
+#if 0
 void draw_button(int i,int j,int w,int h,int p,char *l)
 {
 
@@ -374,7 +376,6 @@ void draw_button(int i,int j,int w,int h,int p,char *l)
                       j+(h-DFH)/2+(dfont->max_bounds).ascent,&xti,1);
     }
 }
-
 /*
 
 Draw arrow
@@ -584,6 +585,7 @@ void draw_tab(int x,int y,int t) {
         XSetLineAttributes(xd,xgc,1,LineSolid,CapNotLast,JoinRound);
     }
 }
+#endif
 
 /*
 
@@ -5088,3 +5090,23 @@ void redraw_inp_str(void)
     redraw_stline = 1;
 }
 
+#endif
+void redraw_document_window() {
+    UNIMPLEMENTED();
+}
+void redraw_flea() {
+    UNIMPLEMENTED();
+}
+void setview(int mode) {
+    UNIMPLEMENTED();
+}
+int wrmc8(int mm, char* s1, char* s2) {
+    UNIMPLEMENTED();
+    return 0;
+}
+void check_dlimits(int cursoron) {
+    UNIMPLEMENTED();
+}
+void force_redraw() {
+    UNIMPLEMENTED();
+}
