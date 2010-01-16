@@ -44,7 +44,7 @@ DOCDIR=$(DESTDIR)/usr/share/doc/clara
 #
 CC = gcc
 
-
+HUSH=./hush
 
 #
 # Now choose the Clara OCR compilation options:
@@ -95,13 +95,13 @@ CFLAGS = -g -Wall $(COPTS) -O0
 #CFLAGS = $(INCLUDE) -g -O2 -pedantic $(COPTS)
 #CFLAGS = $(INCLUDE) -g -O2 $(COPTS)
 
-CFLAGS += $(shell pkg-config --cflags gtk+-2.0 )
+CFLAGS += $(shell pkg-config --cflags gtk+-2.0 webkit-1.0 )
 
 #
 # Add or remove flags if necessary:
 #
 LDFLAGS = -g -rdynamic
-LDFLAGS += $(shell pkg-config --libs gtk+-2.0 )
+LDFLAGS += $(shell pkg-config --libs gtk+-2.0 webkit-1.0 )
 #
 # If your system requires additional libs, please add them:
 #
@@ -118,15 +118,19 @@ OBJS = clara.o skel.o event.o symbol.o pattern.o pbm2cl.o cml.o\
        consist.o pgmblock.o preproc.o obd.o html.o redraw.o
 # removed: html.o redraw.o
 
+SOURCES = $(OBJS:%.o=%.c)
+DOCSRC = book.c $(SOURCES)
 
-SRC = book.c $(OBJS:%.o=%.c)
+all: TAGS clara
+
+-include $(SOURCES:%.c=.deps/%.d)
 
 #
 # The programs.
 #
 
-clara: $(OBJS)
-	$(CC) -o clara $(LDFLAGS) $(OBJS) $(LINKLIB)
+clara: $(OBJS) | hush
+	@$(HUSH) "Linking $@" $(CC) -o clara $(LDFLAGS) $(OBJS) $(LINKLIB)
 
 manager: manager.c
 	$(CC) $(CFLAGS) -o manager manager.c
@@ -139,44 +143,42 @@ adv.new:
 	rm -f doc/clara-book.html doc/clara-book.1
 
 adv: adv.new
-	./mkdoc.pl $(DFLAGS) -html -book $(SRC) *.h >doc/clara-adv.html
-	./mkdoc.pl $(DFLAGS) -nroff -book $(SRC) *.h >doc/clara-adv.1
+	./mkdoc.pl $(DFLAGS) -html -book $(DOCSRC) *.h >doc/clara-adv.html
+	./mkdoc.pl $(DFLAGS) -nroff -book $(DOCSRC) *.h >doc/clara-adv.1
 
 dev.new:
 	rm -f doc/clara-dev.html doc/clara-dev.1
 
 dev: dev.new
-	./mkdoc.pl $(DFLAGS) -html -devel $(SRC) *.h >doc/clara-dev.html
-	./mkdoc.pl $(DFLAGS) -nroff -devel $(SRC) *.h >doc/clara-dev.1
+	./mkdoc.pl $(DFLAGS) -html -devel $(DOCSRC) *.h >doc/clara-dev.html
+	./mkdoc.pl $(DFLAGS) -nroff -devel $(DOCSRC) *.h >doc/clara-dev.1
 
 tut.new:
 	rm -f doc/clara-tut.html doc/clara.1
 
 tut: tut.new
-	./mkdoc.pl $(DFLAGS) -html -tutorial $(SRC) *.h >doc/clara-tut.html
-	./mkdoc.pl $(DFLAGS) -nroff -tutorial $(SRC) *.h >doc/clara.1
+	./mkdoc.pl $(DFLAGS) -html -tutorial $(DOCSRC) *.h >doc/clara-tut.html
+	./mkdoc.pl $(DFLAGS) -nroff -tutorial $(DOCSRC) *.h >doc/clara.1
 
 faq.new:
 	rm -f doc/clara-faq.html doc/clara-faq.1
 
 faq: faq.new
-	./mkdoc.pl $(DFLAGS) -html -faq $(SRC) *.h >doc/clara-faq.html
-	./mkdoc.pl -faq $(SRC) *.h >doc/FAQ
+	./mkdoc.pl $(DFLAGS) -html -faq $(DOCSRC) *.h >doc/clara-faq.html
+	./mkdoc.pl -faq $(DOCSRC) *.h >doc/FAQ
 
 glossary.new:
 	rm -f doc/clara-glo.html doc/clara-glo.1
 
 glossary: glossary.new
-	./mkdoc.pl $(DFLAGS) -html -glossary $(SRC) *.h >doc/clara-glo.html
-	./mkdoc.pl -glossary $(SRC) *.h >doc/clara-glo.1
+	./mkdoc.pl $(DFLAGS) -html -glossary $(DOCSRC) *.h >doc/clara-glo.html
+	./mkdoc.pl -glossary $(DOCSRC) *.h >doc/clara-glo.1
 
 doc: faq tut adv dev glossary
 
 #
 # Other.
 #
-
-all: clara doc
 
 test: clara
 	./clara -p 2
@@ -192,6 +194,7 @@ install: all
 
 clean:
 	rm -f clara sclara $(OBJS) doc/clara*.1 doc/clara*.html doc/FAQ
+	rm -f $(SOURCES:%.c=.deps/%.d)
 	rm -f acts patterns *session *.html *~ core
 	rm -f www/*~
 	rm -f doubts/*
@@ -200,27 +203,12 @@ clean:
 stats:
 	wc *.c *.h *.pl Makefile CHANGELOG | sort -n
 
-TAGS: $(SRC)
-	etags $(SRC)
+TAGS: $(SOURCES) | hush
+	@$(HUSH) "Building tags" etags $(SOURCES)
 
-#
-# Module dependencies.
-#
-alphabet.o: common.h alphabet.c
-build.o: common.h build.c
-clara.o: common.h gui.h clara.c
-cml.o: common.h gui.h cml.c
-consist.o: common.h consist.c
-event.o: common.h gui.h event.c
-html.o: common.h gui.h html.c
-pattern.o: common.h gui.h pattern.c
-pbm2cl.o: common.h pbm2cl.c
-redraw.o: common.h gui.h redraw.c
-revision.o: common.h gui.h revision.c
-skel.o: common.h skel.c
-symbol.o: common.h gui.h symbol.c
-welcome.o: common.h welcome.c
-pgmblock.o: 
-preproc.c:
-obd.c:
+hush: hush.c
+	@$(CC) -o $@ $<
 
+%.o: %.c | hush
+	-@test -d .deps || mkdir -p .deps
+	@$(HUSH) "Compiling $<" $(CC) -MMD -MF .deps/$*.d -c -o $@ $< $(CFLAGS)

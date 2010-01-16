@@ -1994,7 +1994,6 @@ void init_welcome(void);
 //void prior(void);
 void get_pointer(int *x,int *y) __attribute__((deprecated));
 void set_xfont(void);
-void init_dws(int m);
 void setview(int mode);
 void check_dlimits(int cursoron);
 void set_buttons(int s,int p);
@@ -2093,4 +2092,7 @@ void write_report(char *fn);
 char *mkpath(char *d,char *a,char *b);
 void build_internal_patterns(void);
 int obd_main (int argc, char **argv);
-void UNIMPLEMENTED();
+char* ht(int secs);
+
+#define UNIMPLEMENTED() real_UNIMPLEMENTED(__FILE__,__FUNCTION__)
+void real_UNIMPLEMENTED();

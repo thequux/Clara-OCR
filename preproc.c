@@ -67,7 +67,7 @@ float modff(float A,float *B)
    
 */
 
-inline int PIXFI(float x, int y, unsigned char *map, int X, int Y) 
+int PIXFI(float x, int y, unsigned char *map, int X, int Y)
 {
   int ix;
   unsigned char *p;

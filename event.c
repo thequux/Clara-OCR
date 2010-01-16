@@ -30,6 +30,7 @@ event.c: GUI initialization and event handler
 #include <math.h>
 #include <fcntl.h>
 #include <stdarg.h>
+#include <webkit/webkit.h>
 #include "common.h"
 #include "gui.h"
 
@@ -217,7 +218,12 @@ Menu availability flags.
 #define CMA_ABSENT   32
 #define CMA_NCL      64
 
-GtkWidget *menubar, *sbStatus;
+GtkWidget *menubar, *sbStatus,
+    *nbViews, *nbPage, *nbPatterns, *nbTune,
+    *wPageList;
+
+GtkListStore *pageStore;
+GtkTreeIter *pageIters = NULL;
 /*
 
 Menu help message and failure warning.
@@ -5532,9 +5538,9 @@ void set_xfont(void)
 Reset the parameters of all windows.
 
 */
+#if 0
 void init_dws(int m)
 {
-#if 0
     int i;
 
     for (i=0; i<=TOP_DW; ++i) {
@@ -5567,8 +5573,18 @@ void init_dws(int m)
     */
     dw[TUNE].hm = DFW;
     dw[PATTERN_TYPES].hm = DFW;
-#endif
     UNIMPLEMENTED();
+}
+#endif
+
+static void null_callback(GtkMenuItem* object, void* user_ptr) {
+    UNIMPLEMENTED();
+}
+
+static void quit_callback(GtkMenuItem* object, void* user_ptr) {
+    start_ocr(-2,OCR_SAVE,0);
+    continue_ocr();
+    gtk_main_quit();
 }
 
 /*
@@ -5579,7 +5595,6 @@ Context menu initializer.
 /* orig: cmi */
 static void init_context_menus(void)
 {
-    cmdesc *c;
 
     /* (book)
 
@@ -5600,7 +5615,7 @@ static void init_context_menus(void)
 
 #define MENU(title)                                                     \
     do {                                                                \
-        mi = gtk_menu_item_new_with_label(text);                        \
+        mi = gtk_menu_item_new_with_label(title);                        \
         submenu = gtk_menu_new();                                       \
         gtk_menu_item_set_submenu(GTK_MENU_ITEM(mi),submenu);           \
         gtk_menu_shell_append(GTK_MENU_SHELL(menubar),mi);              \
@@ -5612,20 +5627,26 @@ static void init_context_menus(void)
         var = submenu = gtk_menu_new();             \
         group = NULL;                           \
     } while(0)
-#define MITEM(text)                                             \
+#define MITEM(text,cb)                                          \
     do {                                                        \
         mi = gtk_menu_item_new_with_label(text);                \
+        g_signal_connect(G_OBJECT(mi),"activate",               \
+                         G_CALLBACK(cb),NULL);                  \
         gtk_menu_shell_append(GTK_MENU_SHELL(submenu),mi);      \
     } while(0)
-#define MCHECK(text)                                       \
-    do {                                                   \
-        mi = gtk_check_menu_item_new_with_label(text);     \
-        gtk_menu_shell_append(GTK_MENU_SHELL(submenu),mi); \
+#define MCHECK(text,cb)                                         \
+    do {                                                        \
+        mi = gtk_check_menu_item_new_with_label(text);          \
+        g_signal_connect(G_OBJECT(mi),"activate",               \
+                         G_CALLBACK(cb),NULL);                  \
+        gtk_menu_shell_append(GTK_MENU_SHELL(submenu),mi);      \
     } while(0)
 #define MRADIO_START()  group = NULL
-#define MRADIO(text)                                                    \
+#define MRADIO(text,cb)                                                 \
     do {                                                                \
         mi = gtk_radio_menu_item_new_with_label(group,text);            \
+        g_signal_connect(G_OBJECT(mi),"activate",                       \
+                         G_CALLBACK(cb),NULL);                          \
         if (group == NULL)                                              \
             group = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(mi)); \
         gtk_menu_shell_append(GTK_MENU_SHELL(submenu),mi);              \
@@ -5646,7 +5667,7 @@ static void init_context_menus(void)
 
         Enter the page list to select a page to be loaded.
     */
-    MITEM("Load page"); //CM_F_LOAD, 0 A
+    MITEM("Load page", null_callback); //CM_F_LOAD, 0 A
 
     /* (book)
 
@@ -5655,7 +5676,7 @@ static void init_context_menus(void)
         Save on disk the page session (file page.session), the patterns
         (file "pattern") and the revision acts (file "acts").
     */
-    MITEM("Save session"); // CM_F_SAVE, CMA_PAGE A
+    MITEM("Save session", null_callback); // CM_F_SAVE, CMA_PAGE A
 
     /* (book)
 
@@ -5663,7 +5684,7 @@ static void init_context_menus(void)
 
         Save on disk the first zone as the file zone.pbm.
     */
-    MITEM("Save first zone"); // CM_F_SZ, CMA_PAGE|CMA_ZONE A
+    MITEM("Save first zone", null_callback); // CM_F_SZ, CMA_PAGE|CMA_ZONE A
 
     /* (book)
 
@@ -5673,7 +5694,7 @@ static void init_context_menus(void)
         to achieve better compression rates (mostly to produce small
         web images).
     */
-    MITEM("Save replacing symbols"); // CM_F_SR, CMA_PAGE|CMA_CL A
+    MITEM("Save replacing symbols", null_callback); // CM_F_SR, CMA_PAGE|CMA_CL A
 
     /* (book)
 
@@ -5682,7 +5703,7 @@ static void init_context_menus(void)
         Save the contents of the PAGE LIST window to the file
         report.txt on the working directory.
     */
-    MITEM("Write report"); // CM_F_REP, 0 A
+    MITEM("Write report", null_callback); // CM_F_REP, 0 A
 
     /* (book)
 
@@ -5692,7 +5713,7 @@ static void init_context_menus(void)
         be saved.
     */
 
-    MITEM("Quit"); // CM_F_QUIT, 0 A
+    MITEM("Quit", quit_callback); // CM_F_QUIT, 0 A
 
     /* (book)
 
@@ -5712,7 +5733,7 @@ static void init_context_menus(void)
         PATTERN or the PATTERN PROPS windows will move to the next
         or the previous untransliterated patterns.
     */
-    MCHECK("Only doubts"); // CM_E_DOUBTS, 0 B
+    MCHECK("Only doubts", null_callback); // CM_E_DOUBTS, 0 B
 
     /* (book)
 
@@ -5723,7 +5744,7 @@ static void init_context_menus(void)
         to resolve the unclassified symbols using a second
         classification method.
     */
-    MCHECK("Re-scan all patterns"); // CM_E_RESCAN, 0 B
+    MCHECK("Re-scan all patterns", null_callback); // CM_E_RESCAN, 0 B
 
     /* (book)
 
@@ -5734,7 +5755,7 @@ static void init_context_menus(void)
         "a" remain unclassified, training one of them will perhaps
         recognize some othersm helping to complete the recognition.
     */
-    MCHECK("Auto-classify"); // CM_E_AC, 0 B
+    MCHECK("Auto-classify", null_callback); // CM_E_AC, 0 B
 
     MSEP();
     /* (book)
@@ -5745,7 +5766,7 @@ static void init_context_menus(void)
         around one pixel on the pattern bitmap under edition on the
         font tab.
     */
-    MRADIO("Fill region"); // CM_E_FILL, 0 R
+    MRADIO("Fill region", null_callback); // CM_E_FILL, 0 R
 
     /* (book)
 
@@ -5754,7 +5775,7 @@ static void init_context_menus(void)
         When selected, the mouse button 1 will paint individual
         pixels on the pattern bitmap under edition on the font tab.
     */
-    MRADIO("Paint pixel"); // CM_E_PP, 0 R
+    MRADIO("Paint pixel", null_callback); // CM_E_PP, 0 R
 
     /* (book)
 
@@ -5764,7 +5785,7 @@ static void init_context_menus(void)
         around one pixel on the pattern bitmap under edition on the
         font tab.
     */
-    MRADIO("Clear region"); // CM_E_FILL_C, 0 R
+    MRADIO("Clear region", null_callback); // CM_E_FILL_C, 0 R
 
     /* (book)
 
@@ -5773,7 +5794,7 @@ static void init_context_menus(void)
         When selected, the mouse button 1 will clear individual
         pixels on the pattern bitmap under edition on the font tab.
     */
-    MRADIO("Clear pixel"); // CM_E_PP_C, 0 R
+    MRADIO("Clear pixel", null_callback); // CM_E_PP_C, 0 R
 
     /* (book)
 
@@ -5784,7 +5805,7 @@ static void init_context_menus(void)
         sources.
     */
     MSEP();
-    MCHECK("Sort patterns by page"); // CM_E_SP, 0 B
+    MCHECK("Sort patterns by page", null_callback); // CM_E_SP, 0 B
 
     /* (book)
 
@@ -5794,7 +5815,7 @@ static void init_context_menus(void)
         first criterion when sorting the patterns, the number of
         matches of each pattern.
     */
-    MCHECK("Sort patterns by matches"); // CM_E_SM, 0 B
+    MCHECK("Sort patterns by matches", null_callback); // CM_E_SM, 0 B
 
     /* (book)
 
@@ -5804,7 +5825,7 @@ static void init_context_menus(void)
         second criterion when sorting the patterns, their
         transliterations.
     */
-    MCHECK("Sort patterns by transliteration"); // CM_E_ST, 0 B
+    MCHECK("Sort patterns by transliteration", null_callback); // CM_E_ST, 0 B
 
     /* (book)
 
@@ -5814,7 +5835,7 @@ static void init_context_menus(void)
         third criterion when sorting the patterns, their
         number of pixels.
     */
-    MCHECK("Sort patterns by number of pixels"); // CM_E_SN, 0 B
+    MCHECK("Sort patterns by number of pixels", null_callback); // CM_E_SN, 0 B
 
     /* (book)
 
@@ -5824,7 +5845,7 @@ static void init_context_menus(void)
         fourth criterion when sorting the patterns, their
         widths.
     */
-    MCHECK("Sort patterns by width"); // CM_E_SW, 0 B
+    MCHECK("Sort patterns by width", null_callback); // CM_E_SW, 0 B
 
     /* (book)
 
@@ -5834,7 +5855,7 @@ static void init_context_menus(void)
         fifth criterion when sorting the patterns, their
         heights.
     */
-    MCHECK("Sort patterns by height"); // CM_E_SH, 0 B
+    MCHECK("Sort patterns by height", null_callback); // CM_E_SH, 0 B
 
     /* (book)
 
@@ -5843,7 +5864,7 @@ static void init_context_menus(void)
         Remove from the font all untransliterated fonts.
     */
     MSEP();
-    MITEM("Delete Untransliterated patterns"); // CM_E_DU, 0 A
+    MITEM("Delete Untransliterated patterns", null_callback); // CM_E_DU, 0 A
 
     /* (book)
 
@@ -5851,7 +5872,7 @@ static void init_context_menus(void)
 
         Set the pattern type for all patterns marked as "other".
     */
-    MITEM("Set pattern type"); //CM_E_SETPT, 0 A
+    MITEM("Set pattern type", null_callback); //CM_E_SETPT, 0 A
 
     /* (book)
 
@@ -5859,7 +5880,7 @@ static void init_context_menus(void)
 
         Try to find a barcode on the loaded page.
     */
-    MITEM("Search barcode"); // CM_E_SEARCHB, 0 A
+    MITEM("Search barcode", null_callback); // CM_E_SEARCHB, 0 A
 
     /* (book)
 
@@ -5867,7 +5888,7 @@ static void init_context_menus(void)
 
         Perform on-the-fly global thresholding.
     */
-    MITEM("Instant thresholding"); // CM_E_THRESH, 0 A
+    MITEM("Instant thresholding", null_callback); // CM_E_THRESH, 0 A
 
 #ifdef PATT_SKEL
     /* (book)
@@ -5877,7 +5898,7 @@ static void init_context_menus(void)
         Reset the parameters for skeleton computation for all
         patterns.
     */
-    MITEM("Reset skeleton parameters"); // CM_E_RSKEL, 0 A
+    MITEM("Reset skeleton parameters", null_callback); // CM_E_RSKEL, 0 A
 #endif
 
     /* (book)
@@ -5897,7 +5918,7 @@ static void init_context_menus(void)
 
         Use a small X font (6x13).
     */
-    MRADIO("Small font (6x13)"); // CM_V_SMALL, 0 R
+    MRADIO("Small font (6x13)", null_callback); // CM_V_SMALL, 0 R
 
     /* (book)
 
@@ -5905,7 +5926,7 @@ static void init_context_menus(void)
 
         Use the medium font (9x15).
     */
-    MRADIO("Medium font (9x15)"); // CM_V_MEDIUM, 0 R
+    MRADIO("Medium font (9x15)", null_callback); // CM_V_MEDIUM, 0 R
 
     /* (book)
 
@@ -5913,7 +5934,7 @@ static void init_context_menus(void)
 
         Use a large X font (10x20).
     */
-    MRADIO("Large font (10x20)"); // CM_V_LARGE, 0 R
+    MRADIO("Large font (10x20)", null_callback); // CM_V_LARGE, 0 R
 
     /* (book)
 
@@ -5922,7 +5943,7 @@ static void init_context_menus(void)
         Use the default font (7x13 or "fixed" or the one informed
         on the command line).
     */
-    MRADIO("Default font"); // CM_V_DEF, 0 R
+    MRADIO("Default font", null_callback); // CM_V_DEF, 0 R
 
     /* (book)
 
@@ -5932,7 +5953,7 @@ static void init_context_menus(void)
         flag hides the display of scrolllbar on all windows.
     */
     
-    MCHECK("Hide scrollbars"); // CM_V_HIDE, 0 B
+    MCHECK("Hide scrollbars", null_callback); // CM_V_HIDE, 0 B
 #endif
 
     /* (book)
@@ -5943,7 +5964,7 @@ static void init_context_menus(void)
         fragments won't be included on the list of
         patterns.
     */
-    MCHECK("Omit fragments"); // CM_V_OF, 0 B
+    MCHECK("Omit fragments", null_callback); // CM_V_OF, 0 B
 
 #if 0
     /* (book)
@@ -5954,7 +5975,7 @@ static void init_context_menus(void)
         graphic rendering.
     */
     MSEP();
-    MCHECK("Show HTML source"); // CM_V_VHS, 0 B
+    MCHECK("Show HTML source", null_callback); // CM_V_VHS, 0 B
 
     /* (book)
 
@@ -5964,7 +5985,7 @@ static void init_context_menus(void)
         window will include the clip of the document around the
         current symbol that will be used through web revision.
     */
-    MCHECK("Show web clip"); // CM_V_WCLIP, 0 B
+    MCHECK("Show web clip", null_callback); // CM_V_WCLIP, 0 B
 
     /* (book)
 
@@ -5974,7 +5995,7 @@ static void init_context_menus(void)
         from Latin letters to the current alphabet will be
         displayed.
     */
-    MCHECK("Show alphabet map"); // CM_V_MAP, 0 B
+    MCHECK("Show alphabet map", null_callback); // CM_V_MAP, 0 B
 #endif
 
     /* (book)
@@ -5984,7 +6005,7 @@ static void init_context_menus(void)
         Identify the symbols on the current class using
         a gray ellipse.
     */
-    MCHECK("Show current class"); // CM_V_CC, 0 B
+    MCHECK("Show current class", null_callback); // CM_V_CC, 0 B
 
     MSEP();
     /* (book)
@@ -5993,7 +6014,7 @@ static void init_context_menus(void)
 
         Display bitmap matches when performing OCR.
     */
-    MRADIO("Show matches"); // CM_V_MAT, 0 R
+    MRADIO("Show matches", null_callback); // CM_V_MAT, 0 R
 
     /* (book)
 
@@ -6001,7 +6022,7 @@ static void init_context_menus(void)
 
         Display all bitmap comparisons when performing OCR.
     */
-    MRADIO("Show comparisons"); // CM_V_CMP, 0 R
+    MRADIO("Show comparisons", null_callback); // CM_V_CMP, 0 R
 
     /* (book)
 
@@ -6010,7 +6031,7 @@ static void init_context_menus(void)
         Display bitmap matches when performing OCR,
         waiting a key after each display.
     */
-    MRADIO("Show matches and wait"); // CM_V_MAT_K, 0 R
+    MRADIO("Show matches and wait", null_callback); // CM_V_MAT_K, 0 R
 
     /* (book)
 
@@ -6019,7 +6040,7 @@ static void init_context_menus(void)
         Display all bitmap comparisons when performing OCR,
         waiting a key after each display.
     */
-    MRADIO("Show comparisons and wait"); // CM_V_CMP_K, 0 R
+    MRADIO("Show comparisons and wait", null_callback); // CM_V_CMP_K, 0 R
 
     /* (book)
 
@@ -6028,7 +6049,7 @@ static void init_context_menus(void)
         Display each candidate when tuning the skeletons of the
         patterns.
     */
-    MCHECK("Show skeleton tuning"); // CM_V_ST, 0 B
+    MCHECK("Show skeleton tuning", null_callback); // CM_V_ST, 0 B
 
     /* (book)
 
@@ -6049,7 +6070,7 @@ static void init_context_menus(void)
 
         Start preproc.
     */
-    MITEM("Preprocessing"); // CM_R_PREPROC, CMA_PAGE A
+    MITEM("Preprocessing", null_callback); // CM_R_PREPROC, CMA_PAGE A
 
     /* (book)
 
@@ -6058,7 +6079,7 @@ static void init_context_menus(void)
         Start detecting text blocks.
 
     */
-    MITEM("Detect blocks"); // CM_R_BLOCK, CMA_PAGE A
+    MITEM("Detect blocks", null_callback); // CM_R_BLOCK, CMA_PAGE A
 
     /* (book)
 
@@ -6066,7 +6087,7 @@ static void init_context_menus(void)
 
         Start binarization and segmentation.
     */
-    MITEM("Segmentation"); // CM_R_SEG, CMA_PAGE|CMA_NCL  A
+    MITEM("Segmentation", null_callback); // CM_R_SEG, CMA_PAGE|CMA_NCL  A
 
     /* (book)
 
@@ -6075,7 +6096,7 @@ static void init_context_menus(void)
         All OCR data structures are submitted to consistency
         tests. This is under implementation.
     */
-    MITEM("Consist structures"); // CM_R_CONS, 0 A
+    MITEM("Consist structures", null_callback); // CM_R_CONS, 0 A
 
     /* (book)
 
@@ -6085,7 +6106,7 @@ static void init_context_menus(void)
         the achievement of best results by the classifier. Not
         fully implemented yet.
     */
-    MITEM("Prepare patterns"); // CM_R_OPT, 0 A
+    MITEM("Prepare patterns", null_callback); // CM_R_OPT, 0 A
 
     /* (book)
 
@@ -6094,7 +6115,7 @@ static void init_context_menus(void)
         Revision data from the web interface is read, and
         added to the current OCR training knowledge.
     */
-    MITEM("Read revision data"); // CM_R_REV, CMA_PAGE|CMA_CL A
+    MITEM("Read revision data", null_callback); // CM_R_REV, CMA_PAGE|CMA_CL A
 
     /* (book)
 
@@ -6107,7 +6128,7 @@ static void init_context_menus(void)
         corresponding item is selected on the Options menu.
 
     */
-    MITEM("Classification"); // CM_R_CLASS, CMA_PAGE|CMA_CL A
+    MITEM("Classification", null_callback); // CM_R_CLASS, CMA_PAGE|CMA_CL A
 
     /* (book)
 
@@ -6116,7 +6137,7 @@ static void init_context_menus(void)
         Merge closures on symbols depending on their
         geometry.
     */
-    MITEM("Geometric merging"); // CM_R_GEOMERGE, CMA_PAGE|CMA_CL A
+    MITEM("Geometric merging", null_callback); // CM_R_GEOMERGE, CMA_PAGE|CMA_CL A
 
     /* (book)
 
@@ -6128,7 +6149,7 @@ static void init_context_menus(void)
         the "Work on current page only" item of the Options menu.
 
     */
-    MITEM("Build words and lines"); // CM_R_BUILD, CMA_PAGE|CMA_CL A
+    MITEM("Build words and lines", null_callback); // CM_R_BUILD, CMA_PAGE|CMA_CL A
 
     /* (book)
 
@@ -6145,7 +6166,7 @@ static void init_context_menus(void)
         the "Work on current page only" item of the Options menu.
 
     */
-    MITEM("Generate spelling hints"); // CM_R_SPELL, CMA_PAGE|CMA_CL A
+    MITEM("Generate spelling hints", null_callback); // CM_R_SPELL, CMA_PAGE|CMA_CL A
 
     /* (book)
 
@@ -6155,7 +6176,7 @@ static void init_context_menus(void)
         "PAGE (output)" window. The output is also saved to the
         file page.html.
     */
-    MITEM("Generate output"); // CM_R_OUTP, CMA_PAGE|CMA_CL A
+    MITEM("Generate output", null_callback); // CM_R_OUTP, CMA_PAGE|CMA_CL A
 
     /* (book)
 
@@ -6166,7 +6187,7 @@ static void init_context_menus(void)
         the work directory. This step is performed only when
         Clara OCR is started with the -W command-line switch.
     */
-    MITEM("Generate web doubts"); // CM_R_DOUBTS, CMA_PAGE|CMA_CL A
+    MITEM("Generate web doubts", null_callback); // CM_R_DOUBTS, CMA_PAGE|CMA_CL A
 
 
     /* (book)
@@ -6187,7 +6208,7 @@ static void init_context_menus(void)
 
         Change to PAGE_FATBITS focusing this symbol.
     */
-    MITEM("See in fatbits"); // CM_D_FOCUS, CMA_CL A
+    MITEM("See in fatbits", null_callback); // CM_D_FOCUS, CMA_CL A
 
     /* (book)
 
@@ -6196,7 +6217,7 @@ static void init_context_menus(void)
         Scroll the window contents in order to the
         current pointer position become the bottom left.
     */
-    MITEM("Bottom left here"); // CM_D_HERE, 0 A
+    MITEM("Bottom left here", null_callback); // CM_D_HERE, 0 A
 
     /* (book)
 
@@ -6209,7 +6230,7 @@ static void init_context_menus(void)
         be compared, in order to test the classification routines.
 
     */
-    MITEM("Use as pattern"); // CM_D_TS, CMA_CL A
+    MITEM("Use as pattern", null_callback); // CM_D_TS, CMA_CL A
 
     /* (book)
 
@@ -6219,7 +6240,7 @@ static void init_context_menus(void)
         classification will re-scan all patterns even if the "re-scan
         all patterns" option is unselected.
     */
-    MITEM("OCR this symbol"); // CM_D_OS, CMA_CL A
+    MITEM("OCR this symbol", null_callback); // CM_D_OS, CMA_CL A
 
     /* (book)
 
@@ -6227,7 +6248,7 @@ static void init_context_menus(void)
 
         Merge this fragment with the current symbol.
     */
-    MITEM("Merge with current symbol"); // CM_D_ADD, CMA_CL A
+    MITEM("Merge with current symbol", null_callback); // CM_D_ADD, CMA_CL A
 
     /* (book)
 
@@ -6236,7 +6257,7 @@ static void init_context_menus(void)
         Create a symbol link from the current symbol (the one
         identified by the graphic cursor) to this symbol.
     */
-    MITEM("Link as next symbol"); // CM_D_SLINK, CMA_CL A
+    MITEM("Link as next symbol", null_callback); // CM_D_SLINK, CMA_CL A
 
     /* (book)
 
@@ -6245,7 +6266,7 @@ static void init_context_menus(void)
         Make the current symbol nonpreferred and each of its
         components preferred.
     */
-    MITEM("Disassemble symbol"); // CM_D_DIS, CMA_CL A
+    MITEM("Disassemble symbol", null_callback); // CM_D_DIS, CMA_CL A
 
     /* (book)
 
@@ -6254,7 +6275,7 @@ static void init_context_menus(void)
         Create an accent link from the current symbol (the one
         identified by the graphic cursor) to this symbol.
     */
-    MITEM("Link as accent"); // CM_D_ALINK, CMA_CL A
+    MITEM("Link as accent", null_callback); // CM_D_ALINK, CMA_CL A
 
     /* (book)
 
@@ -6265,7 +6286,7 @@ static void init_context_menus(void)
         This is useful to know why the OCR is not joining two
         symbols on one same word.
     */
-    MITEM("Diagnose symbol pairing"); // CM_D_SDIAG, CMA_CL A
+    MITEM("Diagnose symbol pairing", null_callback); // CM_D_SDIAG, CMA_CL A
 
     /* (book)
 
@@ -6276,7 +6297,7 @@ static void init_context_menus(void)
         on one same line. This is useful to know why the OCR is
         not joining two words on one same line.
     */
-    MITEM("Diagnose word pairing"); // CM_D_WDIAG, CMA_CL A
+    MITEM("Diagnose word pairing", null_callback); // CM_D_WDIAG, CMA_CL A
 
     /* (book)
 
@@ -6285,7 +6306,7 @@ static void init_context_menus(void)
         Run locally the line comparison heuristic to decide
         which is the preceding line.
     */
-    MITEM("Diagnose lines"); // CM_D_LDIAG, CMA_CL A
+    MITEM("Diagnose lines", null_callback); // CM_D_LDIAG, CMA_CL A
 
     /* (book)
 
@@ -6294,7 +6315,7 @@ static void init_context_menus(void)
         Run locally the geometrical merging heuristic to try
         to merge this piece to the current symbol.
     */
-    MITEM("Diagnose merging"); // CM_D_GM, CMA_CL A
+    MITEM("Diagnose merging", null_callback); // CM_D_GM, CMA_CL A
 
     /* (book)
 
@@ -6303,7 +6324,7 @@ static void init_context_menus(void)
         Present the coordinates and color of the current pixel.
     */
     MSEP();
-    MRADIO("Show pixel coords"); // CM_D_PIXELS, 0 R
+    MRADIO("Show pixel coords", null_callback); // CM_D_PIXELS, 0 R
 
     /* (book)
 
@@ -6312,7 +6333,7 @@ static void init_context_menus(void)
         Identify the individual closures when displaying the
         current document.
     */
-    MRADIO("Show closures"); // CM_D_CLOSURES, 0 R
+    MRADIO("Show closures", null_callback); // CM_D_CLOSURES, 0 R
 
     /* (book)
 
@@ -6321,7 +6342,7 @@ static void init_context_menus(void)
         Identify the individual symbols when displaying the
         current document.
     */
-    MRADIO("Show symbols"); // CM_D_SYMBOLS, 0 R
+    MRADIO("Show symbols", null_callback); // CM_D_SYMBOLS, 0 R
 
     /* (book)
 
@@ -6330,7 +6351,7 @@ static void init_context_menus(void)
         Identify the individual words when displaying the
         current document.
     */
-    MRADIO("Show words"); // CM_D_WORDS, 0 R
+    MRADIO("Show words", null_callback); // CM_D_WORDS, 0 R
 
     /* (book)
 
@@ -6339,7 +6360,7 @@ static void init_context_menus(void)
         Display absent symbols on pattern type 0, to help
         building the bookfont.
     */
-    MRADIO("Show pattern type"); // CM_D_PTYPE, 0 R
+    MRADIO("Show pattern type", null_callback); // CM_D_PTYPE, 0 R
 
     /* (book)
 
@@ -6349,7 +6370,7 @@ static void init_context_menus(void)
         active.
     */
     MSEP();
-    MCHECK("Report scale"); // CM_D_RS, 0 B
+    MCHECK("Report scale", null_callback); // CM_D_RS, 0 B
 
     /* (book)
 
@@ -6359,7 +6380,7 @@ static void init_context_menus(void)
         the symbols themselves. This is useful when designing new
         heuristics.
     */
-    MCHECK("Display box instead of symbol"); // CM_D_BB, 0 B
+    MCHECK("Display box instead of symbol", null_callback); // CM_D_BB, 0 B
 
     /* (book)
 
@@ -6379,7 +6400,7 @@ static void init_context_menus(void)
         Scroll the window contents in order to the
         current pointer position become the bottom left.
     */
-    MITEM("Bottom left here"); // CM_B_HERE, 0 A
+    MITEM("Bottom left here", null_callback); // CM_B_HERE, 0 A
 
     /* (book)
 
@@ -6388,7 +6409,7 @@ static void init_context_menus(void)
         Scroll the window contents in order to the
         centralize the closure under the pointer.
     */
-    MITEM("Centralize"); // CM_B_CENTRE, 0 A
+    MITEM("Centralize", null_callback); // CM_B_CENTRE, 0 A
 
     /* (book)
 
@@ -6396,7 +6417,7 @@ static void init_context_menus(void)
 
         Build the closure border path and activate the flea.
     */
-    MITEM("Build border path"); // CM_B_BP, 0 A
+    MITEM("Build border path", null_callback); // CM_B_BP, 0 A
 
     /* (book)
 
@@ -6405,7 +6426,7 @@ static void init_context_menus(void)
         Build the closure border path and search straight lines
         there using linear distances.
     */
-    MITEM("Search straight lines (linear)"); // CM_B_SLD, 0 A
+    MITEM("Search straight lines (linear)", null_callback); // CM_B_SLD, 0 A
 
     /* (book)
 
@@ -6414,7 +6435,7 @@ static void init_context_menus(void)
         Build the closure border path and search straight lines
         there using correlation.
     */
-    MITEM("Search straight lines (quadratic)"); // CM_B_SLC, 0 A
+    MITEM("Search straight lines (quadratic)", null_callback); // CM_B_SLC, 0 A
 
     /* (book)
 
@@ -6422,7 +6443,7 @@ static void init_context_menus(void)
 
         Apply the isbar test on the closure.
     */
-    MITEM("Is bar?"); // CM_B_ISBAR, 0 A
+    MITEM("Is bar?", null_callback); // CM_B_ISBAR, 0 A
 
     /* (book)
 
@@ -6430,7 +6451,7 @@ static void init_context_menus(void)
 
         Detect closure extremities.
     */
-    MITEM("Detect extremities"); // CM_B_DX, 0 A
+    MITEM("Detect extremities", null_callback); // CM_B_DX, 0 A
 
     /* (book)
 
@@ -6440,7 +6461,7 @@ static void init_context_menus(void)
         skeletons are computed on the fly.
     */
     MSEP();
-    MRADIO("Show skeletons"); // CM_B_SKEL, 0 R
+    MRADIO("Show skeletons", null_callback); // CM_B_SKEL, 0 R
 
     /* (book)
 
@@ -6449,7 +6470,7 @@ static void init_context_menus(void)
         Show the border on the window PAGE_FATBITS. The
         border is computed on the fly.
     */
-    MRADIO("Show border"); // CM_B_BORDER, 0 R
+    MRADIO("Show border", null_callback); // CM_B_BORDER, 0 R
 
     /* (book)
 
@@ -6458,7 +6479,7 @@ static void init_context_menus(void)
         For each symbol, will show the skeleton of its best match
         on the PAGE (fatbits) window.
     */
-    MRADIO("Show pattern skeleton"); // CM_B_HS, 0 R
+    MRADIO("Show pattern skeleton", null_callback); // CM_B_HS, 0 R
 
     /* (book)
 
@@ -6467,7 +6488,7 @@ static void init_context_menus(void)
         For each symbol, will show the border of its best match
         on the PAGE (fatbits) window.
     */
-    MRADIO("Show pattern border"); // CM_B_HB, 0 R
+    MRADIO("Show pattern border", null_callback); // CM_B_HB, 0 R
 
 
     /* (book)
@@ -6487,7 +6508,7 @@ static void init_context_menus(void)
         This is a provision for future support of Arabic
         alphabet.
     */
-    MCHECK("Arabic"); // CM_A_ARABIC, CMA_ABSENT B
+    MCHECK("Arabic", null_callback); // CM_A_ARABIC, CMA_ABSENT B
 
     /* (book)
 
@@ -6496,7 +6517,7 @@ static void init_context_menus(void)
         This is a provision for future support of Cyrillic
         alphabet.
     */
-    MCHECK("Cyrillic"); // CM_A_CYRILLIC, CMA_ABSENT B
+    MCHECK("Cyrillic", null_callback); // CM_A_CYRILLIC, CMA_ABSENT B
 
     /* (book)
 
@@ -6505,7 +6526,7 @@ static void init_context_menus(void)
         This is a provision for future support of Greek
         alphabet.
     */
-    MCHECK("Greek"); // CM_A_GREEK, CMA_ABSENT B
+    MCHECK("Greek", null_callback); // CM_A_GREEK, CMA_ABSENT B
 
     /* (book)
 
@@ -6514,7 +6535,7 @@ static void init_context_menus(void)
         This is a provision for future support of Hebrew
         alphabet.
     */
-    MCHECK("Hebrew"); // CM_A_HEBREW, CMA_ABSENT B
+    MCHECK("Hebrew", null_callback); // CM_A_HEBREW, CMA_ABSENT B
 
     /* (book)
 
@@ -6523,7 +6544,7 @@ static void init_context_menus(void)
         This is a provision for future support of Kana
         alphabet.
     */
-    MCHECK("Kana"); // CM_A_KANA, CMA_ABSENT B
+    MCHECK("Kana", null_callback); // CM_A_KANA, CMA_ABSENT B
 
     /* (book)
 
@@ -6533,7 +6554,7 @@ static void init_context_menus(void)
         the languages of most Western European countries (English,
         German, French, Spanish, Portuguese and others).
     */
-    MCHECK("Latin"); // CM_A_LATIN, 0 B
+    MCHECK("Latin", null_callback); // CM_A_LATIN, 0 B
 
     /* (book)
 
@@ -6543,7 +6564,7 @@ static void init_context_menus(void)
         1234, +55-11-12345678 or 2000.
     */
     MSEP();
-    MCHECK("Numeric"); // CM_A_NUMBER, 0 B
+    MCHECK("Numeric", null_callback); // CM_A_NUMBER, 0 B
 
     /* (book)
 
@@ -6551,7 +6572,7 @@ static void init_context_menus(void)
 
         Ideograms.
     */
-    MCHECK("Ideograms"); // CM_A_IDEOGRAM, CMA_ABSENT B
+    MCHECK("Ideograms", null_callback); // CM_A_IDEOGRAM, CMA_ABSENT B
 
 
 #ifdef LANG_MENU
@@ -6575,7 +6596,7 @@ static void init_context_menus(void)
         Toggle American English spell checking for
         each word found on the page.
     */
-    MCHECK("English (USA)"); // CM_L_EN, 0 B
+    MCHECK("English (USA)", null_callback); // CM_L_EN, 0 B
 
     /* (book)
 
@@ -6584,7 +6605,7 @@ static void init_context_menus(void)
         Toggle British English spell checking for
         each word found on the page.
     */
-    MCHECK("English (UK)"); // CM_L_UK, 0 B
+    MCHECK("English (UK)", null_callback); // CM_L_UK, 0 B
 
     /* (book)
 
@@ -6593,7 +6614,7 @@ static void init_context_menus(void)
         Toggle French spell checking for
         each word found on the page.
     */
-    MCHECK("French"); // CM_L_FR, 0 B
+    MCHECK("French", null_callback); // CM_L_FR, 0 B
 
     /* (book)
 
@@ -6602,7 +6623,7 @@ static void init_context_menus(void)
         Toggle german spell checking for
         each word found on the page.
     */
-    MCHECK("German"); // CM_L_DE, 0 B
+    MCHECK("German", null_callback); // CM_L_DE, 0 B
 
     /* (book)
 
@@ -6611,7 +6632,7 @@ static void init_context_menus(void)
         Toggle greek spell checking for
         each word found on the page.
     */
-    MCHECK("Greek"); // CM_L_GR, 0 B
+    MCHECK("Greek", null_callback); // CM_L_GR, 0 B
 
     /* (book)
 
@@ -6620,7 +6641,7 @@ static void init_context_menus(void)
         Toggle brazilian protuguese spell checking for
         each word found on the page.
     */
-    MCHECK("Portuguese (Brazil)"); // CM_L_BR, 0 B
+    MCHECK("Portuguese (Brazil)", null_callback); // CM_L_BR, 0 B
 
     /* (book)
 
@@ -6629,7 +6650,7 @@ static void init_context_menus(void)
         Toggle Portuguese spell checking for
         each word found on the page.
     */
-    MCHECK("Portuguese (Portugal)"); // CM_L_PT, 0 B
+    MCHECK("Portuguese (Portugal)", null_callback); // CM_L_PT, 0 B
 
     /* (book)
 
@@ -6638,7 +6659,7 @@ static void init_context_menus(void)
         Toggle Russian spell checking for
         each word found on the page.
     */
-    MCHECK("Russian"); // CM_L_RU, 0 B
+    MCHECK("Russian", null_callback); // CM_L_RU, 0 B
 
 #endif
 
@@ -6656,7 +6677,7 @@ static void init_context_menus(void)
         OCR operations (classification, merge, etc) will be
         performed only on the current page.
     */
-    MRADIO("Work on current page only"); // CM_O_CURR, 0 R
+    MRADIO("Work on current page only", null_callback); // CM_O_CURR, 0 R
 
     /* (book)
 
@@ -6666,7 +6687,7 @@ static void init_context_menus(void)
         OCR operations (classification, merge, etc) will be
         performed on all pages.
     */
-    MRADIO("Work on all pages"); // CM_O_ALL, 0 R
+    MRADIO("Work on all pages", null_callback); // CM_O_ALL, 0 R
 
     /* (book)
 
@@ -6678,7 +6699,7 @@ static void init_context_menus(void)
         through the -i command-line switch.
     */
     MSEP();
-    MCHECK("Emulate deadkeys"); // CM_O_DKEYS, 0 B
+    MCHECK("Emulate deadkeys", null_callback); // CM_O_DKEYS, 0 B
 
     /* (book)
 
@@ -6688,7 +6709,7 @@ static void init_context_menus(void)
         menu bar will pop automatically when the pointer reaches
         the menu bar.
     */
-    MCHECK("Menu auto popup"); // CM_O_AMENU, 0 B
+    MCHECK("Menu auto popup", null_callback); // CM_O_AMENU, 0 B
 
     /* (book)
 
@@ -6697,7 +6718,7 @@ static void init_context_menus(void)
         When selected, the PAGE tab will display only the PAGE window. The
         windows PAGE_OUTPUT and PAGE_SYMBOL will be hidden.
     */
-    MCHECK("PAGE only"); // CM_O_PGO, CMA_Q_DISMISS B
+    MCHECK("PAGE only", null_callback); // CM_O_PGO, CMA_Q_DISMISS B
 
     /* (book)
 
@@ -6715,7 +6736,7 @@ static void init_context_menus(void)
         ellipses. This option overrides the "show current class"
         feature.
     */
-    MCHECK("Show unaligned symbols"); // CM_G_ALIGN, 0 B
+    MCHECK("Show unaligned symbols", null_callback); // CM_G_ALIGN, 0 B
 
     /* (book)
 
@@ -6724,7 +6745,7 @@ static void init_context_menus(void)
         Display the progress of the extraction of symbols
         performed by the local binarizer.
     */
-    MCHECK("Show localbin progress"); // CM_G_LB, 0 B
+    MCHECK("Show localbin progress", null_callback); // CM_G_LB, 0 B
 
     /* (book)
 
@@ -6738,7 +6759,7 @@ static void init_context_menus(void)
         the segmentation enters the zone.
 
     */
-    MCHECK("Activate Abagar"); // CM_G_ABAGAR, 0 B
+    MCHECK("Activate Abagar", null_callback); // CM_G_ABAGAR, 0 B
 
     /* (book)
 
@@ -6747,7 +6768,7 @@ static void init_context_menus(void)
         Identify the lines (computed using geometrical criteria)
         when displaying the current document.
     */
-    MRADIO("Show lines (geometrical)"); // CM_G_GLINES, 0 R
+    MRADIO("Show lines (geometrical)", null_callback); // CM_G_GLINES, 0 R
 
     /* (book)
 
@@ -6757,7 +6778,7 @@ static void init_context_menus(void)
         (PAGE menu) to bold symbols or words.
     */
     MSEP();
-    MRADIO("Bold Only"); // CM_G_BO, 0 R
+    MRADIO("Bold Only", null_callback); // CM_G_BO, 0 R
 
     /* (book)
 
@@ -6766,7 +6787,7 @@ static void init_context_menus(void)
         Restrict the show symbols or show words feature
         (PAGE menu) to bold symbols or words.
     */
-    MRADIO("Italic Only"); // CM_G_IO, 0 R
+    MRADIO("Italic Only", null_callback); // CM_G_IO, 0 R
 
     /* (book)
 
@@ -6777,7 +6798,7 @@ static void init_context_menus(void)
         to diagnose symbol comparison problems.
     */
     MSEP();
-    MCHECK("Search unexpected mismatches"); // CM_G_SUM, 0 B
+    MCHECK("Search unexpected mismatches", null_callback); // CM_G_SUM, 0 B
 
     /* (book)
 
@@ -6788,7 +6809,7 @@ static void init_context_menus(void)
         text analisys code.
     */
     MSEP();
-    MRADIO("Attach vocab.txt"); // CM_G_VOCAB, 0 R
+    MRADIO("Attach vocab.txt", null_callback); // CM_G_VOCAB, 0 R
 
     /* (book)
 
@@ -6797,7 +6818,7 @@ static void init_context_menus(void)
         Attach the contents of message log to the DEBUG window.
         Used to inspect the log.
     */
-    MRADIO("Attach log"); // CM_G_LOG, 0 R
+    MRADIO("Attach log", null_callback); // CM_G_LOG, 0 R
 
     /* (book)
 
@@ -6807,14 +6828,14 @@ static void init_context_menus(void)
         patterns.
     */
     MSEP();
-    MITEM("Reset match counters"); // CM_G_CM, 0 A
+    MITEM("Reset match counters", null_callback); // CM_G_CM, 0 A
 
     /* (book)
 
         Enter debug window
 
     */
-    MITEM("Enter debug window"); // CM_G_DW, 0 A
+    MITEM("Enter debug window", null_callback); // CM_G_DW, 0 A
 
 
     /*
@@ -6924,6 +6945,156 @@ static void init_context_menus(void)
 #endif
 }
 
+enum {
+    PL_COL_FILENAME,
+    PL_COL_NRUNS,
+    PL_COL_TIME,
+    PL_COL_WORDS,
+    PL_COL_SYMBOLS,
+    PL_COL_DOUBTS,
+    PL_COL_CLASSES,
+    PL_NCOL,
+};
+
+void setup_page_list() {
+    int i, pn;
+    pageStore = gtk_list_store_new(PL_NCOL,
+                                   G_TYPE_STRING, /* filename */
+                                   G_TYPE_INT, /* runs */
+                                   G_TYPE_INT, // time
+                                   G_TYPE_INT, // words
+                                   G_TYPE_INT, // symbols
+                                   G_TYPE_INT, // doubts
+                                   G_TYPE_INT); // classes
+    pageIters = malloc(sizeof(GtkTreeIter) * npages);
+    memset(pageIters,0,sizeof(GtkTreeIter) * npages);
+
+    for (i = pn = 0; i < npages; i++) {
+        if (i > 0)
+            while (pagelist[pn++]); /* pagelist is a continuous stream
+                                    * of null-terminated strings. Skip
+                                    * to the next one.  There is
+                                    * intentionally no while body.
+                                    */
+        printf("%p %s\n",pagelist+pn,pagelist+pn);
+        gtk_list_store_insert_with_values(pageStore, pageIters + i, i,
+                                          PL_COL_FILENAME, pagelist+pn, // filename
+                                          PL_COL_NRUNS, dl_r[i],
+                                          PL_COL_TIME, dl_t[i],
+                                          PL_COL_WORDS, dl_w[i],
+                                          PL_COL_SYMBOLS, dl_ne[i],
+                                          PL_COL_DOUBTS, dl_db[i],
+                                          PL_COL_CLASSES, dl_c[i],
+                                          //PL_COL_FACT, (dl_c[i] > 0) ? (((float) dl_ne[i]) / dl_c[i]) : 1.0,
+                                          //PL_COL_RECOG, (dl_ne[i] > 0) ? (((float) dl_ne[i] - dl_db[i]) / dl_ne[i]) : 0.0,
+                                          -1);
+    }
+}
+
+void int_data_func(GtkTreeViewColumn *tree_column,
+                   GtkCellRenderer *cell,
+                   GtkTreeModel *model,
+                   GtkTreeIter *iter,
+                   gpointer colno) {
+    gchar* str;
+    gint val;
+    gtk_tree_model_get(model,iter, GPOINTER_TO_INT(colno), &val, -1);
+    str = g_strdup_printf("%d", val);
+    g_object_set(cell, "text", str, NULL);
+    g_free(str);
+}
+
+void timespan_data_func(GtkTreeViewColumn *tree_column,
+                        GtkCellRenderer *cell,
+                        GtkTreeModel *model,
+                        GtkTreeIter *iter,
+                        gpointer colno) {
+    gint val;
+
+    gtk_tree_model_get(model,iter, GPOINTER_TO_INT(colno), &val, -1);
+    g_object_set(cell, "text", ht(val), NULL);
+}
+
+void fact_data_func(GtkTreeViewColumn *tree_column,
+                    GtkCellRenderer *cell,
+                    GtkTreeModel *model,
+                    GtkTreeIter *iter,
+                    gpointer data __attribute__((unused))) {
+    gint classes, symbols;
+    gfloat val;
+    gchar* str;
+    gtk_tree_model_get(model,iter, PL_COL_CLASSES, &classes, PL_COL_SYMBOLS, &symbols, -1);
+    if (classes > 0)
+        val = ((float)symbols) / classes;
+    else
+        val = 1.0;
+    str = g_strdup_printf("%.3g%%",100*val);
+    g_object_set(cell,
+                 "text",str,
+                 "value",((gint)(100 * val)),
+                 NULL);
+    g_free(str);
+}
+void recog_data_func(GtkTreeViewColumn *tree_column,
+                     GtkCellRenderer *cell,
+                     GtkTreeModel *model,
+                     GtkTreeIter *iter,
+                     gpointer colno) {
+    gint doubts, symbols;
+    gfloat val;
+    gchar* str;
+    gtk_tree_model_get(model,iter, PL_COL_DOUBTS, &doubts, PL_COL_SYMBOLS, &symbols, -1);
+    if (symbols > 0)
+        val = ((float)symbols - doubts) / symbols;
+    else
+        val = 0.0;
+    str = g_strdup_printf("%.3g%%",100*val);
+    g_object_set(cell,
+                 "text",str,
+                 "value",((gint)(100 * val)),
+                 NULL);
+    g_free(str);
+}
+
+GtkTreeViewColumn* gtk_tree_view_column_new_with_data_func(const gchar* title,
+                                                           GtkCellRenderer* cell,
+                                                           GtkTreeCellDataFunc func,
+                                                           gpointer func_data,
+                                                           GDestroyNotify destroy,
+                                                           gboolean expands) {
+    GtkTreeViewColumn* col = gtk_tree_view_column_new();
+
+    gtk_tree_view_column_set_title(col, title);
+    gtk_tree_view_column_pack_start(col, cell, TRUE);
+    gtk_tree_view_column_set_cell_data_func(col, cell, func, func_data, destroy);
+
+    
+    g_object_set(col,
+                 "expand", expands,
+                 "resizable", TRUE,
+                 NULL);
+    /*
+    {
+        va_list args;
+        gchar* attribute;
+        gint srccol;
+        va_start(args, destroy);
+
+        attribute =  va_arg(args, gchar*);
+        gtk_tree_view_column_clear_attributes(col, cell);
+
+        while(attribute != NULL) {
+            srccol = va_arg(args, gint);
+            gtk_tree_view_column_add_attribute(col, cell, attribute, srccol);
+            attribute = va_arg(args, gchar*);
+        }
+
+        va_end(args);
+    }
+    */
+    return col;
+}
+
 /*
 
 GUI initialization.
@@ -6932,6 +7103,8 @@ GUI initialization.
 void xpreamble()
 {
 
+    if (!g_thread_supported ())
+        g_thread_init (NULL);
     /* X preamble */
     if ((batch_mode == 0) && (wnd_ready == 0)) {
         const char* displayname = gdk_get_display_arg_name();
@@ -6966,16 +7139,116 @@ void xpreamble()
         // TODO: fix batch mode to use pixmaps as appropriate.
         // xw = (use_xb) ? pm : XW;
 
-        // create the UI.
-        { 
-            GtkWidget *top = gtk_vbox_new(FALSE, 0);
-            gtk_box_pack_start(GTK_BOX(top),menubar,FALSE,FALSE,0);
-            gtk_box_pack_start(GTK_BOX(top),gtk_text_view_new(),TRUE,TRUE,0);
-            sbStatus = gtk_statusbar_new();
-            gtk_box_pack_start(GTK_BOX(top),sbStatus, FALSE,FALSE,0);
-            gtk_container_add(GTK_CONTAINER(mainwin),top);
-        }
+        GtkWidget *top = gtk_vbox_new(FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(top),menubar,FALSE,FALSE,0);
+        nbViews = gtk_notebook_new();
+        nbPage = gtk_notebook_new();
+        nbPatterns = gtk_notebook_new();
+        nbTune = gtk_notebook_new();
 
+        wPageList = gtk_text_view_new();
+
+        setup_page_list();
+        GtkWidget* tree = gtk_tree_view_new_with_model(GTK_TREE_MODEL(pageStore));
+        gtk_tree_view_append_column(GTK_TREE_VIEW(tree),
+                                    gtk_tree_view_column_new_with_attributes("File",
+                                                                             gtk_cell_renderer_text_new(),
+                                                                             "text",PL_COL_FILENAME,
+                                                                             NULL));
+        g_object_set(gtk_tree_view_get_column(GTK_TREE_VIEW(tree), 0),
+                     "resizable", TRUE, NULL);
+
+        gtk_tree_view_append_column(GTK_TREE_VIEW(tree),
+                                    gtk_tree_view_column_new_with_data_func("Runs",
+                                                                            gtk_cell_renderer_text_new(),
+                                                                            int_data_func,
+                                                                            GINT_TO_POINTER(PL_COL_NRUNS),
+                                                                            NULL,
+                                                                            FALSE));
+
+        gtk_tree_view_append_column(GTK_TREE_VIEW(tree),
+                                    gtk_tree_view_column_new_with_data_func("Time",
+                                                                            gtk_cell_renderer_text_new(),
+                                                                            timespan_data_func,
+                                                                            GINT_TO_POINTER(PL_COL_TIME),
+                                                                            NULL,
+                                                                            FALSE));
+
+        gtk_tree_view_append_column(GTK_TREE_VIEW(tree),
+                                    gtk_tree_view_column_new_with_data_func("Words",
+                                                                            gtk_cell_renderer_text_new(),
+                                                                            int_data_func,
+                                                                            GINT_TO_POINTER(PL_COL_WORDS),
+                                                                            NULL,
+                                                                            FALSE));
+
+        gtk_tree_view_append_column(GTK_TREE_VIEW(tree),
+                                    gtk_tree_view_column_new_with_data_func("Symbols",
+                                                                            gtk_cell_renderer_text_new(),
+                                                                            int_data_func,
+                                                                            GINT_TO_POINTER(PL_COL_SYMBOLS),
+                                                                            NULL,
+                                                                            FALSE));
+
+        gtk_tree_view_append_column(GTK_TREE_VIEW(tree),
+                                    gtk_tree_view_column_new_with_data_func("Doubts",
+                                                                            gtk_cell_renderer_text_new(),
+                                                                            int_data_func,
+                                                                            GINT_TO_POINTER(PL_COL_DOUBTS),
+                                                                            NULL,
+                                                                            FALSE));
+
+        gtk_tree_view_append_column(GTK_TREE_VIEW(tree),
+                                    gtk_tree_view_column_new_with_data_func("Classes",
+                                                                            gtk_cell_renderer_text_new(),
+                                                                            int_data_func,
+                                                                            GINT_TO_POINTER(PL_COL_CLASSES),
+                                                                            NULL,
+                                                                            FALSE));
+
+        gtk_tree_view_append_column(GTK_TREE_VIEW(tree),
+                                    gtk_tree_view_column_new_with_data_func("Fact",
+                                                                            gtk_cell_renderer_progress_new(),
+                                                                            fact_data_func,
+                                                                            NULL,
+                                                                            NULL,
+                                                                            TRUE));
+        gtk_tree_view_append_column(GTK_TREE_VIEW(tree),
+                                    gtk_tree_view_column_new_with_data_func("Recog",
+                                                                            gtk_cell_renderer_progress_new(),
+                                                                            recog_data_func,
+                                                                            NULL,
+                                                                            NULL,
+                                                                            TRUE));
+
+
+        GtkWidget *scroller = gtk_scrolled_window_new(NULL,NULL);
+        gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroller),GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+        gtk_container_add(GTK_CONTAINER(scroller),tree);
+        gtk_widget_show_all(scroller);
+
+        { 
+            GtkWidget* scrolled_window = gtk_scrolled_window_new (NULL, NULL);
+            WebKitWebView* web_view = WEBKIT_WEB_VIEW (webkit_web_view_new());
+            gtk_container_add(GTK_CONTAINER(scrolled_window),GTK_WIDGET(web_view));
+            mk_page_list();
+            webkit_web_view_load_html_string(web_view,text,"local://");
+            gtk_widget_show_all(scrolled_window);
+            
+            gtk_notebook_append_page(GTK_NOTEBOOK(nbViews), scrolled_window, gtk_label_new("WEBBY"));
+        }
+        gtk_notebook_append_page(GTK_NOTEBOOK(nbViews), scroller, gtk_label_new("Page List"));
+        gtk_notebook_append_page(GTK_NOTEBOOK(nbViews), gtk_text_view_new(), gtk_label_new("Page View"));
+        //gtk_notebook_append_page(GTK_NOTEBOOK(nbViews), gtk_text_view_new(), gtk_label_new("Page (Fatbits)"));
+
+        gtk_notebook_append_page(GTK_NOTEBOOK(nbViews), gtk_text_view_new(), gtk_label_new("Patterns"));
+
+        gtk_widget_show_all(nbViews);
+
+        gtk_box_pack_start(GTK_BOX(top),nbViews,TRUE,TRUE,0);
+        sbStatus = gtk_statusbar_new();
+        gtk_box_pack_start(GTK_BOX(top),sbStatus, FALSE,FALSE,0);
+        gtk_container_add(GTK_CONTAINER(mainwin),top);
         gtk_widget_show_all(mainwin);
 
         /* window ready flag */
@@ -6983,7 +7256,7 @@ void xpreamble()
     }
 
     /* initialize document windows */
-    init_dws(1);
+    // UNPATCHED: init_dws(1);
 
     /* PAGE special settings */
     //UNPATCHED: dw[PAGE].rf = MRF;

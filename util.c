@@ -2,7 +2,12 @@
 #include <execinfo.h>
 #include <stdio.h>
 
-void UNIMPLEMENTED() {
+#define DONT_DIE
+
+void real_UNIMPLEMENTED(const char* file, const char* function) {
+#ifdef DONT_DIE
+        fprintf(stderr, "Unimplemented function: %s:%s\n", file,function);
+#else
         void* symlocs[20];
         char** syms;
         int count,i;
@@ -14,4 +19,5 @@ void UNIMPLEMENTED() {
         fprintf(stderr,"Aborting\n");
         
         abort();
+#endif
 }

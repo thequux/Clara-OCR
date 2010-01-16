@@ -3086,7 +3086,7 @@ Step 1
 Save session.
 
 */
-int step_1(int reset)
+int save_session(int reset)
 {
     int r=1;
     static int st,myreset;
@@ -4402,10 +4402,10 @@ void start_ocr(int p,int s,int r)
         onlystep = s;
 
         g_idle_add(continue_ocr_thunk, NULL);
-        //if ((onlystep != OCR_SAVE) && (onlystep != OCR_LOAD)) {
+        if ((onlystep != OCR_SAVE) && (onlystep != OCR_LOAD)) {
             // UNPATCHED: button[bocr] = 1;
             //         redraw_button = bocr;
-        //}
+        }
         if (p == -1)
             ocr_all = 1;
         else {
@@ -4525,7 +4525,7 @@ void continue_ocr(void)
                before loading the new one).
         */
         case 1: if ((onlystep <= 2) || ocr_all)
-                    r = step_1(reset);
+                    r = save_session(reset);
                 else
                     r = 0;
                 break;

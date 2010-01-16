@@ -1768,7 +1768,7 @@ int load_page(int p,int reset,int bin)
     */
     x0 = dw[PAGE_LIST].x0;
     y0 = dw[PAGE_LIST].y0;
-    init_dws(0);
+    // UNPATCHED: init_dws(0);
     dw[PAGE_LIST].x0 = y0;
     dw[PAGE_LIST].y0 = y0;
 
