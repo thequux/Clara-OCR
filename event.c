@@ -31,9 +31,10 @@ event.c: GUI initialization and event handler
 #include <fcntl.h>
 #include <stdarg.h>
 #include <webkit/webkit.h>
+#include <assert.h>
 #include "common.h"
 #include "gui.h"
-
+#include "docView.h"
 #ifndef PI
 #define PI M_PI
 #endif
@@ -220,10 +221,11 @@ Menu availability flags.
 
 GtkWidget *menubar, *sbStatus,
     *nbViews, *nbPage, *nbPatterns, *nbTune,
-    *wPageList;
+    *wPageList, *wDocView;
 
 GtkListStore *pageStore;
 GtkTreeIter *pageIters = NULL;
+
 /*
 
 Menu help message and failure warning.
@@ -1268,12 +1270,6 @@ int cma(int it,int check)
     */
     if (cmenu-CM == CM_F) {
 
-        /* Load page */
-        if (it == CM_F_LOAD) {
-
-            setview(PAGE_LIST);
-            new_mclip = 0;
-        }
 
         /* save session */
         else if (it == CM_F_SAVE) {
@@ -2970,7 +2966,7 @@ int spyhole(int x,int y,int op,int et)
             display the progress of the extraction of symbols
             performed by the local binarizer.
         */
-        if (*cm_g_lb != ' ') {
+        if (get_flag(FL_SHOW_LOCALBIN_PROGRESS)) {
             if (CDW != PAGE)
                 setview(PAGE);
             redraw_document_window();
@@ -5663,14 +5659,6 @@ static void init_context_menus(void)
 
     /* (book)
 
-        Load page
-
-        Enter the page list to select a page to be loaded.
-    */
-    MITEM("Load page", null_callback); //CM_F_LOAD, 0 A
-
-    /* (book)
-
         Save session
 
         Save on disk the page session (file page.session), the patterns
@@ -6943,9 +6931,20 @@ static void init_context_menus(void)
 
     *cm_e_rescan     = 'X';
 #endif
+    
+    set_flag(FL_OMIT_FRAGMENTS, TRUE);
+    set_flag(FL_SHOW_CLASS, TRUE);
+    set_flag(FL_CURRENT_ONLY, TRUE);
+    set_flag(FL_PAGE_ONLY, FALSE);
+    set_flag(FL_ALPHABET_NUMBERS, TRUE);
+    set_flag(FL_ALPHABET_LATIN, TRUE);
+    set_flag(FL_ATTACH_LOG, TRUE);
+    set_flag(FL_RESCAN, TRUE);
+    set_flag(FL_SHOW_LOCALBIN_PROGRESS, FALSE);
 }
 
 enum {
+    PL_COL_PAGENO,
     PL_COL_FILENAME,
     PL_COL_NRUNS,
     PL_COL_TIME,
@@ -6956,40 +6955,22 @@ enum {
     PL_NCOL,
 };
 
-void setup_page_list() {
-    int i, pn;
-    pageStore = gtk_list_store_new(PL_NCOL,
-                                   G_TYPE_STRING, /* filename */
-                                   G_TYPE_INT, /* runs */
-                                   G_TYPE_INT, // time
-                                   G_TYPE_INT, // words
-                                   G_TYPE_INT, // symbols
-                                   G_TYPE_INT, // doubts
-                                   G_TYPE_INT); // classes
-    pageIters = malloc(sizeof(GtkTreeIter) * npages);
-    memset(pageIters,0,sizeof(GtkTreeIter) * npages);
 
-    for (i = pn = 0; i < npages; i++) {
-        if (i > 0)
-            while (pagelist[pn++]); /* pagelist is a continuous stream
-                                    * of null-terminated strings. Skip
-                                    * to the next one.  There is
-                                    * intentionally no while body.
-                                    */
-        printf("%p %s\n",pagelist+pn,pagelist+pn);
-        gtk_list_store_insert_with_values(pageStore, pageIters + i, i,
-                                          PL_COL_FILENAME, pagelist+pn, // filename
-                                          PL_COL_NRUNS, dl_r[i],
-                                          PL_COL_TIME, dl_t[i],
-                                          PL_COL_WORDS, dl_w[i],
-                                          PL_COL_SYMBOLS, dl_ne[i],
-                                          PL_COL_DOUBTS, dl_db[i],
-                                          PL_COL_CLASSES, dl_c[i],
-                                          //PL_COL_FACT, (dl_c[i] > 0) ? (((float) dl_ne[i]) / dl_c[i]) : 1.0,
-                                          //PL_COL_RECOG, (dl_ne[i] > 0) ? (((float) dl_ne[i] - dl_db[i]) / dl_ne[i]) : 0.0,
-                                          -1);
+void resync_pagelist(int pageno) {
+    int i = pageno;
+    if (pageStore != NULL && pageIters != NULL) {
+        gtk_list_store_set(pageStore, pageIters + i,
+                           PL_COL_NRUNS, dl_r[i],
+                           PL_COL_TIME, dl_t[i],
+                           PL_COL_WORDS, dl_w[i],
+                           PL_COL_SYMBOLS, dl_ne[i],
+                           PL_COL_DOUBTS, dl_db[i],
+                           PL_COL_CLASSES, dl_c[i],
+                           -1);
     }
 }
+
+                       
 
 void int_data_func(GtkTreeViewColumn *tree_column,
                    GtkCellRenderer *cell,
@@ -7024,14 +7005,14 @@ void fact_data_func(GtkTreeViewColumn *tree_column,
     gfloat val;
     gchar* str;
     gtk_tree_model_get(model,iter, PL_COL_CLASSES, &classes, PL_COL_SYMBOLS, &symbols, -1);
-    if (classes > 0)
+    if (symbols > 0)
         val = ((float)symbols) / classes;
     else
         val = 1.0;
-    str = g_strdup_printf("%.3g%%",100*val);
+    str = g_strdup_printf("%.2f",100*val);
     g_object_set(cell,
                  "text",str,
-                 "value",((gint)(100 * val)),
+                 //                 "value",((gint)(100 * val)),
                  NULL);
     g_free(str);
 }
@@ -7095,6 +7076,173 @@ GtkTreeViewColumn* gtk_tree_view_column_new_with_data_func(const gchar* title,
     return col;
 }
 
+/* handlers */
+
+void page_list_callback(GtkTreeSelection* sel, gpointer userdata) {
+    GtkTreeModel* model;
+    GtkTreeIter it;
+    if(gtk_tree_selection_get_selected(sel,&model,&it)) {
+        int val;
+        gtk_tree_model_get(model,&it,PL_COL_PAGENO,&val, -1);
+        start_ocr(val,OCR_LOAD,0);
+    }
+}
+
+static GtkWidget* create_page_list_window() {
+    int i, pn;
+    pageStore = gtk_list_store_new(PL_NCOL,
+                                   G_TYPE_INT,
+                                   G_TYPE_STRING, /* filename */
+                                   G_TYPE_INT, /* runs */
+                                   G_TYPE_INT, // time
+                                   G_TYPE_INT, // words
+                                   G_TYPE_INT, // symbols
+                                   G_TYPE_INT, // doubts
+                                   G_TYPE_INT); // classes
+    pageIters = malloc(sizeof(GtkTreeIter) * npages);
+    memset(pageIters,0,sizeof(GtkTreeIter) * npages);
+
+    for (i = pn = 0; i < npages; i++) {
+        if (i > 0)
+            while (pagelist[pn++]); /* pagelist is a continuous stream
+                                    * of null-terminated strings. Skip
+                                    * to the next one.  There is
+                                    * intentionally no while body.
+                                    */
+        printf("%p %s\n",pagelist+pn,pagelist+pn);
+        gtk_list_store_insert_with_values(pageStore, pageIters + i, i,
+                                          PL_COL_PAGENO, i,
+                                          PL_COL_FILENAME, pagelist+pn, // filename
+                                          PL_COL_NRUNS, dl_r[i],
+                                          PL_COL_TIME, dl_t[i],
+                                          PL_COL_WORDS, dl_w[i],
+                                          PL_COL_SYMBOLS, dl_ne[i],
+                                          PL_COL_DOUBTS, dl_db[i],
+                                          PL_COL_CLASSES, dl_c[i],
+                                          //PL_COL_FACT, (dl_c[i] > 0) ? (((float) dl_ne[i]) / dl_c[i]) : 1.0,
+                                          //PL_COL_RECOG, (dl_ne[i] > 0) ? (((float) dl_ne[i] - dl_db[i]) / dl_ne[i]) : 0.0,
+                                          -1);
+    }
+
+
+    GtkWidget* tree = gtk_tree_view_new_with_model(GTK_TREE_MODEL(pageStore));
+    gtk_tree_view_append_column(GTK_TREE_VIEW(tree),
+                                gtk_tree_view_column_new_with_attributes("File",
+                                                                         gtk_cell_renderer_text_new(),
+                                                                         "text",PL_COL_FILENAME,
+                                                                         NULL));
+    g_object_set(gtk_tree_view_get_column(GTK_TREE_VIEW(tree), 0),
+                 "resizable", TRUE, NULL);
+    
+    gtk_tree_view_append_column(GTK_TREE_VIEW(tree),
+                                gtk_tree_view_column_new_with_data_func("Runs",
+                                                                        gtk_cell_renderer_text_new(),
+                                                                        int_data_func,
+                                                                        GINT_TO_POINTER(PL_COL_NRUNS),
+                                                                        NULL,
+                                                                        FALSE));
+    
+    gtk_tree_view_append_column(GTK_TREE_VIEW(tree),
+                                gtk_tree_view_column_new_with_data_func("Time",
+                                                                        gtk_cell_renderer_text_new(),
+                                                                        timespan_data_func,
+                                                                        GINT_TO_POINTER(PL_COL_TIME),
+                                                                        NULL,
+                                                                        FALSE));
+    
+    gtk_tree_view_append_column(GTK_TREE_VIEW(tree),
+                                gtk_tree_view_column_new_with_data_func("Words",
+                                                                        gtk_cell_renderer_text_new(),
+                                                                        int_data_func,
+                                                                        GINT_TO_POINTER(PL_COL_WORDS),
+                                                                        NULL,
+                                                                        FALSE));
+    
+    gtk_tree_view_append_column(GTK_TREE_VIEW(tree),
+                                gtk_tree_view_column_new_with_data_func("Symbols",
+                                                                        gtk_cell_renderer_text_new(),
+                                                                        int_data_func,
+                                                                        GINT_TO_POINTER(PL_COL_SYMBOLS),
+                                                                        NULL,
+                                                                        FALSE));
+    
+    gtk_tree_view_append_column(GTK_TREE_VIEW(tree),
+                                gtk_tree_view_column_new_with_data_func("Doubts",
+                                                                        gtk_cell_renderer_text_new(),
+                                                                        int_data_func,
+                                                                        GINT_TO_POINTER(PL_COL_DOUBTS),
+                                                                        NULL,
+                                                                        FALSE));
+    
+    gtk_tree_view_append_column(GTK_TREE_VIEW(tree),
+                                gtk_tree_view_column_new_with_data_func("Classes",
+                                                                        gtk_cell_renderer_text_new(),
+                                                                        int_data_func,
+                                                                        GINT_TO_POINTER(PL_COL_CLASSES),
+                                                                        NULL,
+                                                                        FALSE));
+    
+    gtk_tree_view_append_column(GTK_TREE_VIEW(tree),
+                                gtk_tree_view_column_new_with_data_func("Fact",
+                                                                        gtk_cell_renderer_text_new(),
+                                                                        fact_data_func,
+                                                                        NULL,
+                                                                        NULL,
+                                                                        FALSE));
+    gtk_tree_view_append_column(GTK_TREE_VIEW(tree),
+                                gtk_tree_view_column_new_with_data_func("Recog",
+                                                                        gtk_cell_renderer_progress_new(),
+                                                                        recog_data_func,
+                                                                        NULL,
+                                                                        NULL,
+                                                                        TRUE));
+    GtkTreeSelection* sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(tree));
+    gtk_tree_selection_set_mode(sel, GTK_SELECTION_BROWSE);
+    
+    g_signal_connect(sel, "changed", G_CALLBACK(page_list_callback), NULL);
+    GtkWidget *scroller = gtk_scrolled_window_new(NULL,NULL);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroller),GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+    gtk_container_add(GTK_CONTAINER(scroller),tree);
+    gtk_widget_show_all(scroller);
+    return scroller;
+    //
+}
+
+
+void redraw_document_window() {
+    clara_doc_view_new_page(CLARA_DOC_VIEW(wDocView));
+    UNIMPLEMENTED();
+}
+
+
+static GtkWidget* create_page_view_window(void) {
+    GtkWidget *vp1, *vp2, *wText, *wInfo, *scroller;
+    
+
+    wDocView = clara_doc_view_new();
+    scroller = gtk_scrolled_window_new(NULL,NULL);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroller),GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+    //gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(scroller),wDocView);
+    gtk_container_add(GTK_CONTAINER(scroller),wDocView);
+
+    vp1 = gtk_vpaned_new();
+    vp2 = gtk_vpaned_new();
+
+    wText = gtk_text_view_new();
+    wInfo = gtk_text_view_new();
+
+    
+
+    gtk_paned_add1(GTK_PANED(vp1), scroller);
+    gtk_paned_add2(GTK_PANED(vp1),vp2);
+    gtk_paned_add1(GTK_PANED(vp2), wText);
+    gtk_paned_add2(GTK_PANED(vp2), wInfo);
+    
+    gtk_widget_show_all(vp1);
+    return vp1;
+    
+}
+
 /*
 
 GUI initialization.
@@ -7148,85 +7296,6 @@ void xpreamble()
 
         wPageList = gtk_text_view_new();
 
-        setup_page_list();
-        GtkWidget* tree = gtk_tree_view_new_with_model(GTK_TREE_MODEL(pageStore));
-        gtk_tree_view_append_column(GTK_TREE_VIEW(tree),
-                                    gtk_tree_view_column_new_with_attributes("File",
-                                                                             gtk_cell_renderer_text_new(),
-                                                                             "text",PL_COL_FILENAME,
-                                                                             NULL));
-        g_object_set(gtk_tree_view_get_column(GTK_TREE_VIEW(tree), 0),
-                     "resizable", TRUE, NULL);
-
-        gtk_tree_view_append_column(GTK_TREE_VIEW(tree),
-                                    gtk_tree_view_column_new_with_data_func("Runs",
-                                                                            gtk_cell_renderer_text_new(),
-                                                                            int_data_func,
-                                                                            GINT_TO_POINTER(PL_COL_NRUNS),
-                                                                            NULL,
-                                                                            FALSE));
-
-        gtk_tree_view_append_column(GTK_TREE_VIEW(tree),
-                                    gtk_tree_view_column_new_with_data_func("Time",
-                                                                            gtk_cell_renderer_text_new(),
-                                                                            timespan_data_func,
-                                                                            GINT_TO_POINTER(PL_COL_TIME),
-                                                                            NULL,
-                                                                            FALSE));
-
-        gtk_tree_view_append_column(GTK_TREE_VIEW(tree),
-                                    gtk_tree_view_column_new_with_data_func("Words",
-                                                                            gtk_cell_renderer_text_new(),
-                                                                            int_data_func,
-                                                                            GINT_TO_POINTER(PL_COL_WORDS),
-                                                                            NULL,
-                                                                            FALSE));
-
-        gtk_tree_view_append_column(GTK_TREE_VIEW(tree),
-                                    gtk_tree_view_column_new_with_data_func("Symbols",
-                                                                            gtk_cell_renderer_text_new(),
-                                                                            int_data_func,
-                                                                            GINT_TO_POINTER(PL_COL_SYMBOLS),
-                                                                            NULL,
-                                                                            FALSE));
-
-        gtk_tree_view_append_column(GTK_TREE_VIEW(tree),
-                                    gtk_tree_view_column_new_with_data_func("Doubts",
-                                                                            gtk_cell_renderer_text_new(),
-                                                                            int_data_func,
-                                                                            GINT_TO_POINTER(PL_COL_DOUBTS),
-                                                                            NULL,
-                                                                            FALSE));
-
-        gtk_tree_view_append_column(GTK_TREE_VIEW(tree),
-                                    gtk_tree_view_column_new_with_data_func("Classes",
-                                                                            gtk_cell_renderer_text_new(),
-                                                                            int_data_func,
-                                                                            GINT_TO_POINTER(PL_COL_CLASSES),
-                                                                            NULL,
-                                                                            FALSE));
-
-        gtk_tree_view_append_column(GTK_TREE_VIEW(tree),
-                                    gtk_tree_view_column_new_with_data_func("Fact",
-                                                                            gtk_cell_renderer_progress_new(),
-                                                                            fact_data_func,
-                                                                            NULL,
-                                                                            NULL,
-                                                                            TRUE));
-        gtk_tree_view_append_column(GTK_TREE_VIEW(tree),
-                                    gtk_tree_view_column_new_with_data_func("Recog",
-                                                                            gtk_cell_renderer_progress_new(),
-                                                                            recog_data_func,
-                                                                            NULL,
-                                                                            NULL,
-                                                                            TRUE));
-
-
-        GtkWidget *scroller = gtk_scrolled_window_new(NULL,NULL);
-        gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroller),GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-        gtk_container_add(GTK_CONTAINER(scroller),tree);
-        gtk_widget_show_all(scroller);
-
         { 
             GtkWidget* scrolled_window = gtk_scrolled_window_new (NULL, NULL);
             WebKitWebView* web_view = WEBKIT_WEB_VIEW (webkit_web_view_new());
@@ -7237,8 +7306,8 @@ void xpreamble()
             
             gtk_notebook_append_page(GTK_NOTEBOOK(nbViews), scrolled_window, gtk_label_new("WEBBY"));
         }
-        gtk_notebook_append_page(GTK_NOTEBOOK(nbViews), scroller, gtk_label_new("Page List"));
-        gtk_notebook_append_page(GTK_NOTEBOOK(nbViews), gtk_text_view_new(), gtk_label_new("Page View"));
+        gtk_notebook_append_page(GTK_NOTEBOOK(nbViews), create_page_list_window(), gtk_label_new("Page List"));
+        gtk_notebook_append_page(GTK_NOTEBOOK(nbViews), create_page_view_window(), gtk_label_new("Page View"));
         //gtk_notebook_append_page(GTK_NOTEBOOK(nbViews), gtk_text_view_new(), gtk_label_new("Page (Fatbits)"));
 
         gtk_notebook_append_page(GTK_NOTEBOOK(nbViews), gtk_text_view_new(), gtk_label_new("Patterns"));

@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <execinfo.h>
 #include <stdio.h>
+#include <assert.h>
+#include "common.h"
 
 #define DONT_DIE
 
@@ -20,4 +22,16 @@ void real_UNIMPLEMENTED(const char* file, const char* function) {
         
         abort();
 #endif
+}
+
+
+gboolean flags[FL_NFLAGS];
+
+void set_flag(flag_t fl, gboolean value) {
+        assert(fl >= 0 && fl < FL_NFLAGS);
+        flags[fl] = value;
+}
+gboolean get_flag(flag_t fl) {
+        assert(fl >= 0 && fl < FL_NFLAGS);
+        return flags[fl];
 }

@@ -113,9 +113,10 @@ LINKLIB = -lm
 
 DFLAGS = -web
 
-OBJS = clara.o skel.o event.o symbol.o pattern.o pbm2cl.o cml.o\
+OBJS = clara_marshalers.o \
+       clara.o skel.o event.o symbol.o pattern.o pbm2cl.o cml.o\
        welcome.o util.o alphabet.o revision.o build.o\
-       consist.o pgmblock.o preproc.o obd.o html.o redraw.o
+       consist.o pgmblock.o preproc.o obd.o html.o redraw.o docView.o
 # removed: html.o redraw.o
 
 SOURCES = $(OBJS:%.o=%.c)
@@ -199,7 +200,7 @@ clean:
 	rm -f www/*~
 	rm -f doubts/*
 	rm -f manager
-
+	rm -f clara_marshalers.c clara_marshalers.h
 stats:
 	wc *.c *.h *.pl Makefile CHANGELOG | sort -n
 
@@ -209,6 +210,11 @@ TAGS: $(SOURCES) | hush
 hush: hush.c
 	@$(CC) -o $@ $<
 
-%.o: %.c | hush
+%.o: %.c | hush clara_marshalers.h
 	-@test -d .deps || mkdir -p .deps
 	@$(HUSH) "Compiling $<" $(CC) -MMD -MF .deps/$*.d -c -o $@ $< $(CFLAGS)
+
+clara_marshalers.h: clara_marshalers.list
+	glib-genmarshal --header $< >$@
+clara_marshalers.c: clara_marshalers.list
+	glib-genmarshal --body $< >$@

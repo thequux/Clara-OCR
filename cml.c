@@ -1736,7 +1736,7 @@ int load_page(int p,int reset,int bin)
 
         /* PAGE only is mandatory for graymaps */
         if (pm_t == 8)
-            *cm_o_pgo = 'X';
+                set_flag(FL_PAGE_ONLY, TRUE);
 
         /* no predefined zone */
         zones = 0;
@@ -1783,7 +1783,7 @@ int load_page(int p,int reset,int bin)
     dl_lr[p] = ocr_r;
     dl_w[p] = words;
     dl_c[p] = classes;
-
+    resync_pagelist(p);
     /* finished */
     sess_changed = 0;
     return(0);

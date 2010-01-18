@@ -5091,9 +5091,6 @@ void redraw_inp_str(void)
 }
 
 #endif
-void redraw_document_window() {
-    UNIMPLEMENTED();
-}
 void redraw_flea() {
     UNIMPLEMENTED();
 }

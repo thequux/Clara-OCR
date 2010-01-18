@@ -4,3 +4,20 @@ DFW: Display Font Width
 DFH: Display Font Height
 
 CDW: Current Document Window
+
+HTML links:
+defined in html.c:4165
+
+load/<n>
+        load page <n>
+
+
+flags:
+cm_a_latin      -> FL_ALPHABET_LATIN
+cm_a_number     -> FL_ALPHABET_NUMBERS
+cm_e_rescan     -> FL_RESCAN
+cm_g_log        -> FL_ATTACH_LOG
+cm_o_curr       -> FL_CURRENT_ONLY
+cm_o_pgo        -> FL_PAGE_ONLY
+cm_v_of         -> FL_OMIT_FRAGMENTS
+cm_v_cc         -> FL_SHOW_CLASS

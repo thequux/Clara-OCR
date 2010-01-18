@@ -25,7 +25,7 @@ common.h: Shared declarations
 #include <stdio.h>
 #include <time.h>
 #include <sys/time.h>
-
+#include <glib.h>
 /* version number */
 extern char *version;
 
@@ -177,6 +177,20 @@ handled.
 #define C_MASK 3
 #define D_MASK 32
 extern char *cschema;
+
+typedef enum {
+    FL_ALPHABET_LATIN,
+    FL_ALPHABET_NUMBERS,
+    FL_ATTACH_LOG,
+    FL_CURRENT_ONLY,
+    FL_OMIT_FRAGMENTS,
+    FL_PAGE_ONLY,
+    FL_RESCAN,
+    FL_SHOW_CLASS,
+    FL_SHOW_LOCALBIN_PROGRESS, // cm_g_lb
+
+    FL_NFLAGS,
+} flag_t;
 
 /*
 
@@ -2093,6 +2107,10 @@ char *mkpath(char *d,char *a,char *b);
 void build_internal_patterns(void);
 int obd_main (int argc, char **argv);
 char* ht(int secs);
+void set_flag(flag_t flag, gboolean value);
+gboolean get_flag(flag_t flag);
+void resync_pagelist(int pageno);
+
 
 #define UNIMPLEMENTED() real_UNIMPLEMENTED(__FILE__,__FUNCTION__)
 void real_UNIMPLEMENTED();
