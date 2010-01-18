@@ -7216,7 +7216,7 @@ void redraw_document_window() {
 
 
 static GtkWidget* create_page_view_window(void) {
-    GtkWidget *vp1, *vp2, *wText, *wInfo, *scroller;
+    GtkWidget *vp1, *vp2, *wText, *wInfo, *scroller, *vb1, *wZoom;
     
 
     wDocView = clara_doc_view_new();
@@ -7224,6 +7224,15 @@ static GtkWidget* create_page_view_window(void) {
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroller),GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
     //gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(scroller),wDocView);
     gtk_container_add(GTK_CONTAINER(scroller),wDocView);
+
+    vb1 = gtk_vbox_new(FALSE, 2);
+    GtkAdjustment *zoomAdj;
+    g_object_get(wDocView, "zoom-adjustment", &zoomAdj, NULL);
+    wZoom = gtk_hscale_new(zoomAdj);
+    g_object_set(wZoom, "digits", 2, NULL);
+    gtk_box_pack_start(GTK_BOX(vb1),wZoom,FALSE,FALSE,0);
+    gtk_box_pack_start(GTK_BOX(vb1),gtk_hseparator_new(),FALSE,FALSE,0);
+    gtk_box_pack_start(GTK_BOX(vb1),scroller,TRUE,TRUE,0);
 
     vp1 = gtk_vpaned_new();
     vp2 = gtk_vpaned_new();
@@ -7233,7 +7242,7 @@ static GtkWidget* create_page_view_window(void) {
 
     
 
-    gtk_paned_add1(GTK_PANED(vp1), scroller);
+    gtk_paned_add1(GTK_PANED(vp1), vb1);
     gtk_paned_add2(GTK_PANED(vp1),vp2);
     gtk_paned_add1(GTK_PANED(vp2), wText);
     gtk_paned_add2(GTK_PANED(vp2), wInfo);

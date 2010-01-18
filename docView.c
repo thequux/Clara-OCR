@@ -19,7 +19,7 @@ struct _ClaraDocViewPrivate {
         GtkAdjustment* hadjustment;
         GtkAdjustment* vadjustment;
 
-        gdouble oldx, oldy;
+        gdouble oldx, oldy, oldzoom;
         gboolean use_position;
         gboolean keep_position;
 };
@@ -140,7 +140,7 @@ static void clara_doc_view_class_init(ClaraDocViewClass *klass) {
 static void clara_doc_view_init(ClaraDocView* self) {
         ClaraDocViewPrivate* priv = CLARA_DOC_VIEW_GET_PRIVATE(self);
         priv->zoom_adj = g_object_ref_sink(gtk_adjustment_new(1.0, 0.1, 2.0, //val,  min, max
-                                                              0.1, 0, 0));  // step-inc, page-inc, page-size
+                                                              0, 0, 0));  // step-inc, page-inc, page-size
         g_signal_connect(priv->zoom_adj, "value-changed", G_CALLBACK(clara_doc_view_zoom_changed_cb), self);
         clara_doc_view_set_adjustment(self, NULL, GTK_ORIENTATION_HORIZONTAL, FALSE);
         clara_doc_view_set_adjustment(self, NULL, GTK_ORIENTATION_VERTICAL, FALSE);
@@ -272,7 +272,9 @@ void clara_doc_view_new_page(ClaraDocView* self) {
 static void clara_doc_view_zoom_changed_cb(GtkAdjustment* adj, ClaraDocView* self){
         ClaraDocViewPrivate *priv = CLARA_DOC_VIEW_GET_PRIVATE(self);
         priv->keep_position = TRUE;
+        priv->use_position = FALSE;
         clara_doc_view_adjust_position(self, GTK_ANCHOR_CENTER);
+        gtk_widget_queue_draw(GTK_WIDGET(self));
 }
 static void clara_doc_view_adjust_position(ClaraDocView* self, GtkAnchorType anchor) {
         ClaraDocViewPrivate *priv = CLARA_DOC_VIEW_GET_PRIVATE(self);
@@ -413,36 +415,40 @@ static void clara_doc_view_viewport_changed(GtkAdjustment* adj, ClaraDocView* se
                 gdouble zoom;
                 clara_doc_view_calc_viewport(self, &rect, &zoom);
 #define SCR(x) ((int)((x) * zoom))
-                if (priv->use_position) {
+                // floating point equality is actually CORRECT here. 
+                // If it changed, even by F_EPSILON, we might need a redraw. Determining for sure involves actually redrawing, so...
+                if (priv->use_position && priv->oldzoom == zoom) {
                         gint dx = SCR(priv->oldx) - SCR(rect.x),
                                 dy = SCR(priv->oldy) - SCR(rect.y);
 #undef SCR
                         if (dx != 0 || dy != 0)
                                 gdk_window_scroll(widget->window,
                                                   dx, dy);
+                        gdk_window_process_updates(widget->window, TRUE);
                                 
                 } else {
                         gtk_widget_queue_draw(GTK_WIDGET(self));
                 }
-                gdk_window_process_updates(widget->window, TRUE);
                 
                 priv->keep_position = TRUE;
                 priv->oldx = rect.x;
                 priv->oldy = rect.y;
-                priv->use_position = TRUE;
         }
 
 }
 
 static gboolean clara_doc_view_expose(GtkWidget *doc, GdkEventExpose *event) {
         ClaraDocView* self = CLARA_DOC_VIEW(doc);
-        DblRectangle area;
+        ClaraDocViewPrivate* priv = CLARA_DOC_VIEW_GET_PRIVATE(self);
+        DblRectangle vp;
         gdouble zoom;
         cairo_t *cr;
 
+        priv->use_position = TRUE;
+
         // figure out what we want to draw...
-        clara_doc_view_calc_viewport(self,&area,&zoom);
-        
+        clara_doc_view_calc_viewport(self,&vp,&zoom);
+        priv->oldzoom = zoom;
         cr = gdk_cairo_create(doc->window);
         cairo_rectangle(cr, 
                         event->area.x, event->area.y,
@@ -450,7 +456,7 @@ static gboolean clara_doc_view_expose(GtkWidget *doc, GdkEventExpose *event) {
         cairo_clip(cr);
 
         cairo_scale(cr,zoom,zoom);
-        cairo_translate(cr,-area.x, -area.y);
+        cairo_translate(cr,-vp.x, -vp.y);
 
         cairo_rectangle(cr,0,0,XRES,YRES);
         cairo_set_source_rgb(cr,1,1,1);
@@ -469,7 +475,12 @@ static gboolean clara_doc_view_expose(GtkWidget *doc, GdkEventExpose *event) {
                 // for each symbol...
                 int c;
                 c = ps[i];
-                draw_symbol(cr,DV_BBOX | DV_CLOSURE_KNOWN, mc+c);
+                sdesc* sym = mc + c;
+                if ((sym->l <= vp.x + vp.width) &&
+                    (sym->r >= vp.x) &&
+                    (sym->t <= vp.y + vp.height) &&
+                    (sym->b >= vp.y))
+                        draw_symbol(cr,DV_BBOX | DV_CLOSURE_KNOWN, mc+c);
         }
         cairo_destroy(cr);
     return FALSE;
