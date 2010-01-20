@@ -3762,12 +3762,12 @@ int classify(int c,int bmpcmp(int,int,int,int),int mode)
     static int direct=1;
 
     /* flags for display */
-    int wait_key = ((*cm_v_mat_k != ' ') ||
-                    (*cm_v_cmp_k != ' '));
-    int display_cmp = ((*cm_v_cmp != ' ') ||
-                       (*cm_v_cmp_k != ' '));
-    int display_mat = ((*cm_v_mat != ' ') ||
-                       (*cm_v_mat_k != ' '));
+    int wait_key = (get_flag(FL_SHOW_MATCHES_AND_WAIT) ||
+                    get_flag(FL_SHOW_COMPARISONS_AND_WAIT));
+    int display_cmp = (get_flag(FL_SHOW_COMPARISONS) ||
+		       get_flag(FL_SHOW_COMPARISONS_AND_WAIT));
+    int display_mat = (get_flag(FL_SHOW_MATCHES) ||
+		       get_flag(FL_SHOW_MATCHES_AND_WAIT));
 
     /* reset state */
     if (c < 0) {
@@ -3853,7 +3853,7 @@ int classify(int c,int bmpcmp(int,int,int,int),int mode)
         else if (this_pattern >= 0) {
             topk = k = id2idx(this_pattern);
         }
-        else if ((justone) || (*cm_e_rescan != ' ')) {
+        else if ((justone) || get_flag(FL_RESCAN)) {
             k = 0;
             topk = topp;
         }

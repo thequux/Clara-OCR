@@ -1395,7 +1395,7 @@ char *dwname(int s)
 
     if (s == PAGE) {
 
-        if (*cm_d_rs != ' ') {
+        if (get_flag(FL_REPORT_SCALE)) {
             snprintf(p,25,"page 1:%d",dw[PAGE].rf);
             p[24] = 0;
             return(p);
@@ -1777,7 +1777,7 @@ void mk_page_symbol(int c)
         snprintf(mba,MMB,"symbol %d from word %d",c,d);
     show_hint(0,mba);
 
-    if (*cm_v_wclip == 'X')
+    if (get_flag(FL_SHOW_WEBCLIP))
         wrmc8(curr_mc,NULL,NULL);
 
     /* HTML headings */
@@ -1785,7 +1785,7 @@ void mk_page_symbol(int c)
 
     /* symbol main properties */
     m = mc + c;
-    if (*cm_v_wclip == 'X')
+    if (get_flag(FL_SHOW_WEBCLIP))
         totext("<IMG SRC=internal><BR>\n");
     if ((m->tr == NULL) || (((m->tr)->t) == NULL))
         totext("<INPUT TYPE=TEXT VALUE=\"\"><BR>\n");
@@ -2276,7 +2276,7 @@ int cmp_pattern(int i,int j)
     d = pattern + j;
 
     /* first criterion is the source */
-    if (*cm_e_sp != ' ') {
+    if (get_flag(FL_PATSORT_PAGE)) {
         if (c->d == NULL) {
             if (d->d != NULL)
                 return(-1);
@@ -2290,7 +2290,7 @@ int cmp_pattern(int i,int j)
     }
 
     /* second criterion is the number of matches */
-    if (*cm_e_sm != ' ') {
+    if (get_flag(FL_PATSORT_MATCHES)) {
         if (c->cm > d->cm)
             return(-1);
         else if (c->cm < d->cm)
@@ -2298,7 +2298,7 @@ int cmp_pattern(int i,int j)
     }
 
     /* third criterion is the transliteration */
-    if (*cm_e_st != ' ') {
+    if (get_flag(FL_PATSORT_TRANSLIT)) {
         if (c->tr == NULL) {
             if (d->tr != NULL)
                 return(-1);
@@ -2312,7 +2312,7 @@ int cmp_pattern(int i,int j)
     }
 
     /* third criterion is the number of pixels */
-    if (*cm_e_sn != ' ') {
+    if (get_flag(FL_PATSORT_NPIXELS)) {
         if (c->bp < d->bp)
             return(-1);
         else if (c->bp > d->bp)
@@ -2320,7 +2320,7 @@ int cmp_pattern(int i,int j)
     }
 
     /* fourth criterion is the width */
-    if (*cm_e_sw != ' ') {
+    if (get_flag(FL_PATSORT_WIDTH)) {
         if (c->bw < d->bw)
             return(-1);
         else if (c->bw > d->bw)
@@ -2328,7 +2328,7 @@ int cmp_pattern(int i,int j)
     }
 
     /* fifth criterion is the height */
-    if (*cm_e_sh != ' ') {
+    if (get_flag(FL_PATSORT_HEIGHT)) {
         if (c->bh < d->bh)
             return(-1);
         else if (c->bh > d->bh)
@@ -2390,7 +2390,7 @@ void mk_pattern_list(void)
     for (k=0; k<=topp; ++k) {
 
         /* ignore fragments, if requested */
-        if ((*cm_v_of != ' ') && (pattern[k].f & F_FRAG))
+        if (get_flag(FL_OMIT_FRAGMENTS) && (pattern[k].f & F_FRAG))
             continue;
 
         d = pattern + slist[k]; 
@@ -2691,7 +2691,7 @@ void mk_pattern_props(void)
     totext("Pattern %d (id %d):<BR>",cdfc,s->id);
 
     /* include the web clip */
-    if (*cm_v_wclip != ' ') {
+    if (get_flag(FL_SHOW_WEBCLIP)) {
         /*
         if (tp) {
             wrmc8(pattern[cdfc].e,NULL,NULL);
@@ -2852,12 +2852,12 @@ void mk_debug(void)
     text[0] = 0;
 
     /* attach vocabulary */
-    if (*cm_g_vocab != ' ') {
+    if (get_flag(FL_ATTACH_VOCAB)) {
         load_vocab("vocab.txt");
     }
 
     /* attach debug messages */
-    else if (*cm_g_log != ' ') {
+    else if (get_flag(FL_ATTACH_LOG)) {
         if (dbm != NULL)
             totext(dbm);
     }

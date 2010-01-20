@@ -729,7 +729,7 @@ void right(void)
         if (topp >= 0) {
 
             /* find the next untransliterated pattern */
-            if (*cm_e_od != ' ') {
+            if (get_flag(FL_ONLY_DOUBTS))
                 while ((++cdfc <= topp) &&
                        (pattern[cdfc].tr != NULL));
                 if (cdfc > topp)
@@ -5725,7 +5725,7 @@ static void init_context_menus(void)
         PATTERN or the PATTERN PROPS windows will move to the next
         or the previous untransliterated patterns.
     */
-    MCHECK("Only doubts", null_callback); // CM_E_DOUBTS, 0 B
+    MCHECK("Only doubts", null_callback); // CM_E_OD, 0 B
 
     /* (book)
 
@@ -5864,7 +5864,7 @@ static void init_context_menus(void)
 
         Set the pattern type for all patterns marked as "other".
     */
-    MITEM("Set pattern type", null_callback); //CM_E_SETPT, 0 A
+    MITEM("Set pattern type", null_callback); // CM_E_SETPT, 0 A
 
     /* (book)
 
@@ -6829,122 +6829,6 @@ static void init_context_menus(void)
     */
     MITEM("Enter debug window", null_callback); // CM_G_DW, 0 A
 
-
-    /*
-
-        Assign menu flags to the menu labels.
-
-    */
-#if 0
-    /* edit menu */
-    cm_e_od      = F(CM_E_DOUBTS);
-    cm_e_rescan  = F(CM_E_RESCAN);
-    cm_e_pp      = F(CM_E_PP);
-    cm_e_pp_c    = F(CM_E_PP_C);
-    cm_e_fill    = F(CM_E_FILL);
-    cm_e_fill_c  = F(CM_E_FILL_C);
-    cm_e_sm      = F(CM_E_SM);
-    cm_e_sp      = F(CM_E_SP);
-    cm_e_st      = F(CM_E_ST);
-    cm_e_sw      = F(CM_E_SW);
-    cm_e_sh      = F(CM_E_SH);
-    cm_e_sn      = F(CM_E_SN);
-    cm_e_ac      = F(CM_E_AC);
-
-    /* view menu */
-    cm_v_small    = F(CM_V_SMALL);
-    cm_v_medium   = F(CM_V_MEDIUM);
-    cm_v_large    = F(CM_V_LARGE);
-    cm_v_def      = F(CM_V_DEF);
-    cm_v_hide     = F(CM_V_HIDE);
-    cm_v_of       = F(CM_V_OF);
-    cm_v_wclip    = F(CM_V_WCLIP);
-    cm_v_map      = F(CM_V_MAP);
-    cm_v_vhs      = F(CM_V_VHS);
-    cm_v_cc       = F(CM_V_CC);
-    cm_v_mat      = F(CM_V_MAT);
-    cm_v_mat_k    = F(CM_V_MAT_K);
-    cm_v_cmp_k    = F(CM_V_CMP_K);
-    cm_v_cmp      = F(CM_V_CMP);
-    cm_v_st       = F(CM_V_ST);
-
-    /* options menu */
-    cm_o_dkeys   = F(CM_O_DKEYS);
-    cm_o_amenu   = F(CM_O_AMENU);
-    cm_o_curr    = F(CM_O_CURR);
-    cm_o_all     = F(CM_O_ALL);
-    cm_o_pgo     = F(CM_O_PGO);
-
-    /* alphabets menu */
-    cm_a_arabic    = F(CM_A_ARABIC);
-    cm_a_cyrillic  = F(CM_A_CYRILLIC);
-    cm_a_greek     = F(CM_A_GREEK);
-    cm_a_hebrew    = F(CM_A_HEBREW);
-    cm_a_kana      = F(CM_A_KANA);
-    cm_a_latin     = F(CM_A_LATIN);
-    cm_a_ideogram  = F(CM_A_IDEOGRAM);
-    cm_a_number    = F(CM_A_NUMBER);
-
-    /* debug menu */
-    cm_g_align  = F(CM_G_ALIGN);
-    cm_g_lb     = F(CM_G_LB);
-    cm_g_abagar = F(CM_G_ABAGAR);
-    cm_g_glines = F(CM_G_GLINES);
-    cm_g_bo     = F(CM_G_BO);
-    cm_g_io     = F(CM_G_IO);
-    cm_g_sum    = F(CM_G_SUM);
-    cm_g_vocab  = F(CM_G_VOCAB);
-    cm_g_log    = F(CM_G_LOG);
-
-    /* PAGE menu */
-    cm_d_pixels   = F(CM_D_PIXELS);
-    cm_d_closures = F(CM_D_CLOSURES);
-    cm_d_symbols  = F(CM_D_SYMBOLS);
-    cm_d_words    = F(CM_D_WORDS);
-    cm_d_ptype    = F(CM_D_PTYPE);
-    cm_d_rs      = F(CM_D_RS);
-    cm_d_bb      = F(CM_D_BB);
-
-    /* PAGE (fatbits) menu */
-    cm_b_skel     = F(CM_B_SKEL);
-    cm_b_border   = F(CM_B_BORDER);
-    cm_b_hs       = F(CM_B_HS);
-    cm_b_hb       = F(CM_B_HB);
-#endif
-#if 0
-    /* initial values */
-    if (RW < 0) {
-        *cm_v_hide = 'X';
-        RW = - RW;
-    }
-    if (dkeys) {
-        *cm_o_dkeys = 'X';
-        RW = - RW;
-    }
-
-    /* these are on by default */
-    *cm_v_of         = 'X';
-    *cm_v_cc         = 'X';
-
-    *cm_o_curr       = 'X';
-
-    *cm_a_number     = 'X';
-    *cm_a_latin      = 'X';
-
-    *cm_g_log        = 'X';
-
-    *cm_e_rescan     = 'X';
-#endif
-    
-    set_flag(FL_OMIT_FRAGMENTS, TRUE);
-    set_flag(FL_SHOW_CLASS, TRUE);
-    set_flag(FL_CURRENT_ONLY, TRUE);
-    set_flag(FL_PAGE_ONLY, FALSE);
-    set_flag(FL_ALPHABET_NUMBERS, TRUE);
-    set_flag(FL_ALPHABET_LATIN, TRUE);
-    set_flag(FL_ATTACH_LOG, TRUE);
-    set_flag(FL_RESCAN, TRUE);
-    set_flag(FL_SHOW_LOCALBIN_PROGRESS, FALSE);
 }
 
 enum {
@@ -7215,9 +7099,10 @@ static GtkWidget* create_page_list_window() {
 
 
 void redraw_document_window() {
-    clara_doc_view_new_page(CLARA_DOC_VIEW(wDocView));
-    rebuild_page_contents();
-    UNIMPLEMENTED();
+    if (!batch_mode) {
+	clara_doc_view_new_page(CLARA_DOC_VIEW(wDocView));
+	rebuild_page_contents();
+    }
 }
 
 static void rebuild_page_contents() {
@@ -7515,14 +7400,15 @@ void copychar(void)
     }
 
     /* compute the skeleton on the fly */
-    if ((*cm_b_skel != ' ') || (*cm_b_border != ' ')) {
+    if (get_flag(FL_SHOW_SKELETONS) ||
+	get_flag(FL_SHOW_BORDER)) {
         int u,v,d,e,p;
 
         memset(cb,WHITE,LFS*FS);
         for (u=0; u<FS; ++u)
             for (v=0; v<FS; ++v)
                 cb[u+v*LFS] = cfont[u+v*HR];
-        if (*cm_b_skel != ' ')
+        if (get_flag(FL_SHOW_SKELETONS))
             skel(-1,-1,0,0);
         else
             cb_border(0,0);
@@ -7541,7 +7427,7 @@ void copychar(void)
         int u,v,d,e,p;
 
         /* Show the pattern border */
-        if ((*cm_b_hb != ' ') && (mc[cs[k]].bm >= 0)) {
+        if (get_flag(FL_SHOW_PATTERN_BORDER) && (mc[cs[k]].bm >= 0)) {
             {
                 int i,j,h;
                 unsigned char m,*p;
@@ -7574,7 +7460,7 @@ void copychar(void)
         }
 
         /* Show the pattern skeleton */
-        if ((*cm_b_hs != ' ') && (mc[cs[k]].bm >= 0)) {
+        if (get_flag(FL_SHOW_PATTERN_SKEL) && (mc[cs[k]].bm >= 0)) {
             int i,j,h;
             unsigned char m,*p;
             pdesc *d;

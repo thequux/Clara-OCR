@@ -1981,7 +1981,7 @@ int tune_skel_global(int reset,int p)
         }
 
         /* set the best local (for visualization) */
-        else if ((bl+1 < n) && (*cm_v_st != ' ')) {
+        else if ((bl+1 < n) && get_flag(FL_SHOW_SKELETON_TUNING)) {
             c = bl*8;
             SA = CSP[c++];
             RR = ((float)CSP[c++]) / 10;
@@ -2046,7 +2046,7 @@ int tune_skel(int p)
             }
 
             /* obs: rendering of TUNE_PATTERN will call skel_quality again! */
-            if (*cm_v_st != ' ') {
+            if (get_flag(FL_SHOW_SKELETON_TUNING)) {
                 dw[TUNE_PATTERN].rg = 1;
                 dw[TUNE_SKEL].rg = 1;
                 redraw_document_window();

@@ -773,7 +773,8 @@ void new_cl(int x,int y,int w,int h,void *b)
     cl[topcl].supsz = MAXSUP;
 
     /* create unitary symbol */
-    C_SET(mc[new_mc(&topcl,1)].f,F_ISP);
+    int nsym = new_mc(&topcl, 1);
+    C_SET(mc[nsym].f,F_ISP);
 }
 
 /*
@@ -1189,7 +1190,7 @@ int pbm2bm(char *f,int reset)
                                 x = u+ab[j].x;
                                 y = v+ab[j].y;
 
-                                if ((*cm_g_abagar != ' ') && (zones > 0) &&
+                                if (get_flag(FL_ABAGAR_ACTIVE) && (zones > 0) &&
                                     (limits[0] <= x) && (x <= limits[6]) &&
                                     (limits[1] <= y) && (y <= limits[3])) {
 

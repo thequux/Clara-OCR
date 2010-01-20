@@ -4597,7 +4597,7 @@ void continue_ocr(void)
             9. Classify the symbols
         */
         case 9: if ((onlystep < 0) || (onlystep == 9) ||
-                    ((onlystep==8) && (*cm_e_ac != ' '))) {
+                    ((onlystep==8) && get_flag(FL_AUTO_CLASSIFY))) {
                     r = step_9(reset);
                 }
                 else
@@ -4898,6 +4898,7 @@ void handle_alrm(int p)
 The program begins here.
 
 */
+extern void init_flags();
 int main(int argc,char *argv[])
 {
 
@@ -4915,6 +4916,8 @@ int main(int argc,char *argv[])
             fprintf(stderr, "GTK failed to initialize, for some reason. Bailing\n");
             exit(1);
     }
+
+    init_flags();
 
     process_cl(argc,argv);
 

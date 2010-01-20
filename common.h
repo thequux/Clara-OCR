@@ -179,16 +179,37 @@ handled.
 extern char *cschema;
 
 typedef enum {
-    FL_ALPHABET_LATIN,
-    FL_ALPHABET_NUMBERS,
-    FL_ATTACH_LOG,
-    FL_CURRENT_ONLY,
-    FL_OMIT_FRAGMENTS,
-    FL_PAGE_ONLY,
-    FL_RESCAN,
-    FL_SHOW_CLASS,
-    FL_SHOW_LOCALBIN_PROGRESS, // cm_g_lb
-
+  FL_ABAGAR_ACTIVE, // CM_G_ABAGAR
+  FL_ALPHABET_LATIN, // CM_A_LATIN
+  FL_ALPHABET_NUMBERS, // CM_A_NUMBER
+  FL_ATTACH_LOG, // CM_G_LOG
+  FL_ATTACH_VOCAB, // CM_G_VOCAB
+  FL_AUTO_CLASSIFY, // CM_E_AC
+  FL_CURRENT_ONLY, // CM_O_CURR
+  FL_OMIT_FRAGMENTS, // CM_V_OF
+  FL_ONLY_DOUBTS, // CM_E_DOUBTS / cm_e_od
+  FL_PAGE_ONLY, // CM_O_PGO
+  FL_PATSORT_HEIGHT, // CM_E_SH
+  FL_PATSORT_MATCHES, // CM_E_SM
+  FL_PATSORT_NPIXELS, // CM_E_SN
+  FL_PATSORT_PAGE, // CM_E_SP
+  FL_PATSORT_TRANSLIT, // CM_E_ST
+  FL_PATSORT_WIDTH, // CM_E_SW
+  FL_REPORT_SCALE, // CM_D_RS
+  FL_RESCAN, // CM_E_RESCAN
+  FL_SEARCH_UNEXPECTED_MISMATCHES, // CM_G_SUM
+  FL_SHOW_BORDER, // CM_B_BORDER
+  FL_SHOW_COMPARISONS, // CM_V_CMP
+  FL_SHOW_COMPARISONS_AND_WAIT, // CM_V_CMP_K
+  FL_SHOW_CLASS, // CM_V_CC
+  FL_SHOW_LOCALBIN_PROGRESS, // CM_G_LB
+  FL_SHOW_MATCHES, // CM_V_MAT
+  FL_SHOW_MATCHES_AND_WAIT, // CM_V_MAT_K
+  FL_SHOW_PATTERN_BORDER, // CM_B_HB
+  FL_SHOW_PATTERN_SKEL, // CM_B_HS
+  FL_SHOW_SKELETON_TUNING, // CM_V_ST
+  FL_SHOW_SKELETONS, // CM_B_SKEL
+  FL_SHOW_WEBCLIP, // CM_V_WCLIP
     FL_NFLAGS,
 } flag_t;
 
@@ -1466,76 +1487,6 @@ and CM_SZ), and the menu clip flag.
 extern int TOP_CM,CM_SZ;
 extern int mclip;
 
-/* menu flags */
-extern
-char *cm_v_small,
-     *cm_v_medium,
-     *cm_v_large,
-     *cm_v_def,
-     *cm_v_hide,
-     *cm_v_of,
-     *cm_v_wclip,
-     *cm_v_map,
-     *cm_v_vhs,
-     *cm_v_cc,
-     *cm_v_mat,
-     *cm_v_mat_k,
-     *cm_v_cmp_k,
-     *cm_v_cmp,
-     *cm_v_st,
-
-     *cm_e_od,
-     *cm_e_rescan,
-     *cm_e_pp,
-     *cm_e_pp_c,
-     *cm_e_fill,
-     *cm_e_fill_c,
-     *cm_e_sm,
-     *cm_e_st,
-     *cm_e_sp,
-     *cm_e_sw,
-     *cm_e_sh,
-     *cm_e_sn,
-     *cm_e_ac,
-
-     *cm_o_curr,
-     *cm_o_all,
-     *cm_o_dkeys,
-     *cm_o_amenu,
-     *cm_o_pgo,
-
-     *cm_a_arabic,
-     *cm_a_cyrillic,
-     *cm_a_greek,
-     *cm_a_hebrew,
-     *cm_a_latin,
-     *cm_a_kana,
-     *cm_a_abbrev,
-     *cm_a_number,
-     *cm_a_ideogram,
-
-     *cm_b_skel,
-     *cm_b_border,
-     *cm_b_hs,
-     *cm_b_hb,
-
-     *cm_d_pixels,
-     *cm_d_closures,
-     *cm_d_symbols,
-     *cm_d_words,
-     *cm_d_ptype,
-     *cm_d_rs,
-     *cm_d_bb,
-
-     *cm_g_glines,
-     *cm_g_align,
-     *cm_g_lb,
-     *cm_g_abagar,
-     *cm_g_bo,
-     *cm_g_io,
-     *cm_g_vocab,
-     *cm_g_log,
-     *cm_g_sum;
 
 /* input buffers */
 extern char tb[];

@@ -76,7 +76,8 @@ int PIXFI(float x, int y, unsigned char *map, int X, int Y)
   y=TRIM(y,0,Y-1);
   x-=(ix=floor(x));
   p=map+ix+y*X;
-  ix=rintf(ITP(*p,*(NPIX(p)),x));
+  ix=rintf(ITP(*p,*(p+1),x));
+  ++p;
   return(ix);
 }
 
@@ -290,7 +291,12 @@ void pp_shear_y(float f)
 
  s=abs((int)(f*(XRES-1)));
  if (s==0) return;
- s=s++/2;
+ // originally: s = s++/2. 
+ // Possible interpretations:
+ // s = (s+1) / 2;
+ // s = (s/2) + 1;
+ 
+ s = (s/2 + 1);
  p= alloca(YRES);
 
  d= alloca(XRES*sizeof(d));
@@ -310,33 +316,35 @@ void pp_shear_y(float f)
      else x0=0, x1=XRES/2;
 
  for (y=0; y+s<YRES; y++)
- for (x=x0; x<x1; x++) {
-   D=y+d[x]; 
-   *PIX(x,y)=(float)0.5+ITP(*PIX(x,D),*PIX(x,++D),m1[x]);
- }
+   for (x=x0; x<x1; x++) {
+     D=y+d[x]; 
+     *PIX(x,y)=(float)0.5+ITP(*PIX(x,D),*PIX(x,(D+1)),m1[x]);
+   }
 
  for (; y<YRES; y++)
- for (x=x0; x<x1; x++) {
-   D=y+d[x]; D=MIN(D,YRES-2);
-   *PIX(x,y)=(float)0.5+ITP(*PIX(x,D),*PIX(x,++D),m1[x]); 
- }
+   for (x=x0; x<x1; x++) {
+     D=MIN(y+d[x] ,YRES-2);
+     *PIX(x,y)=(float)0.5+ITP(*PIX(x,D),*PIX(x,D+1),m1[x]); 
+   }
 
  /* shear down half map (x0<=x<x1) */
- if (f<0) x0=XRES/2+1, x1=XRES;
-     else x0=0, x1=XRES/2;
+ if (f<0) 
+   x0=XRES/2+1, x1=XRES;
+ else 
+   x0=0, x1=XRES/2;
 
  for (y=YRES-1; y>=s; y--) {
    for (x=x0; x<x1; x++) {
      D=y+d[x];
-     *PIX(x,y)=(float)0.5+ITP(*PIX(x,D),*PIX(x,++D),m1[x]);
+     *PIX(x,y)=(float)0.5+ITP(*PIX(x,D),*PIX(x,D+1),m1[x]);
    }
  }
 
  for (; y>=0; y--)
- for (x=x0; x<x1; x++) {
-   D=y+d[x]; D=MAX(D,1);
-   *PIX(x,y)=(float)0.5+ITP(*PIX(x,D),*PIX(x,++D),m1[x]);
- }
+   for (x=x0; x<x1; x++) {
+     D=MAX(y+d[x],1);
+     *PIX(x,y)=(float)0.5+ITP(*PIX(x,D),*PIX(x,D+1),m1[x]);
+   }
 }
 
 

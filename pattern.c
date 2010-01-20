@@ -965,14 +965,14 @@ int prepare_patterns(int reset)
                 OOPS.. each pattern is displayed once (using its
                 best parameters), not once per candidate.
             */
-            if ((r==0) || (*cm_v_st != ' ')) {
-                if ((*cm_v_st != ' ') && (!dw[TUNE_SKEL].v)) {
-                    setview(TUNE_SKEL);
-                }
-                cdfc = c;
-                dw[TUNE_SKEL].rg = 1;
-                dw[TUNE_PATTERN].rg = 1;
-                redraw_document_window();
+            if ((r==0) || get_flag(FL_SHOW_SKELETON_TUNING)) {
+	      if ((get_flag(FL_SHOW_SKELETON_TUNING)) && (!dw[TUNE_SKEL].v)) {
+		setview(TUNE_SKEL);
+	      }
+	      cdfc = c;
+	      dw[TUNE_SKEL].rg = 1;
+	      dw[TUNE_PATTERN].rg = 1;
+	      redraw_document_window();
             }
 
             /* prepare the next */
@@ -1121,7 +1121,7 @@ int prepare_patterns(int reset)
     else if (st == 5) {
         pdesc *p,*q;
 
-        if (*cm_g_sum == ' ') {
+        if (!get_flag(FL_SEARCH_UNEXPECTED_MISMATCHES)) {
             i = topp;
         }
 

@@ -35,3 +35,17 @@ gboolean get_flag(flag_t fl) {
         assert(fl >= 0 && fl < FL_NFLAGS);
         return flags[fl];
 }
+
+void init_flags() {
+  // initialize everything to FALSE..
+  int i;
+  for (i = 0; i < FL_NFLAGS; i++)
+    flags[i] = FALSE;
+  set_flag(FL_ALPHABET_LATIN, TRUE);
+  set_flag(FL_ALPHABET_NUMBERS, TRUE);
+  set_flag(FL_ATTACH_LOG, TRUE);
+  set_flag(FL_CURRENT_ONLY, TRUE);
+  set_flag(FL_OMIT_FRAGMENTS, TRUE);
+  set_flag(FL_RESCAN, TRUE);
+  set_flag(FL_SHOW_CLASS, TRUE);
+}
