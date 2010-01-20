@@ -1991,7 +1991,9 @@ above another letter i. Somehow this dot was linked to the i below it
 resulting in having the diaeresis case in the function mk_page_output().
 
 */
-void mk_page_output(int encap)
+
+
+void mk_page_output(output_encap encap)
 {
     int i,a,s,f,w,nw;
     char nc;
@@ -2001,12 +2003,12 @@ void mk_page_output(int encap)
     text[0] = 0;
 
     /* HTML headings */
-    if (encap == 0) {
+    if (encap == OE_FULL_HTML) {
         totext("<HTML><HEAD><TITLE>OCR Output</TITLE></HEAD><BODY>\n");
     }
 
     /* djvu headings */
-    else if (encap == 3) {
+    else if (encap == OE_DJVU) {
         totext("select 1; set-txt\n");
         totext("  (page 0 0 %d %d\n",XRES,YRES);
     }
@@ -2022,7 +2024,7 @@ void mk_page_output(int encap)
         nc = 0;
 
         /* djvu line descriptor */
-        if (encap == 3) {
+        if (encap == OE_DJVU) {
             int f;
 
             f = line[i].f;
@@ -2047,7 +2049,7 @@ void mk_page_output(int encap)
         for (w=line[i].f, s=-1, pass=1; w>=0; ) {
 
             /* djvu */
-            if ((pass==1) && (encap == 3)) {
+            if ((pass==1) && (encap == OE_DJVU)) {
                 totext("    (word %d %d %d %d \"",word[w].l,YRES-lb,
                                                   word[w].r,YRES-lt);
             }
@@ -2073,9 +2075,9 @@ void mk_page_output(int encap)
                    unless the "word" is a period or comma
                 */
                 if ((pass==1) && (nw) && (mc[a].tc!=DOT) && (mc[a].tc!=COMMA)) {
-                    if (encap != 3)
+                    if (encap != OE_DJVU)
                         totext(" ");
-                    if (encap < 2) {
+                    if (encap == OE_FULL_HTML || encap == OE_ENCAP_HTML) {
                         if (word[w].f & F_ITALIC)
                             totext("<I>");
                         if (word[w].f & F_BOLD)
@@ -2089,9 +2091,9 @@ void mk_page_output(int encap)
                 if (mc[a].tr == NULL) {
                     if (pass == 2) {
                     }
-                    else if (encap == 0)
+                    else if (encap == OE_FULL_HTML)
                         totext("[<A HREF=symb/%d>%d</A>]",a,a);
-                    else if (encap != 3)
+                    else if (encap != OE_DJVU)
                         totext("[%d]",a);
                 }
 
@@ -2121,12 +2123,12 @@ void mk_page_output(int encap)
 
                         if (pass == 2)
                             totext("(char %d %d %d %d %d \"%c\")\n",mc[a].l,YRES-lb,mc[a].r,YRES-lt,mc[c].bm,l);
-                        else if ((l == '"') && (encap == 3))
+                        else if ((l == '"') && (encap == OE_DJVU))
                             totext("\\042");
-                        else if (encap)
-                            totext("%c",l);
-                        else
+                        else if (encap == OE_FULL_HTML)
                             totext("<A HREF=symb/%d>%c</A>",a,l);
+                        else
+                            totext("%c",l);
                     }
 
                     else if ((ns == 1) &&
@@ -2146,10 +2148,10 @@ void mk_page_output(int encap)
 
                         if (pass == 2)
                             totext("(char %d %d %d %d %d \"%c\")\n",mc[a].l,YRES-lb,mc[a].r,YRES-lt,mc[c].bm,c);
-                        else if (encap)
-                            totext("%c",c);
-                        else
+                        else if (encap == OE_FULL_HTML)
                             totext("<A HREF=symb/%d>%c</A>",a,c);
+                        else
+                            totext("%c",c);
                     }
 
                     /* diaeresis */
@@ -2165,10 +2167,10 @@ void mk_page_output(int encap)
 
                         if (pass == 2)
                             totext("(char %d %d %d %d %d \"%c\")\n",mc[a].l,YRES-lb,mc[a].r,YRES-lt,mc[c].bm,l);
-                        else if (encap)
-                            totext("%c",l);
-                        else
+                        else if (encap == OE_FULL_HTML)
                             totext("<A HREF=symb/%d>%c</A>",a,l);
+                        else
+                            totext("%c",l);
                     }
 
                     else {
@@ -2178,22 +2180,22 @@ void mk_page_output(int encap)
                             if (mc[k].tr != NULL) {
                                 if (pass == 2)
                                     totext("(char %d %d %d %d %d \"%s\")\n",mc[k].l,YRES-lb,mc[k].r,YRES-lt,mc[k].bm,mc[k].tr->t);
-                                else if (encap)
-                                    totext("\\%s",mc[k].tr->t);
-                                else
+                                else if (encap == OE_FULL_HTML)
                                     totext("<A HREF=symb/%d>\\%s</A>",k,mc[k].tr->t);
+                                else
+                                    totext("\\%s",mc[k].tr->t);
                             }
                         }
 
                         /* now the symbol */
                         if (pass == 2)
                             totext("(char %d %d %d %d %d \"%s\")\n",mc[a].l,YRES-lb,mc[a].r,YRES-lt,mc[a].bm,mc[a].tr->t);
-                        else if ((strcmp(mc[a].tr->t,"\"") == 0) && (encap == 3))
+                        else if ((strcmp(mc[a].tr->t,"\"") == 0) && (encap == OE_DJVU))
                             totext("\\\"");
-                        else if (encap)
-                            totext("%s",mc[a].tr->t);
-                        else
+                        else if (encap == OE_FULL_HTML)
                             totext("<A HREF=symb/%d>%s</A>",a,mc[a].tr->t);
+                        else
+                            totext("%s",mc[a].tr->t);
                     }
                 }
 
@@ -2204,21 +2206,21 @@ void mk_page_output(int encap)
             }
 
             /* djvu */
-            else if (encap == 3) {
+            else if (encap == OE_DJVU) {
                 if (word[w].E >= 0)
                     totext("\")\n");
                 else
                     totext("\"))\n");
             }
 
-            else if ((encap != 2) && (!nw)) {
+            else if ((encap == OE_FULL_HTML || encap == OE_ENCAP_HTML) && (!nw)) {
                 if (word[w].f & F_ITALIC)
                     totext("</I>");
                 if (word[w].f & F_BOLD)
                     totext("</B>");
             }
 
-            if ((pass == 1) && (encap == 3) && (djvu_char)) {
+            if ((pass == 1) && (encap == OE_DJVU) && (djvu_char)) {
                 pass = 2;
             }
             else {
@@ -2230,20 +2232,20 @@ void mk_page_output(int encap)
         /* break only non-empty lines */
         if (nc > 0) {
             /* totext(" {{%d}}<BR>\n",line[i].ln); */
-            if (encap)
-                totext("\n");
-            else
+            if (encap == OE_FULL_HTML)
                 totext("<BR>\n");
+            else
+                totext("\n");
         }
 
     }
 
     /* djvu */
-    if (encap == 3)
+    if (encap == OE_DJVU)
         totext(")\n");
 
     /* HTML footings */
-    else if (encap == 0) {
+    else if (encap == OE_FULL_HTML) {
         totext("</BODY></HTML>\n");
     }
 

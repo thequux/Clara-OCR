@@ -226,6 +226,8 @@ GtkWidget *menubar, *sbStatus,
 GtkListStore *pageStore;
 GtkTreeIter *pageIters = NULL;
 
+static GtkTextBuffer *tbOutput = NULL;
+
 /*
 
 Menu help message and failure warning.
@@ -443,6 +445,8 @@ Spyhole stuff.
 */
 int sh_tries;
 
+
+static void rebuild_page_contents();
 /*
 
 Create a new menu.
@@ -7209,11 +7213,64 @@ static GtkWidget* create_page_list_window() {
 }
 
 
+
 void redraw_document_window() {
     clara_doc_view_new_page(CLARA_DOC_VIEW(wDocView));
+    rebuild_page_contents();
     UNIMPLEMENTED();
 }
 
+static void rebuild_page_contents() {
+    GtkTextIter it;
+    int lineNo;
+    gboolean new_word;
+    GtkTextMark *mark_start;
+    gtk_text_buffer_set_text(tbOutput, "foo", 0);
+
+    gtk_text_buffer_get_start_iter(tbOutput, &it);
+    mark_start = gtk_text_buffer_create_mark(tbOutput, "word-start", &it, TRUE);
+    for (lineNo = 0; lineNo < topln; ++lineNo) {
+        gboolean put_ch = FALSE;
+        int wordNo, chr;
+        for (wordNo = line[lineNo].f; wordNo >= 0; ) {
+            new_word = TRUE;
+            for (chr = word[wordNo].F; chr >= 0; chr = mc[chr].E) {
+                if (new_word && mc[chr].tc != DOT && mc[chr].tc != COMMA) {
+                    new_word = FALSE;
+                    gtk_text_buffer_insert(tbOutput, &it, " ", -1);
+                    gtk_text_buffer_move_mark_by_name(tbOutput, "word-start", &it);
+                }
+                if (mc[chr].tr == NULL) {
+                    put_ch = TRUE;
+                    gtk_text_buffer_insert_with_tags_by_name(tbOutput, &it, "\342\230\271", -1,
+                                                             "invalid",NULL);
+                } else
+                    gtk_text_buffer_insert(tbOutput, &it, mc[chr].tr->t, -1);
+                put_ch=TRUE;
+                
+            }
+            
+            if (!new_word) {
+                GtkTextIter wordStart;
+                gtk_text_buffer_get_iter_at_mark(tbOutput,
+                                                 &it,
+                                                 gtk_text_buffer_get_mark(tbOutput, "word-start"));
+                if(word[wordNo].f & F_ITALIC)
+                    gtk_text_buffer_apply_tag_by_name(tbOutput, 
+                                                      "italic",
+                                                      &wordStart, &it);
+                                                      
+                if (word[wordNo].f & F_BOLD)
+                    gtk_text_buffer_apply_tag_by_name(tbOutput,
+                                                      "bold",
+                                                      &wordStart, &it);
+            }
+            wordNo = word[wordNo].E;
+        }
+        if (put_ch)
+            gtk_text_buffer_insert(tbOutput, &it, "\n", -1);
+    }
+}
 
 static GtkWidget* create_page_view_window(void) {
     GtkWidget *vp1, *vp2, *wText, *wInfo, *scroller, *vb1, *wZoom;
@@ -7238,6 +7295,20 @@ static GtkWidget* create_page_view_window(void) {
     vp2 = gtk_vpaned_new();
 
     wText = gtk_text_view_new();
+    tbOutput = gtk_text_view_get_buffer(GTK_TEXT_VIEW(wText));
+    gtk_text_buffer_create_tag(tbOutput, "bold", 
+                               "weight", PANGO_WEIGHT_BOLD,
+                               "weight-set", TRUE,
+                               NULL);
+    gtk_text_buffer_create_tag(tbOutput, "italic", 
+                               "style", PANGO_STYLE_ITALIC,
+                               "style-set", TRUE,
+                               NULL);
+    gtk_text_buffer_create_tag(tbOutput, "invalid", 
+                               "foreground", "red",
+                               "foreground-set", TRUE,
+                               NULL);
+
     wInfo = gtk_text_view_new();
 
     

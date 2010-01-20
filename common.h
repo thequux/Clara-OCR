@@ -1905,7 +1905,7 @@ void add_tr(int m,char *t,int orig,int an,int q,char al,int f);
 void rmvotes(int o,int k,int a,int nd);
 
 /* production of window contents */
-void mk_page_output(int encap);
+//void mk_page_output(int encap);
 void mk_pattern_list(void);
 void mk_pattern_props(void);
 void mk_page_list(void);

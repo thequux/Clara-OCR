@@ -358,8 +358,15 @@ void html_action(int x,int y);
 void p2cf(void);
 
 /* page generation services */
+typedef enum {
+    OE_FULL_HTML = 0,
+    OE_ENCAP_HTML = 1,
+    OE_TEXT = 2,
+    OE_DJVU = 3,
+} output_encap;
+
 void mk_page_symbol(int c);
-void mk_page_output(int encap);
+void mk_page_output(output_encap encap);
 void mk_pattern_list(void);
 void mk_pattern_types(void);
 void mk_pattern_props(void);
