@@ -77,6 +77,8 @@ GtkWidget *menubar, *sbStatus,
 GtkListStore *pageStore;
 GtkTreeIter *pageIters = NULL;
 
+static gboolean gui_ready = FALSE;
+
 static GtkTextBuffer *tbOutput = NULL;
 
 /*
@@ -5432,7 +5434,15 @@ static void null_callback(GtkMenuItem* object, void* user_ptr) {
     UNIMPLEMENTED();
 }
 
+static void run_ocr_all_callback(GtkMenuItem* object, void* user_ptr) {
+    if (get_flag(FL_CURRENT_ONLY))
+	start_ocr(-2,-1,0);
+    else
+	start_ocr(-1,-1,0);
+}
+
 static void quit_callback(GtkMenuItem* object, void* user_ptr) {
+    gui_ready = FALSE;
     start_ocr(-2,OCR_SAVE,0);
     continue_ocr();
     gtk_main_quit();
@@ -5466,17 +5476,17 @@ static void init_context_menus(void)
 
 #define MENU(title)                                                     \
     do {                                                                \
-        mi = gtk_menu_item_new_with_label(title);                        \
+        mi = gtk_menu_item_new_with_label(title);			\
         submenu = gtk_menu_new();                                       \
         gtk_menu_item_set_submenu(GTK_MENU_ITEM(mi),submenu);           \
         gtk_menu_shell_append(GTK_MENU_SHELL(menubar),mi);              \
         group = NULL;                                                   \
     } while (0)
 
-#define MENUFLOAT(var)                          \
-    do {                                        \
+#define MENUFLOAT(var)				    \
+    do {					    \
         var = submenu = gtk_menu_new();             \
-        group = NULL;                           \
+        group = NULL;				    \
     } while(0)
 #define MITEM(text,cb)                                          \
     do {                                                        \
@@ -5498,8 +5508,7 @@ static void init_context_menus(void)
         mi = gtk_radio_menu_item_new_with_label(group,text);            \
         g_signal_connect(G_OBJECT(mi),"activate",                       \
                          G_CALLBACK(cb),NULL);                          \
-        if (group == NULL)                                              \
-            group = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(mi)); \
+	group = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(mi)); \
         gtk_menu_shell_append(GTK_MENU_SHELL(submenu),mi);              \
     } while(0)
     
@@ -5907,6 +5916,8 @@ static void init_context_menus(void)
     
     MENU("OCR");
 
+    MITEM("Run all steps", run_ocr_all_callback);
+    MSEP();
     /* (book)
 
         Preproc.
@@ -6043,7 +6054,7 @@ static void init_context_menus(void)
 
     */
 
-    MENUFLOAT(mnuPage);
+    MENU("PageCTX");
 
     /* (book)
 
@@ -6697,6 +6708,8 @@ enum {
 
 void resync_pagelist(int pageno) {
     int i = pageno;
+    if (!gui_ready)
+	return;
     if (pageStore != NULL && pageIters != NULL) {
         gtk_list_store_set(pageStore, pageIters + i,
                            PL_COL_NRUNS, dl_r[i],
@@ -6950,7 +6963,7 @@ static GtkWidget* create_page_list_window() {
 
 
 void redraw_document_window() {
-    if (!batch_mode) {
+    if (gui_ready) {
 	clara_doc_view_new_page(CLARA_DOC_VIEW(wDocView));
 	rebuild_page_contents();
     }
@@ -6961,27 +6974,33 @@ static void rebuild_page_contents() {
     int lineNo;
     gboolean new_word;
     GtkTextMark *mark_start;
-    gtk_text_buffer_set_text(tbOutput, "foo", 0);
-
-    gtk_text_buffer_get_start_iter(tbOutput, &it);
+    gtk_text_buffer_set_text(tbOutput, "foo", -1);
+    gtk_text_buffer_get_end_iter(tbOutput, &it);
     mark_start = gtk_text_buffer_create_mark(tbOutput, "word-start", &it, TRUE);
     for (lineNo = 0; lineNo < topln; ++lineNo) {
         gboolean put_ch = FALSE;
         int wordNo, chr;
+	gtk_text_buffer_insert(tbOutput, &it, "<ln>", -1);
         for (wordNo = line[lineNo].f; wordNo >= 0; ) {
             new_word = TRUE;
             for (chr = word[wordNo].F; chr >= 0; chr = mc[chr].E) {
                 if (new_word && mc[chr].tc != DOT && mc[chr].tc != COMMA) {
                     new_word = FALSE;
-                    gtk_text_buffer_insert(tbOutput, &it, " ", -1);
+                    gtk_text_buffer_insert(tbOutput, &it, " _", -1);
                     gtk_text_buffer_move_mark_by_name(tbOutput, "word-start", &it);
                 }
                 if (mc[chr].tr == NULL) {
                     put_ch = TRUE;
                     gtk_text_buffer_insert_with_tags_by_name(tbOutput, &it, "\342\230\271", -1,
                                                              "invalid",NULL);
-                } else
+                } else {
+		    GtkTextMark* preins = gtk_text_buffer_create_mark(tbOutput, NULL, &it, TRUE);
                     gtk_text_buffer_insert(tbOutput, &it, mc[chr].tr->t, -1);
+		    GtkTextIter preit;
+		    gtk_text_buffer_get_iter_at_mark(tbOutput, &preit, preins);
+		    gtk_text_buffer_remove_all_tags(tbOutput,&preit,&it);
+		    gtk_text_buffer_delete_mark(tbOutput,preins);
+		}
                 put_ch=TRUE;
                 
             }
@@ -7030,8 +7049,11 @@ static GtkWidget* create_page_view_window(void) {
     vp1 = gtk_vpaned_new();
     vp2 = gtk_vpaned_new();
 
-    wText = gtk_text_view_new();
-    tbOutput = gtk_text_view_get_buffer(GTK_TEXT_VIEW(wText));
+    tbOutput = gtk_text_buffer_new(NULL);
+    g_object_ref_sink(tbOutput);
+    wText = gtk_text_view_new_with_buffer(tbOutput);
+    
+    //tbOutput = gtk_text_view_get_buffer(GTK_TEXT_VIEW(wText));
     gtk_text_buffer_create_tag(tbOutput, "bold", 
                                "weight", PANGO_WEIGHT_BOLD,
                                "weight-set", TRUE,
@@ -7051,7 +7073,12 @@ static GtkWidget* create_page_view_window(void) {
 
     gtk_paned_add1(GTK_PANED(vp1), vb1);
     gtk_paned_add2(GTK_PANED(vp1),vp2);
-    gtk_paned_add1(GTK_PANED(vp2), wText);
+
+    scroller = gtk_scrolled_window_new(NULL,NULL);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroller),GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+    gtk_container_add(GTK_CONTAINER(scroller),wText);
+    
+    gtk_paned_add1(GTK_PANED(vp2), scroller);
     gtk_paned_add2(GTK_PANED(vp2), wInfo);
     
     gtk_widget_show_all(vp1);
@@ -7099,18 +7126,24 @@ void xpreamble()
         //int i,j,n,r,x,y;
 
         mainwin = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-
+	g_signal_connect(mainwin, "delete-event", G_CALLBACK(quit_callback), NULL);
         // TODO: fix batch mode to use pixmaps as appropriate.
         // xw = (use_xb) ? pm : XW;
 
         GtkWidget *top = gtk_vbox_new(FALSE, 0);
+	GtkWidget *tpane = gtk_hpaned_new();
         gtk_box_pack_start(GTK_BOX(top),menubar,FALSE,FALSE,0);
-        nbViews = gtk_notebook_new();
-        nbPage = gtk_notebook_new();
-        nbPatterns = gtk_notebook_new();
-        nbTune = gtk_notebook_new();
 
-        wPageList = gtk_text_view_new();
+        wPageList = create_page_list_window();
+	gtk_paned_add1(GTK_PANED(tpane),wPageList);
+	
+	nbViews = gtk_notebook_new();
+
+        //gtk_notebook_append_page(GTK_NOTEBOOK(nbViews), create_page_list_window(), gtk_label_new("Page List"));
+        gtk_notebook_append_page(GTK_NOTEBOOK(nbViews), create_page_view_window(), gtk_label_new("Page View"));
+        //gtk_notebook_append_page(GTK_NOTEBOOK(nbViews), gtk_text_view_new(), gtk_label_new("Page (Fatbits)"));
+
+        gtk_notebook_append_page(GTK_NOTEBOOK(nbViews), gtk_text_view_new(), gtk_label_new("Patterns"));
 
         { 
             GtkWidget* scrolled_window = gtk_scrolled_window_new (NULL, NULL);
@@ -7122,15 +7155,10 @@ void xpreamble()
             
             gtk_notebook_append_page(GTK_NOTEBOOK(nbViews), scrolled_window, gtk_label_new("WEBBY"));
         }
-        gtk_notebook_append_page(GTK_NOTEBOOK(nbViews), create_page_list_window(), gtk_label_new("Page List"));
-        gtk_notebook_append_page(GTK_NOTEBOOK(nbViews), create_page_view_window(), gtk_label_new("Page View"));
-        //gtk_notebook_append_page(GTK_NOTEBOOK(nbViews), gtk_text_view_new(), gtk_label_new("Page (Fatbits)"));
 
-        gtk_notebook_append_page(GTK_NOTEBOOK(nbViews), gtk_text_view_new(), gtk_label_new("Patterns"));
+	gtk_paned_add2(GTK_PANED(tpane),nbViews);
 
-        gtk_widget_show_all(nbViews);
-
-        gtk_box_pack_start(GTK_BOX(top),nbViews,TRUE,TRUE,0);
+        gtk_box_pack_start(GTK_BOX(top),tpane,TRUE,TRUE,0);
         sbStatus = gtk_statusbar_new();
         gtk_box_pack_start(GTK_BOX(top),sbStatus, FALSE,FALSE,0);
         gtk_container_add(GTK_CONTAINER(mainwin),top);
@@ -7150,6 +7178,7 @@ void xpreamble()
     if (batch_mode == 0) {
         gtk_window_set_title(GTK_WINDOW(mainwin),"Clara OCR");
     }
+    gui_ready = TRUE;
 
 }
 
