@@ -1,4 +1,3 @@
-/* -*- c-basic-offset: 8  -*- */
 #include <math.h>
 #include "common.h"
 #include "gui.h"
