@@ -8,12 +8,21 @@
 #define CLARA_DOC_VIEW_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj),CLARA_TYPE_DOC_VIEW, ClaraDocViewPrivate))
 
 typedef struct _ClaraDocViewPrivate ClaraDocViewPrivate;
+
+// Properties
 enum {
         PROP_0,
         PROP_HADJUSTMENT,
         PROP_VADJUSTMENT,
         PROP_ZOOM,
         PROP_ZOOM_ADJUSTMENT,
+};
+
+// Signals
+enum {
+        SIG_SYMBOL_SELECTED,
+        SIG_TRANSLIT_GIVEN,
+        LAST_SIGNAL,
 };
 
 struct _ClaraDocViewPrivate {
@@ -52,8 +61,15 @@ static void clara_doc_view_set_adjustment(ClaraDocView* self, GtkAdjustment* adj
 static void clara_doc_view_viewport_changed(GtkAdjustment* adj, ClaraDocView* self);
 static void clara_doc_view_calc_viewport(ClaraDocView* self, DblRectangle* vp, gdouble *zoom);
 static gint clara_doc_view_button_press_cb(GtkWidget* widget, GdkEventButton *evt);
+static void clara_doc_view_symbol_selected_cb(ClaraDocView* self, int symNo);
+static void clara_doc_view_transliteration_given_cb(ClaraDocView* self, int symNo, const gchar* translit);
+
+
+static guint clara_doc_view_signals[LAST_SIGNAL] = {0};
 
 G_DEFINE_TYPE (ClaraDocView, clara_doc_view, GTK_TYPE_DRAWING_AREA);
+
+// TAG:DMODE
 
 #define MASK(off,bits) ((~((~0)<<(bits))) << (off))
 
@@ -77,9 +93,15 @@ G_DEFINE_TYPE (ClaraDocView, clara_doc_view, GTK_TYPE_DRAWING_AREA);
 #define DV_CLOSURE_KNOWN     (2 << DV_CLOSURE__OFF)
 
 
+
+
 static void clara_doc_view_class_init(ClaraDocViewClass *klass) {
         GtkWidgetClass *widget_class;
         GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
+
+        klass->symbol_selected = clara_doc_view_symbol_selected_cb;
+        klass->transliteration_given = clara_doc_view_transliteration_given_cb;
+
         widget_class = GTK_WIDGET_CLASS(klass);
         widget_class->expose_event = clara_doc_view_expose;
         widget_class->size_request = clara_doc_view_size_request;
@@ -141,6 +163,26 @@ static void clara_doc_view_class_init(ClaraDocViewClass *klass) {
                              GTK_TYPE_ADJUSTMENT,
                              GTK_TYPE_ADJUSTMENT);
         
+        clara_doc_view_signals[SIG_SYMBOL_SELECTED] =
+                g_signal_new("symbol-selected",
+                             G_OBJECT_CLASS_TYPE(gobject_class),
+                             G_SIGNAL_RUN_FIRST,
+                             G_STRUCT_OFFSET(ClaraDocViewClass, symbol_selected),
+                             NULL, NULL,
+                             g_cclosure_user_marshal_VOID__INT,
+                             G_TYPE_NONE, 1,
+                             G_TYPE_INT);
+
+        clara_doc_view_signals[SIG_TRANSLIT_GIVEN] = 0;
+                g_signal_new("transliteration-given",
+                             G_OBJECT_CLASS_TYPE(gobject_class),
+                             G_SIGNAL_RUN_FIRST,
+                             G_STRUCT_OFFSET(ClaraDocViewClass, transliteration_given),
+                             NULL, NULL,
+                             g_cclosure_user_marshal_VOID__INT_STRING,
+                             G_TYPE_NONE, 2,
+                             G_TYPE_INT,
+                             G_TYPE_STRING);
 }
 
 static void clara_doc_view_init(ClaraDocView* self) {
@@ -380,8 +422,8 @@ static void draw_symbol(cairo_t* cr, drawmode_t mode, sdesc* sym) {
         }
 	int cn;
         if ((mode & DV_CLOSURE__MASK)) {
-		if (uncertain(mc[c]
-	case DV_CLOSURE_UNCERTAIN:
+                switch(mode & DV_CLOSURE__MASK) {
+                case DV_CLOSURE_UNCERTAIN:
                         cairo_set_source_rgb(cr,0.5,0.5,0.5);
                         break;
                 case DV_CLOSURE_KNOWN:
@@ -406,8 +448,7 @@ static void draw_symbol(cairo_t* cr, drawmode_t mode, sdesc* sym) {
                         g_free(buffer);
 
                 }
-                
-        } 
+        }
 
 	if (mode & DV_SELECTED) {
 		cairo_ellipse(cr, sym->l, sym->t,
@@ -508,8 +549,17 @@ static gboolean clara_doc_view_expose(GtkWidget *doc, GdkEventExpose *event) {
                 if ((sym->l <= vp.x + vp.width) &&
                     (sym->r >= vp.x) &&
                     (sym->t <= vp.y + vp.height) &&
-                    (sym->b >= vp.y))
-                        draw_symbol(cr,DV_BBOX | DV_CLOSURE_KNOWN | (curr_mc == c ? DV_SELECTED : 0), mc+c);
+                    (sym->b >= vp.y)) {
+                        guint options = DV_BBOX;
+                        if (curr_mc == c)
+                                options |= DV_SELECTED;
+
+                        if (uncertain(mc[c].tc))
+                                options |= DV_CLOSURE_UNCERTAIN;
+                        else
+                                options |= DV_CLOSURE_KNOWN;
+                        draw_symbol(cr,options, mc+c);
+                }
         }
 	cairo_rectangle(cr,priv->selx, priv->sely, 2, 2);
 	cairo_stroke(cr);
@@ -550,6 +600,16 @@ static void clara_doc_view_calc_viewport(ClaraDocView* self, DblRectangle* vp, g
                 
 }
 
+static void clara_doc_view_symbol_selected_cb(ClaraDocView* self, int symNo) {
+        curr_mc = symNo;
+		//if ((curr_mc = symNo) >= 1) {
+		//	dw[PAGE_SYMBOL].rg = 1;
+		//}
+        gtk_widget_queue_draw(GTK_WIDGET(self));
+}
+
+static void clara_doc_view_transliteration_given_cb(ClaraDocView* self, int symNo, const gchar* translit) {
+}
 
 static gint clara_doc_view_button_press_cb(GtkWidget* widget, GdkEventButton *evt) {
 	ClaraDocView *self = CLARA_DOC_VIEW(widget);
@@ -563,10 +623,10 @@ static gint clara_doc_view_button_press_cb(GtkWidget* widget, GdkEventButton *ev
 		xr = vp.x + evt->x / zoom;
 		yr = vp.y + evt->y / zoom;
 		gint k = symbol_at(xr,yr);
-		if ((curr_mc = k) >= 1) {
-			dw[PAGE_SYMBOL].rg = 1;
-		}
-		gtk_widget_queue_draw(widget);
+                g_signal_emit(self,
+                              clara_doc_view_signals[SIG_SYMBOL_SELECTED],
+                              0,
+                              k);
 	}
 	return TRUE;
 }

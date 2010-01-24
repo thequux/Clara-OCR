@@ -20,7 +20,12 @@ struct _ClaraDocView {
 struct _ClaraDocViewClass {
         GtkDrawingAreaClass parent_class;
 
-        /* private */
+        /*< protected >*/
+
+        void (*symbol_selected) (ClaraDocView* self, int symNo);
+        void (*transliteration_given) (ClaraDocView *self, int symNo, const gchar* translit);
+
+        /*< private >*/
 
         void (*set_scroll_adjustments) (ClaraDocView*,GtkAdjustment*, GtkAdjustment*);
 };
