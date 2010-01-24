@@ -1959,7 +1959,7 @@ void init_welcome(void);
 //void prior(void);
 void get_pointer(int *x,int *y) __attribute__((deprecated));
 void set_xfont(void);
-void setview(int mode);
+void setview(int mode) G_GNUC_DEPRECATED;
 void check_dlimits(int cursoron);
 void set_buttons(int s,int p);
 void symb2buttons(int s);

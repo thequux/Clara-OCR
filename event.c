@@ -2217,7 +2217,7 @@ void kactions(void)
             return;
     }
 
-    //n = XLookupString(&(xev.xkey),(char *)buffer,100,&ks,&cps);
+    n = XLookupString(&(xev.xkey),(char *)buffer,100,&ks,&cps);
 
     /*
         We're waiting ENTER or ESC keypresses. Discard anything else.
@@ -2824,9 +2824,11 @@ int spyhole(int x,int y,int op,int et)
             performed by the local binarizer.
         */
         if (get_flag(FL_SHOW_LOCALBIN_PROGRESS)) {
+            /* UNPATCHED:
             if (CDW != PAGE)
                 setview(PAGE);
             redraw_document_window();
+            */
         }
 
         return(0);
@@ -6840,6 +6842,20 @@ void page_list_callback(GtkTreeSelection* sel, gpointer userdata) {
     }
 }
 
+static void page_view_symbol_changed_cb(ClaraDocView* docView, int symNo, gpointer data G_GNUC_UNUSED) {
+    curr_mc = symNo;
+}
+
+static void page_view_translit_given_cb(ClaraDocView* docView, int symNo, const gchar* translit, gpointer data G_GNUC_UNUSED) {
+    g_print("Translit: %d -> %s", symNo, translit);
+    if (symNo >= 0) {
+        start_ocr(-2, OCR_REV, 0);
+        strcpy(to_tr, translit);
+        to_rev = REV_TR;
+    }
+}
+// constructors...
+
 static GtkWidget* create_page_list_window() {
     int i, pn;
     pageStore = gtk_list_store_new(PL_NCOL,
@@ -6960,11 +6976,15 @@ static GtkWidget* create_page_list_window() {
     //
 }
 
-
-
+void new_page() {
+    if (gui_ready) {
+        clara_doc_view_new_page(CLARA_DOC_VIEW(wDocView));
+    }
+    redraw_document_window();
+}
 void redraw_document_window() {
     if (gui_ready) {
-	clara_doc_view_new_page(CLARA_DOC_VIEW(wDocView));
+        gtk_widget_queue_draw(wDocView);
 	rebuild_page_contents();
     }
 }
@@ -7029,9 +7049,12 @@ static void rebuild_page_contents() {
 
 static GtkWidget* create_page_view_window(void) {
     GtkWidget *vp1, *vp2, *wText, *wInfo, *scroller, *vb1, *wZoom;
-    
 
     wDocView = clara_doc_view_new();
+    g_signal_connect(wDocView,"transliteration-given",
+                     G_CALLBACK(page_view_translit_given_cb),
+                     NULL);
+    g_signal_connect(wDocView, "symbol-selected", G_CALLBACK(page_view_symbol_changed_cb), NULL);
     scroller = gtk_scrolled_window_new(NULL,NULL);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroller),GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
     //gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(scroller),wDocView);

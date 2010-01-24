@@ -967,7 +967,7 @@ int prepare_patterns(int reset)
             */
             if ((r==0) || get_flag(FL_SHOW_SKELETON_TUNING)) {
 	      if ((get_flag(FL_SHOW_SKELETON_TUNING)) && (!dw[TUNE_SKEL].v)) {
-		setview(TUNE_SKEL);
+                // UNPATCHED: setview(TUNE_SKEL);
 	      }
 	      cdfc = c;
 	      dw[TUNE_SKEL].rg = 1;

@@ -34,7 +34,7 @@ struct _ClaraDocViewPrivate {
         gboolean use_position;
         gboolean keep_position;
 
-	gdouble selx, sely;
+        gint curr_sym;
 };
 
 typedef struct DblRectangle {
@@ -61,6 +61,7 @@ static void clara_doc_view_set_adjustment(ClaraDocView* self, GtkAdjustment* adj
 static void clara_doc_view_viewport_changed(GtkAdjustment* adj, ClaraDocView* self);
 static void clara_doc_view_calc_viewport(ClaraDocView* self, DblRectangle* vp, gdouble *zoom);
 static gint clara_doc_view_button_press_cb(GtkWidget* widget, GdkEventButton *evt);
+static gint clara_doc_view_key_press_cb(GtkWidget* widget, GdkEventKey *evt);
 static void clara_doc_view_symbol_selected_cb(ClaraDocView* self, int symNo);
 static void clara_doc_view_transliteration_given_cb(ClaraDocView* self, int symNo, const gchar* translit);
 
@@ -107,6 +108,7 @@ static void clara_doc_view_class_init(ClaraDocViewClass *klass) {
         widget_class->size_request = clara_doc_view_size_request;
         widget_class->size_allocate = clara_doc_view_size_allocate;
 	widget_class->button_press_event = clara_doc_view_button_press_cb;
+        widget_class->key_press_event = clara_doc_view_key_press_cb;
         
         g_type_class_add_private(gobject_class,sizeof(ClaraDocViewPrivate));
 
@@ -173,7 +175,7 @@ static void clara_doc_view_class_init(ClaraDocViewClass *klass) {
                              G_TYPE_NONE, 1,
                              G_TYPE_INT);
 
-        clara_doc_view_signals[SIG_TRANSLIT_GIVEN] = 0;
+        clara_doc_view_signals[SIG_TRANSLIT_GIVEN] =
                 g_signal_new("transliteration-given",
                              G_OBJECT_CLASS_TYPE(gobject_class),
                              G_SIGNAL_RUN_FIRST,
@@ -193,8 +195,9 @@ static void clara_doc_view_init(ClaraDocView* self) {
         clara_doc_view_set_adjustment(self, NULL, GTK_ORIENTATION_HORIZONTAL, FALSE);
         clara_doc_view_set_adjustment(self, NULL, GTK_ORIENTATION_VERTICAL, FALSE);
 
-	gtk_widget_add_events(GTK_WIDGET(self), GDK_BUTTON_PRESS_MASK);
-	priv->selx = priv->sely = 0;
+        GTK_WIDGET_SET_FLAGS(self, GTK_CAN_FOCUS);
+	gtk_widget_add_events(GTK_WIDGET(self), GDK_BUTTON_PRESS_MASK | GDK_KEY_PRESS_MASK);
+        priv->curr_sym = -1;
 }
 
 GtkWidget* clara_doc_view_new(void) {
@@ -561,10 +564,8 @@ static gboolean clara_doc_view_expose(GtkWidget *doc, GdkEventExpose *event) {
                         draw_symbol(cr,options, mc+c);
                 }
         }
-	cairo_rectangle(cr,priv->selx, priv->sely, 2, 2);
-	cairo_stroke(cr);
         cairo_destroy(cr);
-    return FALSE;
+        return FALSE;
 }
 
 static void clara_doc_view_calc_viewport(ClaraDocView* self, DblRectangle* vp, gdouble *zoom) {
@@ -601,7 +602,8 @@ static void clara_doc_view_calc_viewport(ClaraDocView* self, DblRectangle* vp, g
 }
 
 static void clara_doc_view_symbol_selected_cb(ClaraDocView* self, int symNo) {
-        curr_mc = symNo;
+	ClaraDocViewPrivate* priv = CLARA_DOC_VIEW_GET_PRIVATE(self);
+        priv->curr_sym = symNo;
 		//if ((curr_mc = symNo) >= 1) {
 		//	dw[PAGE_SYMBOL].rg = 1;
 		//}
@@ -617,6 +619,9 @@ static gint clara_doc_view_button_press_cb(GtkWidget* widget, GdkEventButton *ev
 	DblRectangle vp;
 	gdouble zoom;
 	if (evt->type == GDK_BUTTON_PRESS) {
+                if (!GTK_WIDGET_HAS_FOCUS(widget)) {
+                        gtk_widget_grab_focus(widget);
+                }
 		// translate to document...
 		gdouble xr, yr;
 		clara_doc_view_calc_viewport(self,&vp, &zoom);
@@ -629,4 +634,19 @@ static gint clara_doc_view_button_press_cb(GtkWidget* widget, GdkEventButton *ev
                               k);
 	}
 	return TRUE;
+}
+
+static gint clara_doc_view_key_press_cb(GtkWidget* widget, GdkEventKey *evt) {
+	ClaraDocView *self = CLARA_DOC_VIEW(widget);
+	ClaraDocViewPrivate* priv = CLARA_DOC_VIEW_GET_PRIVATE(self);
+
+        gchar buf[10] = {0};
+        guint32 ch = gdk_keyval_to_unicode(evt->keyval);
+        if (ch != 0) {
+                g_unichar_to_utf8(ch,buf);
+                g_signal_emit(self,clara_doc_view_signals[SIG_TRANSLIT_GIVEN], 0,
+                              priv->curr_sym, buf);
+                return FALSE;
+        }
+        return TRUE;
 }

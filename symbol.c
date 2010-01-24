@@ -3957,7 +3957,7 @@ int classify(int c,int bmpcmp(int,int,int,int),int mode)
 
                 /* Enter MATCHES window if required */
                 if (CDW != PAGE_MATCHES) {
-                    setview(PAGE_MATCHES);
+                    // UNPATCHED: setview(PAGE_MATCHES);
                     // UNPATCHED: redraw_grid = 1;
                 }
 
@@ -4020,7 +4020,7 @@ int classify(int c,int bmpcmp(int,int,int,int),int mode)
 
                 /* Enter MATCHES window if required */
                 if (CDW != PAGE_MATCHES) {
-                    setview(PAGE_MATCHES);
+                    // UNPATCHED: setview(PAGE_MATCHES);
                     // UNPATCHED: redraw_grid = 1;
                 }
 

@@ -3232,7 +3232,6 @@ int step_2(int reset)
 
     if (reset) {
         free_page();
-        setview(PAGE_LIST);
         st = 0;
         myreset = 1;
     }
@@ -3284,7 +3283,7 @@ int step_2(int reset)
 
         /* finished reading */
         if (r == 0) {
-            redraw_document_window();
+            new_page();
         }
         else
             myreset = 0;
@@ -4478,9 +4477,10 @@ void continue_ocr(void)
         */
 
         /* avoiding exposing critial data structures to the display code */
+        /* UNPATCHED:
         if ((onlystep<0) && (CDW != PAGE_LIST))
             setview(PAGE_LIST);
-
+        */
         /* remember statuses */
         lcr = cl_ready;
         no_pattern = ((cdfc < 0) || (topp < cdfc));
@@ -4703,7 +4703,6 @@ void continue_ocr(void)
                         *cm_o_pgo = ' ';
                         opage_j1 = page_j1 = PT+TH+(PH-TH)/3;
                         opage_j2 = page_j2 = PT+TH+2*(PH-TH)/3;
-                        setview(PAGE);
                         check_dlimits(0);
                     }
 #endif
@@ -4726,7 +4725,6 @@ void continue_ocr(void)
                     *cm_o_pgo = ' ';
                     opage_j1 = page_j1 = PT+TH+(PH-TH)/3;
                     opage_j2 = page_j2 = PT+TH+2*(PH-TH)/3;
-                    setview(PAGE);
                     check_dlimits(0);
                 }
 #endif
@@ -4745,22 +4743,6 @@ void continue_ocr(void)
                     /* no ack by now */
                 }
             }
-
-            /*
-                When the user requests page loading from
-                the PAGE_LIST window, we jump to the
-                loaded page on finishing, otherwise we
-                go back to the last page.
-
-                Furthermore, the loading page procedure
-                cleared the v flag ("currently visible") for
-                all windows, so we need to recompute that flag,
-                setview will make that.
-            */
-            if ((last_dw == PAGE_LIST) && (onlystep == OCR_LOAD))
-                setview(PAGE);
-            else
-                setview(last_dw);
 
             /* must regenerate PAGE_LIST */
             dw[PAGE_LIST].rg = 1;
@@ -4931,7 +4913,7 @@ int main(int argc,char *argv[])
     */
     init_welcome();
     xpreamble();
-    setview(WELCOME);
+    // UNPATCHED: setview(WELCOME);
 
     /*
          A temporary solution for classifier 4. As we've decided to

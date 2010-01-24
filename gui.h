@@ -379,5 +379,6 @@ void mk_tune_skel(void);
 void redraw_inp_str(void);
 
 void redraw_document_window(void);
+void new_page();
 void redraw_flea(void);
 void show_message(const char* msg);

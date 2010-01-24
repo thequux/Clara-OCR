@@ -719,7 +719,6 @@ the submitted transliteration and the default reviewer info.
 */
 void gen_tr(char *tr)
 {
-#if 0
     adesc *a;
     char *ttr;
     int s;
@@ -743,13 +742,13 @@ void gen_tr(char *tr)
 
     /* properties */
     // UNPATCHED: a->a  = inv_balpha[(int)(button[balpha])];
-    a->f = ((button[bbad]) ? F_BAD : 0);
-    /*
+    a->f = 0; // UNPATCHED: ((button[bbad]) ? F_BAD : 0);
+    /* UNPATCHED:
     a->f |= ((button[bitalic]) ? F_ITALIC : 0);
     a->f |= ((button[bbold]) ? F_BOLD : 0);
     */
 
-    /*
+    /* UNPATCHED:
     a->pt = (*cm_o_ftro == ' ') ? button[btype] : 0;
     */
     a->pt = 0;
@@ -789,7 +788,6 @@ void gen_tr(char *tr)
 
     /* reviewer data */
     reviewer_data(a);
-#endif
     UNIMPLEMENTED();
 }
 
