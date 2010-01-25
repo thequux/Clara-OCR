@@ -56,7 +56,7 @@ $version = "20031214";
 sub gen_line
 {
     if ($appends == 0) {
-        $nl = "/* (book)\n";
+        $nl = "/*_ (book)\n";
     }
     elsif ($appends == 1) {
         $nl = "foo section\n";
@@ -83,9 +83,9 @@ sub read_input
     # make sure that $nl contains one line
     if ($nl_empty) {
         if ($_ = <F>) {
-            s/\/\* \(($other)\)/\/* /g;
-            s/\/\* \($docname\)/\/* (book)/g;
-            s/\/\* \(all\)/\/* (book)/g;
+            s/\/\*_? \(($other)\)/\/*_ /g;
+            s/\/\*_? \($docname\)/\/*_ (book)/g;
+            s/\/\*_? \(all\)/\/*_ (book)/g;
             $nl = $_;
         }
         else {
@@ -106,9 +106,9 @@ sub read_input
     # read next line
     else {
         if ($_ = <F>) {
-            s/\/\* \(($other)\)/\/* /g;
-            s/\/\* \($docname\)/\/* (book)/g;
-            s/\/\* \(all\)/\/* (book)/g;
+            s/\/\*_? \(($other)\)/\/*_ /g;
+            s/\/\*_? \($docname\)/\/*_ (book)/g;
+            s/\/\*_? \(all\)/\/*_ (book)/g;
             $nl = $_;
         }
         else {
@@ -375,7 +375,7 @@ sub process_file
 
         # start of excerpt
         &read_input();
-        if ($cl =~ /\/\* +\(book\)/) {
+        if ($cl =~ /\/\*_? +\(book\)/) {
 
             # initialize control variables
             #printf(STDERR "entering excerpt block\n");

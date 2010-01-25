@@ -69,16 +69,16 @@ For each letter we also store the mandatory and acceptable signs
 
 */
 typedef struct {
-    char *LN;               /* letter name in English (capital) */
-    char *ln;               /* letter name in English (lower) */
-    unsigned char cc;       /* ISO-8859-X code (capital) */
-    unsigned char cbm[16];  /* 8x16 bitmap (capital) */
-    unsigned char sc;       /* ISO-8859-X code (small) */
-    unsigned char sbm[16];  /* 8x16 bitmap (small) */
-    unsigned a;             /* acceptable signs */
-    unsigned m;             /* mandatory signs */
-    unsigned char l;        /* latin (ASCII) mapping for latin keyboards */
-    char va;                /* vertical alignment */
+        char *LN;               /* letter name in English (capital) */
+        char *ln;               /* letter name in English (lower) */
+        unsigned char cc;       /* ISO-8859-X code (capital) */
+        unsigned char cbm[16];  /* 8x16 bitmap (capital) */
+        unsigned char sc;       /* ISO-8859-X code (small) */
+        unsigned char sbm[16];  /* 8x16 bitmap (small) */
+        unsigned a;             /* acceptable signs */
+        unsigned m;             /* mandatory signs */
+        unsigned char l;        /* latin (ASCII) mapping for latin keyboards */
+        char va;                /* vertical alignment */
 } alpharec;
 
 /* Records are grouped in arrays per alphabet */
@@ -93,15 +93,9 @@ extern alpharec *alpha;
 
 /* size of each alphabet */
 extern int latin_sz,
-           greek_sz,
-           cyrillic_sz,
-           hebrew_sz,
-           arabic_sz,
-           kana_sz,
-           number_sz,
-           max_sz,
-           alpha_sz,
-           alpha_cols;
+    greek_sz,
+    cyrillic_sz,
+    hebrew_sz, arabic_sz, kana_sz, number_sz, max_sz, alpha_sz, alpha_cols;
 
 /*
 
@@ -179,38 +173,38 @@ handled.
 extern char *cschema;
 
 typedef enum {
-  FL_ABAGAR_ACTIVE, // CM_G_ABAGAR
-  FL_ALPHABET_LATIN, // CM_A_LATIN
-  FL_ALPHABET_NUMBERS, // CM_A_NUMBER
-  FL_ATTACH_LOG, // CM_G_LOG
-  FL_ATTACH_VOCAB, // CM_G_VOCAB
-  FL_AUTO_CLASSIFY, // CM_E_AC
-  FL_CURRENT_ONLY, // CM_O_CURR
-  FL_OMIT_FRAGMENTS, // CM_V_OF
-  FL_ONLY_DOUBTS, // CM_E_DOUBTS / cm_e_od
-  FL_PAGE_ONLY, // CM_O_PGO
-  FL_PATSORT_HEIGHT, // CM_E_SH
-  FL_PATSORT_MATCHES, // CM_E_SM
-  FL_PATSORT_NPIXELS, // CM_E_SN
-  FL_PATSORT_PAGE, // CM_E_SP
-  FL_PATSORT_TRANSLIT, // CM_E_ST
-  FL_PATSORT_WIDTH, // CM_E_SW
-  FL_REPORT_SCALE, // CM_D_RS
-  FL_RESCAN, // CM_E_RESCAN
-  FL_SEARCH_UNEXPECTED_MISMATCHES, // CM_G_SUM
-  FL_SHOW_BORDER, // CM_B_BORDER
-  FL_SHOW_COMPARISONS, // CM_V_CMP
-  FL_SHOW_COMPARISONS_AND_WAIT, // CM_V_CMP_K
-  FL_SHOW_CLASS, // CM_V_CC
-  FL_SHOW_LOCALBIN_PROGRESS, // CM_G_LB
-  FL_SHOW_MATCHES, // CM_V_MAT
-  FL_SHOW_MATCHES_AND_WAIT, // CM_V_MAT_K
-  FL_SHOW_PATTERN_BORDER, // CM_B_HB
-  FL_SHOW_PATTERN_SKEL, // CM_B_HS
-  FL_SHOW_SKELETON_TUNING, // CM_V_ST
-  FL_SHOW_SKELETONS, // CM_B_SKEL
-  FL_SHOW_WEBCLIP, // CM_V_WCLIP
-    FL_NFLAGS,
+        FL_ABAGAR_ACTIVE,       // CM_G_ABAGAR
+        FL_ALPHABET_LATIN,      // CM_A_LATIN
+        FL_ALPHABET_NUMBERS,    // CM_A_NUMBER
+        FL_ATTACH_LOG,          // CM_G_LOG
+        FL_ATTACH_VOCAB,        // CM_G_VOCAB
+        FL_AUTO_CLASSIFY,       // CM_E_AC
+        FL_CURRENT_ONLY,        // CM_O_CURR
+        FL_OMIT_FRAGMENTS,      // CM_V_OF
+        FL_ONLY_DOUBTS,         // CM_E_DOUBTS / cm_e_od
+        FL_PAGE_ONLY,           // CM_O_PGO
+        FL_PATSORT_HEIGHT,      // CM_E_SH
+        FL_PATSORT_MATCHES,     // CM_E_SM
+        FL_PATSORT_NPIXELS,     // CM_E_SN
+        FL_PATSORT_PAGE,        // CM_E_SP
+        FL_PATSORT_TRANSLIT,    // CM_E_ST
+        FL_PATSORT_WIDTH,       // CM_E_SW
+        FL_REPORT_SCALE,        // CM_D_RS
+        FL_RESCAN,              // CM_E_RESCAN
+        FL_SEARCH_UNEXPECTED_MISMATCHES,        // CM_G_SUM
+        FL_SHOW_BORDER,         // CM_B_BORDER
+        FL_SHOW_COMPARISONS,    // CM_V_CMP
+        FL_SHOW_COMPARISONS_AND_WAIT,   // CM_V_CMP_K
+        FL_SHOW_CLASS,          // CM_V_CC
+        FL_SHOW_LOCALBIN_PROGRESS,      // CM_G_LB
+        FL_SHOW_MATCHES,        // CM_V_MAT
+        FL_SHOW_MATCHES_AND_WAIT,       // CM_V_MAT_K
+        FL_SHOW_PATTERN_BORDER, // CM_B_HB
+        FL_SHOW_PATTERN_SKEL,   // CM_B_HS
+        FL_SHOW_SKELETON_TUNING,        // CM_V_ST
+        FL_SHOW_SKELETONS,      // CM_B_SKEL
+        FL_SHOW_WEBCLIP,        // CM_V_WCLIP
+        FL_NFLAGS,
 } flag_t;
 
 /*
@@ -286,9 +280,9 @@ The pixmap
 
 */
 extern unsigned char *pixmap;
-extern int thresh_val,pm_t;
+extern int thresh_val, pm_t;
 extern int graydist[];
-extern int pp_deskew,pp_bal,pp_double,pp_deskew_accurate;
+extern int pp_deskew, pp_bal, pp_double, pp_deskew_accurate;
 extern float pp_dark, pp_avoid_links;
 extern int p_match;
 extern int bin_method;
@@ -375,32 +369,32 @@ Types
 */
 typedef struct {
 
-    /* preamble */
-    char t;     /* type */
-    char *d;    /* document */
-    int f;      /* flags */
+        /* preamble */
+        char t;                 /* type */
+        char *d;                /* document */
+        int f;                  /* flags */
 
-    /* symbols */
-    int mc;     /* main symbol */
-    int a1;     /* auxiliar 1 */
-    int a2;     /* auxiliar 2 */
+        /* symbols */
+        int mc;                 /* main symbol */
+        int a1;                 /* auxiliar 1 */
+        int a2;                 /* auxiliar 2 */
 
-    /* these are relevant to type REV_TR */
-    char a;     /* alphabet */
-    short pt;   /* pattern type */
-    char *tr;   /* transliteration */
+        /* these are relevant to type REV_TR */
+        char a;                 /* alphabet */
+        short pt;               /* pattern type */
+        char *tr;               /* transliteration */
 
-    /* reviewer data */
-    char rt;    /* reviewer type (anon, trusted, arbiter) */
-    char *r;    /* reviewer (email address or host fqdn) */
-    time_t dt;  /* date of submission */
-    char *sa;   /* internet address of originating computer*/
+        /* reviewer data */
+        char rt;                /* reviewer type (anon, trusted, arbiter) */
+        char *r;                /* reviewer (email address or host fqdn) */
+        time_t dt;              /* date of submission */
+        char *sa;               /* internet address of originating computer */
 
-    /* original reviewer data */
-    char *or;   /* original reviewer (email address or host fqdn) */
-    char *ob;   /* original book */
-    int om;     /* original symbol */
-    time_t od;  /* original submission date */
+        /* original reviewer data */
+        char *or;               /* original reviewer (email address or host fqdn) */
+        char *ob;               /* original book */
+        int om;                 /* original symbol */
+        time_t od;              /* original submission date */
 
 } adesc;
 
@@ -420,10 +414,10 @@ Vote types and structure.
 #define COMPOSITION 3
 #define SPECIAL 4
 typedef struct {
-    char orig;         /* REVISION, SHAPE or SPELLING */
-    int act;           /* revision act */
-    char q;            /* quality */
-    struct vdesc *nv;  /* next vote */
+        char orig;              /* REVISION, SHAPE or SPELLING */
+        int act;                /* revision act */
+        char q;                 /* quality */
+        struct vdesc *nv;       /* next vote */
 } vdesc;
 
 
@@ -469,13 +463,13 @@ along the source code.
 
 */
 typedef struct {
-    int pr;            /* preference */
-    void *nt;          /* next transliteration */
-    int n;             /* number of confirmations */
-    int f;             /* flags */
-    char a;            /* alphabet (latin, greek, etc) */
-    vdesc *v;          /* votes for this transliteration */
-    char *t;           /* the transliteration */
+        int pr;                 /* preference */
+        void *nt;               /* next transliteration */
+        int n;                  /* number of confirmations */
+        int f;                  /* flags */
+        char a;                 /* alphabet (latin, greek, etc) */
+        vdesc *v;               /* votes for this transliteration */
+        char *t;                /* the transliteration */
 } trdesc;
 
 
@@ -532,19 +526,19 @@ Closure struct.
 #define MAXSUP 10
 #define MDV 20
 typedef struct {
-    char type;         /* graphic component type */
-    int l,r,t,b;       /* {left,right,top,bottom}-most coordinate */
-    unsigned char *bm; /* bitmap */
-    int nbp;           /* number of black pixels */
-    short seed[2];     /* seed for closure computation */
-    int *sup;          /* list of the symbols it belongs to */
-    int supsz;         /* size of the memory buffer sup */
+        char type;              /* graphic component type */
+        int l, r, t, b;         /* {left,right,top,bottom}-most coordinate */
+        unsigned char *bm;      /* bitmap */
+        int nbp;                /* number of black pixels */
+        short seed[2];          /* seed for closure computation */
+        int *sup;               /* list of the symbols it belongs to */
+        int supsz;              /* size of the memory buffer sup */
 } cldesc;
 
 /* the closures */
 cldesc *cl;
-extern int topcl,clsz;
-extern int *clx,*cly;
+extern int topcl, clsz;
+extern int *clx, *cly;
 
 /* (devel)
 
@@ -720,46 +714,46 @@ different heights.
 
 */
 #define MAXPS 100
-typedef struct  {
+typedef struct {
 
-    /* fundamental */
-    int ncl;         /* number of closures */
-    int *cl;         /* list of closures */
+        /* fundamental */
+        int ncl;                /* number of closures */
+        int *cl;                /* list of closures */
 
-    /* geometric data */
-    int l,r,t,b;     /* geometric limits */
-    int nbp;         /* number of black pixels */
-    char va;         /* vertical alignment */
-    char c;          /* column (zone) */
+        /* geometric data */
+        int l, r, t, b;         /* geometric limits */
+        int nbp;                /* number of black pixels */
+        char va;                /* vertical alignment */
+        char c;                 /* column (zone) */
 
-    /*
-        Flags. Symbols have per-transliteration flags
-        for per-transliteration statuses (F_BOLD,
-        F_ITALIC,F_UNDERL,F_BAD).
+        /*
+           Flags. Symbols have per-transliteration flags
+           for per-transliteration statuses (F_BOLD,
+           F_ITALIC,F_UNDERL,F_BAD).
 
-        The per-symbol flag field is for those
-        statuses unrelated to the transliterations
-        (F_ISP,F_ISW,F_SS,F_SDIM).
+           The per-symbol flag field is for those
+           statuses unrelated to the transliterations
+           (F_ISP,F_ISW,F_SS,F_SDIM).
 
-        Of course this is a bit confusing... coders must
-        take care to avoid using s->f instead of
-        (s->tr)->f.
-    */
-    int f;
+           Of course this is a bit confusing... coders must
+           take care to avoid using s->f instead of
+           (s->tr)->f.
+         */
+        int f;
 
-    /* neighborhood data */
-    int N,S,E,W;     /* nearest symbols */
-    int sw;          /* surrounding word */
-    int sl;          /* list of signals (accents) */
-    int bs;          /* base symbol */
+        /* neighborhood data */
+        int N, S, E, W;         /* nearest symbols */
+        int sw;                 /* surrounding word */
+        int sl;                 /* list of signals (accents) */
+        int bs;                 /* base symbol */
 
-    /* transliterations */
-    trdesc *tr;      /* first transliteration */
-    char tc;         /* transliteration class */
-    char bq;         /* quality of the best match */
-    int pb;          /* number of publishings */
-    int bm;          /* best match pattern ID */
-    int lfa;         /* last pattern ID analysed */
+        /* transliterations */
+        trdesc *tr;             /* first transliteration */
+        char tc;                /* transliteration class */
+        char bq;                /* quality of the best match */
+        int pb;                 /* number of publishings */
+        int bm;                 /* best match pattern ID */
+        int lfa;                /* last pattern ID analysed */
 
 } sdesc;
 
@@ -839,20 +833,20 @@ extern int i64_opt;
 extern int disp_opt;
 
 /* from skel.c */
-extern int   SA;
+extern int SA;
 extern float RR;
 extern float MA;
-extern int   MP;
+extern int MP;
 extern float ML;
-extern int   MB;
-extern int   RX;
-extern int   BT;
+extern int MB;
+extern int RX;
+extern int BT;
 
 /* geometric limits of the skeleton */
-extern int fc_bp,lc_bp,fl_bp,ll_bp;
+extern int fc_bp, lc_bp, fl_bp, ll_bp;
 
 /* cb and cb2 are buffers for symbols, used to compute skeletons */
-extern char cb[],cb2[];
+extern char cb[], cb2[];
 
 /*
 
@@ -862,7 +856,7 @@ symbols on this list and/or dump their images to
 files on the disk for web-based revision.
 
 */
-extern int RWX,RWY,RCX,RCY;
+extern int RWX, RWY, RCX, RCY;
 extern unsigned char *rw;
 /*
 extern int editing_doubts;
@@ -872,7 +866,7 @@ extern int *doubt;
 extern int max_doubts;
 
 /* document size */
-extern int XRES,YRES,DENSITY;
+extern int XRES, YRES, DENSITY;
 
 /* millimeters-to-pixels conversion */
 #define m2p(x) (x*DENSITY/25.4)
@@ -882,9 +876,9 @@ extern int XRES,YRES,DENSITY;
 Common buffer for HTML generation
 
 */
-extern char *text,*ptext;
-extern int textsz,topt;
-extern int ptextsz,ptopt;
+extern char *text, *ptext;
+extern int textsz, topt;
+extern int ptextsz, ptopt;
 
 /*
 
@@ -892,7 +886,7 @@ Debug messages.
 
 */
 extern char *dbm;
-extern int topdbm,dbmsz;
+extern int topdbm, dbmsz;
 
 /*
 
@@ -932,33 +926,33 @@ below.
 
 */
 typedef struct {
-    int id;            /* unique identifier */
-    char a;            /* alphabet (latin, greek, etc) */
-    short pt;          /* pattern type */
-    short fs;          /* font size (10pt, 12pt, etc) */
-    short bw;          /* bitmap width (pixels) */
-    short bh;          /* bitmap height (pixels) */
-    short bb;          /* bitmap baseline (pixels) */
-    short bp;          /* number of bitmap black pixels */
-    short sw;          /* skeleton width (pixels) */
-    short sh;          /* skeleton height (pixels) */
-    short sb;          /* skeleton baseline (pixels) */
-    short sp;          /* number of skeleton black pixels */
-    short sx,sy;       /* skeleton x and y margins */
-    short bs;          /* size of the fields b and s */
-    unsigned char *b;  /* the bitmap */
-    unsigned char *s;  /* the skeleton */
-    int f;             /* flags */
-    int act;           /* originating act */
-    int cm;            /* cumulative matches */
-    short ts;          /* size of the field tr */
-    short ds;          /* size of the field d */
-    char *tr;          /* transliteration */
-    char *d;           /* name of the originating page */
-    int e;             /* originating symbol (DEPRECATED) */
-    float sl;          /* slope (skew) */
-    short l,t;         /* fragment top-left position within symbol */
-    short p[8];        /* parameters for skeleton computation (deprecated?) */
+        int id;                 /* unique identifier */
+        char a;                 /* alphabet (latin, greek, etc) */
+        short pt;               /* pattern type */
+        short fs;               /* font size (10pt, 12pt, etc) */
+        short bw;               /* bitmap width (pixels) */
+        short bh;               /* bitmap height (pixels) */
+        short bb;               /* bitmap baseline (pixels) */
+        short bp;               /* number of bitmap black pixels */
+        short sw;               /* skeleton width (pixels) */
+        short sh;               /* skeleton height (pixels) */
+        short sb;               /* skeleton baseline (pixels) */
+        short sp;               /* number of skeleton black pixels */
+        short sx, sy;           /* skeleton x and y margins */
+        short bs;               /* size of the fields b and s */
+        unsigned char *b;       /* the bitmap */
+        unsigned char *s;       /* the skeleton */
+        int f;                  /* flags */
+        int act;                /* originating act */
+        int cm;                 /* cumulative matches */
+        short ts;               /* size of the field tr */
+        short ds;               /* size of the field d */
+        char *tr;               /* transliteration */
+        char *d;                /* name of the originating page */
+        int e;                  /* originating symbol (DEPRECATED) */
+        float sl;               /* slope (skew) */
+        short l, t;             /* fragment top-left position within symbol */
+        short p[8];             /* parameters for skeleton computation (deprecated?) */
 } pdesc;
 
 /*
@@ -966,14 +960,14 @@ typedef struct {
 Default skeleton parameters.
 
 */
-int   DEF_SA;
+int DEF_SA;
 float DEF_RR;
 float DEF_MA;
-int   DEF_MP;
+int DEF_MP;
 float DEF_ML;
-int   DEF_MB;
-int   DEF_RX;
-int   DEF_BT;
+int DEF_MB;
+int DEF_RX;
+int DEF_BT;
 
 /*
 
@@ -982,17 +976,17 @@ Pattern types.
 */
 #define MAXSAMPLES 3
 typedef struct {
-    char at;               /* auto-tune flag */
-    char n[MFTL];          /* font name */
-    int f;                 /* flags */
-    int a,d,xh,dd;         /* geometry (in pixels) */
-    short bd;              /* baseline displacement (in pixels) */
-    short ls;              /* line separation (in pixels) */
-    short ss;              /* symbol separation (in pixels) */
-    short ws;              /* word separation (in pixels) */
-    unsigned int acc;      /* alphabet accounting flags */
-    unsigned int sc[256];  /* symbol classification flags */
-    int sa[256];           /* symbol alignment */
+        char at;                /* auto-tune flag */
+        char n[MFTL];           /* font name */
+        int f;                  /* flags */
+        int a, d, xh, dd;       /* geometry (in pixels) */
+        short bd;               /* baseline displacement (in pixels) */
+        short ls;               /* line separation (in pixels) */
+        short ss;               /* symbol separation (in pixels) */
+        short ws;               /* word separation (in pixels) */
+        unsigned int acc;       /* alphabet accounting flags */
+        unsigned int sc[256];   /* symbol classification flags */
+        int sa[256];            /* symbol alignment */
 } ptdesc;
 
 /*
@@ -1001,7 +995,7 @@ Array of pattern types.
 
 */
 extern ptdesc *pt;
-extern int toppt,ptsz,cpt;
+extern int toppt, ptsz, cpt;
 
 /*
 
@@ -1077,10 +1071,10 @@ identify them using an id that may be different from the position
 where it is stored on the array of patterns.
 
 */
-extern int psz,topp,cdfc,cdfc_inv;
+extern int psz, topp, cdfc, cdfc_inv;
 extern pdesc *pattern;
 extern int s_id;
-extern int *slist,slistsz;
+extern int *slist, slistsz;
 
 /*
 
@@ -1089,12 +1083,12 @@ OCR statuses.
 */
 extern int ocring;
 extern int justone, this_pattern;
-extern int waiting_key,key_pressed;
+extern int waiting_key, key_pressed;
 extern char inp_str[];
 extern int recomp_cl;
 extern int ocr_all, starting, onlystep;
-extern int stop_ocr,cannot_stop;
-extern char to_tr[MFTL+1];
+extern int stop_ocr, cannot_stop;
+extern char to_tr[MFTL + 1];
 extern int nopropag;
 extern int to_rev;
 extern int to_arg;
@@ -1111,21 +1105,14 @@ DEBUG viewable buffer.
 
 */
 extern char *dv;
-extern int dvsz,topdv,dvfl;
+extern int dvsz, topdv, dvfl;
 
 /*
 
 Page geometric parameters.
 
 */
-extern float LW,
-             LH,
-             DD,
-             LS,
-             LM,
-             RM,
-             TM,
-             BM;
+extern float LW, LH, DD, LS, LM, RM, TM, BM;
 
 extern int PG_AUTO, TC, SL;
 
@@ -1182,21 +1169,15 @@ classified symbol.
 
 */
 extern int action_type;
-extern char *r_tr_old,*r_tr_new;
-extern int r_tr_patt,r_tr_symb;
+extern char *r_tr_old, *r_tr_new;
+extern int r_tr_patt, r_tr_symb;
 
 /*
 
 Magic Numbers
 
 */
-extern int m_mwd,
-           m_msd,
-           m_mae,
-           m_ds,
-           m_as,
-           m_xh,
-           m_fs;
+extern int m_mwd, m_msd, m_mae, m_ds, m_as, m_xh, m_fs;
 
 /*
 
@@ -1204,9 +1185,9 @@ TUNE form.
 
 */
 extern int classifier;
-extern int bf_auto,st_auto;
+extern int bf_auto, st_auto;
 extern float st_bq;
-extern int mf_i,mf_b,mf_c,mf_r,mf_l;
+extern int mf_i, mf_b, mf_c, mf_r, mf_l;
 
 /* override color buttons */
 extern int overr_cb;
@@ -1231,11 +1212,11 @@ extern int curr_mc;
 
 /* text lines */
 typedef struct {
-    int f,l;       /* first and last symbols on line */
-    char hw;       /* have true words */
+        int f, l;               /* first and last symbols on line */
+        char hw;                /* have true words */
 } lndesc;
 extern lndesc *line;
-extern int lnsz,topln;
+extern int lnsz, topln;
 
 /* (devel)
 
@@ -1273,18 +1254,18 @@ Text words.
 
 */
 typedef struct {
-    int F,L;         /* first and last symbols on word */
-    int E,W;         /* next and previous words on line */
-    int l,r,t,b;     /* bounding box */
-    int tl;          /* line to which this word belongs */
-    int bl,br;       /* baseline left and right ordinates */
-    int f;           /* flags */
-    int a;           /* word type */
-    short sh,as,ds;  /* small height, ascent and descent */
-    int sk;          /* skew */
+        int F, L;               /* first and last symbols on word */
+        int E, W;               /* next and previous words on line */
+        int l, r, t, b;         /* bounding box */
+        int tl;                 /* line to which this word belongs */
+        int bl, br;             /* baseline left and right ordinates */
+        int f;                  /* flags */
+        int a;                  /* word type */
+        short sh, as, ds;       /* small height, ascent and descent */
+        int sk;                 /* skew */
 } wdesc;
 extern wdesc *word;
-extern int wsz,topw;
+extern int wsz, topw;
 
 /* fat bits display buffer */
 extern char cfont[];
@@ -1326,7 +1307,7 @@ Maximum lenght of messages to be put on the message area.
 #define MMB 80
 
 /* buffer of messages */
-extern char mb[],mba[];
+extern char mb[], mba[];
 
 /*
 
@@ -1425,13 +1406,7 @@ extern int tab;
 //extern int CX0,CY0,CX0_orig,CY0_orig,CW,CH;
 
 /* indexes of the menus */
-extern int CM_F,
-           CM_E,
-           CM_T,
-           CM_O,
-           CM_V,
-           CM_S,
-           CM_D;
+extern int CM_F, CM_E, CM_T, CM_O, CM_V, CM_S, CM_D;
 
 /*
 
@@ -1466,16 +1441,16 @@ Menu descriptor.
 
 */
 typedef struct {
-    char a;             /* type (1=bar, 2=select) */
-    int m;              /* maximum number of labels (may grow) */
-    int n;              /* effective number of labels */
-    char *l;            /* labels */
-    char *t;            /* per-item types and flags */
-    char **h;           /* per-item short help */
-    int *f;             /* per-item activation flags */
-    int p;              /* position on bar */
-    int c;              /* current item */
-    char tt[MAX_MT+1];  /* menu title */
+        char a;                 /* type (1=bar, 2=select) */
+        int m;                  /* maximum number of labels (may grow) */
+        int n;                  /* effective number of labels */
+        char *l;                /* labels */
+        char *t;                /* per-item types and flags */
+        char **h;               /* per-item short help */
+        int *f;                 /* per-item activation flags */
+        int p;                  /* position on bar */
+        int c;                  /* current item */
+        char tt[MAX_MT + 1];    /* menu title */
 } cmdesc;
 
 /*
@@ -1484,7 +1459,7 @@ The currently active menu (cmenu), the array of menus (CM, TOP_CM
 and CM_SZ), and the menu clip flag.
 
 */
-extern int TOP_CM,CM_SZ;
+extern int TOP_CM, CM_SZ;
 extern int mclip;
 
 
@@ -1499,33 +1474,27 @@ extern int limits[];
 
 /* list of pixels of an symbol */
 typedef struct {
-    short x,y;
+        short x, y;
 } point;
 
 /* symbols */
 extern sdesc *mc;
-extern int ssz,tops;
+extern int ssz, tops;
 
 /* OCR statistics */
-extern int symbols,words,doubts,runs,classes;
-extern time_t ocr_time,ocr_start;
+extern int symbols, words, doubts, runs, classes;
+extern time_t ocr_time, ocr_start;
 extern int ocr_r;
 
 /* per-page statistics */
-extern int *dl_ne,
-           *dl_db,
-           *dl_r,
-           *dl_t,
-           *dl_lr,
-           *dl_w,
-           *dl_c;
+extern int *dl_ne, *dl_db, *dl_r, *dl_t, *dl_lr, *dl_w, *dl_c;
 
 /* preferred symbols */
-extern int *ps,pssz,topps;
+extern int *ps, pssz, topps;
 
 /* some parameters for comparison of symbols */
 extern int MD;
-extern int PNT,PNT1,PNT2;
+extern int PNT, PNT1, PNT2;
 
 /* the GPL */
 extern char gpl[];
@@ -1538,8 +1507,8 @@ Reduction factor for the list of patterns.
 extern int plist_rf;
 
 /* list_cl and list_s stuff */
-extern int *list_cl_r,list_cl_sz;
-extern int *list_s_r,list_s_sz;
+extern int *list_cl_r, list_cl_sz;
+extern int *list_s_r, list_s_sz;
 
 /*
 
@@ -1555,15 +1524,15 @@ run again.
 
 */
 typedef struct {
-    char t;   /* type (REV_SLINK or REV_ALINK) */
-    char p;   /* reviewer privilege */
-    int a;    /* originating act */
-    int l;    /* left (or base) symbol */
-    int r;    /* right symbol (or accent) */
+        char t;                 /* type (REV_SLINK or REV_ALINK) */
+        char p;                 /* reviewer privilege */
+        int a;                  /* originating act */
+        int l;                  /* left (or base) symbol */
+        int r;                  /* right symbol (or accent) */
 } lkdesc;
 
 extern lkdesc *lk;
-extern int lksz,toplk;
+extern int lksz, toplk;
 
 /*
 
@@ -1574,11 +1543,11 @@ extern char *reviewer;
 extern int revtype;
 
 /* host name with domain */
-extern char fqdn[MAXFNL+1];
+extern char fqdn[MAXFNL + 1];
 
 /* for list_cl */
-extern int *clx, *cly; 
-extern int csz,list_s_r_sz,nlx,nly;
+extern int *clx, *cly;
+extern int csz, list_s_r_sz, nlx, nly;
 
 /*
 
@@ -1592,9 +1561,10 @@ extern char *l2g[256];
 Pattern comparison result and bitmap buffer.
 
 */
-extern int cp_result,cp_diag;
+extern int cp_result, cp_diag;
 extern unsigned cmp_bmp[];
-extern int cmp_bmp_w,cmp_bmp_h,cmp_bmp_dx,cmp_bmp_dy,cmp_bmp_x0,cmp_bmp_y0;
+extern int cmp_bmp_w, cmp_bmp_h, cmp_bmp_dx, cmp_bmp_dy, cmp_bmp_x0,
+    cmp_bmp_y0;
 
 /*
 
@@ -1651,8 +1621,8 @@ This is the flea path.
 */
 /* TODO: fp was originally unsigned. Why? */
 extern short fp[];
-extern float fsl[],fpp[];
-extern int topfp,fpsz,curr_fp,last_fp;
+extern float fsl[], fpp[];
+extern int topfp, fpsz, curr_fp, last_fp;
 
 /*
 
@@ -1686,8 +1656,8 @@ extern char **attrib;
 extern char **val;
 extern int *attribsz;
 extern int *valsz;
-extern char *href,*type,*src,*value,*name,*action,*bgcolor;
-extern int checked,size,cellspacing,oneword;
+extern char *href, *type, *src, *value, *name, *action, *bgcolor;
+extern int checked, size, cellspacing, oneword;
 
 /*
 
@@ -1696,18 +1666,18 @@ Dictionary entry.
 */
 typedef struct {
 
-    char *b;
-    char *col;
-    char *lang;
-    char *key;
-    char *dec;
-    char *gender;
-    char *tense;
-    char *orig;
-    char *parad;
-    char *type;
-    char *ver;
-    char *val;
+        char *b;
+        char *col;
+        char *lang;
+        char *key;
+        char *dec;
+        char *gender;
+        char *tense;
+        char *orig;
+        char *parad;
+        char *type;
+        char *ver;
+        char *val;
 
 } ddesc;
 
@@ -1717,7 +1687,7 @@ Dictionary entries
 
 */
 extern ddesc *de;
-extern int desz,topde,dict_op;
+extern int desz, topde, dict_op;
 
 /*
 
@@ -1744,9 +1714,9 @@ Platform-dependent services.
 #endif
 
 #ifdef __EMX__
-#include <float.h>  /* because of PI */
+#include <float.h>              /* because of PI */
 #define rintf(A) rint(A)
-float modff(float A,float *B);
+float modff(float A, float *B);
 #endif
 
 /*
@@ -1760,7 +1730,7 @@ This section must be carefully reorganized.
 /* boundary check */
 #ifdef MEMCHECK
 extern int dontcheck;
-int check(int i,int s,char *w);
+int check(int i, int s, char *w);
 #define checkidx(i,s,w) ((void)((dontcheck) || (check(i,s,w))))
 #endif
 
@@ -1768,81 +1738,81 @@ int check(int i,int s,char *w);
 void tr(char *m, ...);
 void db(char *m, ...);
 void warn(char *m, ...);
-void fatal(int code,char *m, ...);
+void fatal(int code, char *m, ...);
 
 /* memory allocation */
-void *c_realloc(void *p,int m,const char *s);
+void *c_realloc(void *p, int m, const char *s);
 void c_free(void *p);
 
 /* I/O selector */
-FILE *zfopen(char *f,char *mode,int *pio);
-void zfclose(FILE *F,int pio);
-size_t zfread(void *ptr,size_t size,size_t nmemb,FILE *stream);
-size_t zfwrite(const void *ptr,size_t size,size_t nmemb,FILE *stream);
+FILE *zfopen(char *f, char *mode, int *pio);
+void zfclose(FILE *F, int pio);
+size_t zfread(void *ptr, size_t size, size_t nmemb, FILE *stream);
+size_t zfwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream);
 int zfgetc(FILE *stream);
 
 /* bitmap comparison heuristics */
-int bmpcmp_map(int c,int st,int k,int direct);
-int bmpcmp_skel(int c,int st,int k,int direct);
-int bmpcmp_pd(int c,int st,int k,int direct);
-int bmpcmp_shape(int c,int st,int k,int direct);
+int bmpcmp_map(int c, int st, int k, int direct);
+int bmpcmp_skel(int c, int st, int k, int direct);
+int bmpcmp_pd(int c, int st, int k, int direct);
+int bmpcmp_shape(int c, int st, int k, int direct);
 
 /* redraw-related services */
-void display_match(void *c,void *s,int r);
+void display_match(void *c, void *s, int r);
 void force_redraw(void);
 void set_mclip(int f);
 void swn(char *);
 void set_xfont(void);
 void redraw(void);
-void show_hint(int f,char *s, ...);
-void enter_wait(char *s,int f,int m);
+void show_hint(int f, char *s, ...);
+void enter_wait(char *s, int f, int m);
 void slide(void);
 
 /* symbol pairing and word-related services */
-int s_pair(int a,int b,int p,int *rd);
-int rsymb(int c,int relax);
-int bsymb(int c,int relax);
-int lsymb(int c,int relax);
+int s_pair(int a, int b, int p, int *rd);
+int rsymb(int c, int relax);
+int bsymb(int c, int relax);
+int lsymb(int c, int relax);
 void diag_wpairing(int t);
 void diag_pairing(int t);
 
 /* symbol services */
-int classify(int c,int bmpcmp(int,int,int,int),int mode);
+int classify(int c, int bmpcmp(int, int, int, int), int mode);
 int sdim(int k);
-int swh(int w,int h);
-int avoid(int k,int c);
+int swh(int w, int h);
+int avoid(int k, int c);
 
 /* geometric services */
-int intersize(int a,int b,int c,int d,int *e,int *f);
-float bdist(int a,int b);
-float box_dist(int a,int b,int *v);
-int ldist(int a,int b,int c,int d);
-int inside(int x,int y,int *pol,int npol);
+int intersize(int a, int b, int c, int d, int *e, int *f);
+float bdist(int a, int b);
+float box_dist(int a, int b, int *v);
+int ldist(int a, int b, int c, int d);
+int inside(int x, int y, int *pol, int npol);
 void comp_circ(int max);
 
 /* clipping services */
-int symbol_at(int x,int y);
-int closure_at(int x,int y,int u);
-void list_cl(int x,int y,int w,int h,int reset);
-void list_s(int x,int y,int w,int h);
+int symbol_at(int x, int y);
+int closure_at(int x, int y, int u);
+void list_cl(int x, int y, int w, int h, int reset);
+void list_s(int x, int y, int w, int h);
 
 /* bitmap services */
-int add_closure(cldesc *d,int dx,int dy);
+int add_closure(cldesc *d, int dx, int dy);
 int pixel_mlist(int k);
-int wrmc8(int mm,char *s1,char *s2);
-int pixel(cldesc *c,int x,int y);
-int spixel(sdesc *m,int x,int y);
+int wrmc8(int mm, char *s1, char *s2);
+int pixel(cldesc *c, int x, int y);
+int spixel(sdesc *m, int x, int y);
 int byteat(int b);
-void bm2byte(char *c,unsigned char *b);
-int wrzone(char *s1,int all);
-int pbm2bm(char *f,int reset);
-int find_thing(char *p,int reset,int x,int y);
+void bm2byte(char *c, unsigned char *b);
+int wrzone(char *s1, int all);
+int pbm2bm(char *f, int reset);
+int find_thing(char *p, int reset, int x, int y);
 
 /* OCR startup and steps */
-void start_ocr(int p,int s,int r);
+void start_ocr(int p, int s, int r);
 int build(int reset);
-int load_page(int p,int reset,int bin);
-int loadpgm(int reset,char *f,unsigned char **pb,int *w,int *h);
+int load_page(int p, int reset, int bin);
+int loadpgm(int reset, char *f, unsigned char **pb, int *w, int *h);
 int unload_page(int reset);
 int ocr_prep(int reset);
 
@@ -1852,8 +1822,8 @@ char *dwname(int s);
 char *aname(int a);
 
 /* transliteration-related services */
-void add_tr(int m,char *t,int orig,int an,int q,char al,int f);
-void rmvotes(int o,int k,int a,int nd);
+void add_tr(int m, char *t, int orig, int an, int q, char al, int f);
+void rmvotes(int o, int k, int a, int nd);
 
 /* production of window contents */
 //void mk_page_output(int encap);
@@ -1870,33 +1840,33 @@ void mk_page_doubts(void);
 void names_cpage(void);
 
 /* allocation and of structs */
-int new_mc(int *l,int cls);
+int new_mc(int *l, int cls);
 
 /* OCR thread */
 void continue_ocr(void);
 
 /* sorting services */
-void qss(int *a,int l,int r);
-void qsf(int *a,int l,int r,int inv,int cmpf(int,int));
-void qsi(int *a,int l,int r,char *t,int sz,int p,int inv);
-void qs(char *a[],int l,int r,int p,int inv);
-void true_qsi(int *a,int l,int r,char *t,int sz,int p,int inv);
+void qss(int *a, int l, int r);
+void qsf(int *a, int l, int r, int inv, int cmpf(int, int));
+void qsi(int *a, int l, int r, char *t, int sz, int p, int inv);
+void qs(char *a[], int l, int r, int p, int inv);
+void true_qsi(int *a, int l, int r, char *t, int sz, int p, int inv);
 
 /* revision services */
-int review(int reset,adesc *a);
+int review(int reset, adesc *a);
 void summarize(int m);
 int from_gui(void);
 void synchronize(void);
 
 /* load and dump services */
 void totext(const char *fmt, ...);
-void to(char **t,int *top,int *sz,const char *fmt, ...);
+void to(char **t, int *top, int *sz, const char *fmt, ...);
 void push_text(void);
 void pop_text(void);
-int dump_session(char *f,int reset);
-int dump_acts(char *f,int reset);
-int dump_patterns(char *f,int reset);
-int recover_session(char *f,int st,int reset);
+int dump_session(char *f, int reset);
+int dump_acts(char *f, int reset);
+int dump_patterns(char *f, int reset);
+int recover_session(char *f, int st, int reset);
 int recover_acts(char *f);
 int recover_patterns(char *f);
 int free_page(void);
@@ -1913,58 +1883,59 @@ void consist_pp(void);
 
 /* alphabet services */
 void init_alphabet(void);
-int compose(int *l,int c);
+int compose(int *l, int c);
 
 /* skeleton services */
 void consist_skel(void);
 void skel_parms(char *s);
-int border(int i,int j);
-void cb_border(int W,int H);
-void skel(int i0,int j0,int MX,int MY);
+int border(int i, int j);
+void cb_border(int W, int H);
+void skel(int i0, int j0, int MX, int MY);
 int skel_quality(int p);
 int tune_skel(int p);
-int tune_skel_global(int reset,int p);
-void spcpy(int to,int from);
+int tune_skel_global(int reset, int p);
+void spcpy(int to, int from);
 
 /* pattern services */
 int id2idx(int id);
 void new_pattern(void);
-void justify_pattern(short *h,short *w,short *dx,short *dy);
+void justify_pattern(short *h, short *w, short *dx, short *dy);
 int opt_font();
 void pskel(int c);
 void new_pattern(void);
-int update_pattern(int k,char *tr,int an,char a,short ft,short fs,int f);
+int update_pattern(int k, char *tr, int an, char a, short ft, short fs,
+                   int f);
 void rm_pattern(int n);
 void rm_untrans(void);
 void clear_cm(void);
 int prepare_patterns(int reset);
-void pp(int i,int j);
-void pr(int i,int j,int c);
-int compare_patterns(int p1,int p2,int bmpcmp(int,int,int,int));
-int bm2cb(unsigned char *b,int dx,int dy);
+void pp(int i, int j);
+void pr(int i, int j, int c);
+int compare_patterns(int p1, int p2, int bmpcmp(int, int, int, int));
+int bm2cb(unsigned char *b, int dx, int dy);
 void reset_skel_parms(void);
 void enlarge_pt(int new_toppt);
-int snbp(int s,int *bp,int *sp);
+int snbp(int s, int *bp, int *sp);
 
 /* major gui services */
 void xevents(void);
 void set_alpha(void);
 void set_xfont(void);
 void xpreamble();
-void comp_wnd_size(int ww,int wh);
-void cmi(void) __attribute__((deprecated));
-int mb_item(int x,int y);
+void comp_wnd_size(int ww, int wh);
+void cmi(void) __attribute__ ((deprecated));
+int mb_item(int x, int y);
 void init_welcome(void);
 //void right(void);
 //void prior(void);
-void get_pointer(int *x,int *y) __attribute__((deprecated));
+void get_pointer(int *x, int *y) __attribute__ ((deprecated));
 void set_xfont(void);
 void setview(int mode) G_GNUC_DEPRECATED;
 void check_dlimits(int cursoron);
-void set_buttons(int s,int p);
+void set_buttons(int s, int p);
 void symb2buttons(int s);
 void set_mclip(int f);
-void draw_dw(int bg,int inp);
+void draw_dw(int bg, int inp);
 
 /* auxiliar gui services */
 void copychar(void);
@@ -1972,22 +1943,22 @@ void dismiss(int f);
 void set_bl_alpha(void);
 void comp_menu_size(cmdesc *c);
 void form_auto_submit(void);
-void show_htinfo(int cx,int cy);
+void show_htinfo(int cx, int cy);
 
 /* merging */
 void diag_geomerge(int t);
 void geo_merge(int c);
 
 /* menu-related services */
-int additem(cmdesc *m,char *t,int p,int g,int d,char *h,int f);
+int additem(cmdesc *m, char *t, int p, int g, int d, char *h, int f);
 
 /* preferences stuff */
 void make_pmc(void);
-void extr_tp(int *U,int *T,int *S,int *E,int *A,int *N,int p);
+void extr_tp(int *U, int *T, int *S, int *E, int *A, int *N, int p);
 
 /* HTML services */
 void free_earray(void);
-void img_size(char *img,int *w,int *h);
+void img_size(char *img, int *w, int *h);
 int get_tag(char **ht);
 
 /* destroy data */
@@ -1996,24 +1967,26 @@ void nullify(int n);
 
 /* alignment */
 int tr_align(char *a);
-int complete_align(int a,int b,int *as,int *xh,int *bl,int *ds);
-int geo_align(int c,int dd,int as,int xh,int bl,int ds);
+int complete_align(int a, int b, int *as, int *xh, int *bl, int *ds);
+int geo_align(int c, int dd, int as, int xh, int bl, int ds);
 
 /* barcode stuff */
-int closure_border_slines(int e,int t,int crit,float val,short *res,int mr,int bar);
+int closure_border_slines(int e, int t, int crit, float val, short *res,
+                          int mr, int bar);
 int closure_border_path(int t);
-int border_path(unsigned char *b,int w,int h,short *bp,int m,int u0,int v0,int relax);
-int dist_bar(int i,int j);
+int border_path(unsigned char *b, int w, int h, short *bp, int m, int u0,
+                int v0, int relax);
+int dist_bar(int i, int j);
 int search_barcode(void);
-int isbar(int k,float *sk,float *bl);
-float s2a(float slxy,float sly,float slx,short *bp,int i,int j);
+int isbar(int k, float *sk, float *bl);
+float s2a(float slxy, float sly, float slx, short *bp, int i, int j);
 
 /* blockfinders */
 void cf_block(void);
-int blockfind(int reset,int pc);
+int blockfind(int reset, int pc);
 
 /* clusterization */
-int clusterize(int N,int T,int dist(int,int));
+int clusterize(int N, int T, int dist(int, int));
 int test_clusterize(void);
 
 /* preprocessors */
@@ -2028,7 +2001,7 @@ void test(void);
 void internal_tests(void);
 
 /* dictionary services */
-int dump_dict(int reset,char *f);
+int dump_dict(int reset, char *f);
 int dict_sel(ddesc *e);
 void dict_load(void);
 void dict_behaviour(void);
@@ -2036,28 +2009,28 @@ void dict_behaviour(void);
 /* other */
 void checkcl(int m);
 void gen_wrf();
-void process_cl(int argc,char *argv[]);
+void process_cl(int argc, char *argv[]);
 void process_webdata(void);
 int pagenbr(char *p);
 int s2p(int k);
-int tsymb(int c,int relax);
+int tsymb(int c, int relax);
 int classify_tr(char *t);
-void new_alrm(unsigned d,int who);
+void new_alrm(unsigned d, int who);
 void dump_cb(void);
 void dump_bm(unsigned char *b);
 void init_pt(ptdesc *p);
-int dx(int k,int i0,int j0);
-int cma(int it,int check);
-int spyhole(int x,int y,int op,int et);
-int justify_bitmap(unsigned char *bm,int bw,int bh);
-void get_ap(int c,int *as,int *xh,int *bl,int *ds);
+int dx(int k, int i0, int j0);
+int cma(int it, int check);
+int spyhole(int x, int y, int op, int et);
+int justify_bitmap(unsigned char *bm, int bw, int bh);
+void get_ap(int c, int *as, int *xh, int *bl, int *ds);
 void cb2bm(unsigned char *b);
-int cmpln(int a,int b);
+int cmpln(int a, int b);
 void write_report(char *fn);
-char *mkpath(char *d,char *a,char *b);
+char *mkpath(char *d, char *a, char *b);
 void build_internal_patterns(void);
-int obd_main (int argc, char **argv);
-char* ht(int secs);
+int obd_main(int argc, char **argv);
+char *ht(int secs);
 void set_flag(flag_t flag, gboolean value);
 gboolean get_flag(flag_t flag);
 void resync_pagelist(int pageno);

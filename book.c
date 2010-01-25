@@ -573,7 +573,7 @@ the images:
     $ cd /home/clara/books/BC
     $ mkdir pbm
     $ cd pbm
-    $ selthresh -y 300 -l 0.45 0.55 ../pgm/*pgm
+    $ selthresh -y 300 -l 0.45 0.55 ../pgm/\*pgm
     selthresh: scaling 2 times
     Best thresholds:
     143-l.pgm 0.49
@@ -588,7 +588,7 @@ running). The execution can be safely restarted from the point
 where it was interrupted typing again the same command:
 
     $ cd /home/clara/books/MBB/pbm
-    $ selthresh -y 300 -l 0.40 0.55 ../pgm/*pgm
+    $ selthresh -y 300 -l 0.40 0.55 ../pgm/\*pgm
 
 The option -l is used to inform an interval of thresholds to
 try. By now, selthresh is unable to choose by itself a "good"
@@ -994,7 +994,7 @@ binary (change the path /usr/local/bin/clara as required):
     $ cd /home/clara/www/bin
     $ ln -s /usr/local/bin/clara clara
     $ ./clara.pl -s book1
-    $ rm ../book1/*html
+    $ rm ../book1/\*html
     $ ./clara.pl -p
 
 Now your server must be instructed to exec /home/clara/www/bin/clara.pl

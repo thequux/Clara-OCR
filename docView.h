@@ -13,23 +13,25 @@ typedef struct _ClaraDocViewClass ClaraDocViewClass;
 
 struct _ClaraDocView {
         GtkDrawingArea parent;
-        
+
         /* private */
 };
 
 struct _ClaraDocViewClass {
         GtkDrawingAreaClass parent_class;
 
-        /*< protected >*/
+        /*< protected > */
 
-        void (*symbol_selected) (ClaraDocView* self, int symNo);
-        void (*transliteration_given) (ClaraDocView *self, int symNo, const gchar* translit);
+        void (*symbol_selected) (ClaraDocView *self, int symNo);
+        void (*transliteration_given) (ClaraDocView *self, int symNo,
+                                       const gchar *translit);
 
-        /*< private >*/
+        /*< private > */
 
-        void (*set_scroll_adjustments) (ClaraDocView*,GtkAdjustment*, GtkAdjustment*);
+        void (*set_scroll_adjustments) (ClaraDocView *, GtkAdjustment *,
+                                        GtkAdjustment *);
 };
 
-GtkWidget* clara_doc_view_new(void);
-void clara_doc_view_new_page(ClaraDocView* dv);
+GtkWidget *clara_doc_view_new(void);
+void clara_doc_view_new_page(ClaraDocView *dv);
 GType clara_doc_view_get_type(void);

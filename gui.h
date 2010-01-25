@@ -39,7 +39,7 @@ extern char *displayname;
 // extern Window XW;
 // extern XID xw;
 // extern Pixmap pm;
-extern int have_xw,have_pm,use_xb;
+extern int have_xw, have_pm, use_xb;
 
 /* Xcolors */
 // extern XColor white,black,gray,darkgray,vdgray;
@@ -147,16 +147,16 @@ All other supported tags do not generate GEs.
 
 */
 typedef struct {
-    char type;         /* graphic element type */
-    int l,r,t,b;       /* {left,right,top,bottom}-most coordinate */
-    int tsz;           /* text buffer size */
-    char *txt;         /* text buffer */
-    char a;            /* action type (0, HTA_HREF, HTA_HREF_C or HTA_SUBMIT) */
-    int argsz;         /* size of arg buffer */
-    char *arg;         /* HREF URL */
-    int iarg;          /* integer argument */
-    int tr,tc;         /* table row and column */
-    int bg;            /* background color */
+        char type;              /* graphic element type */
+        int l, r, t, b;         /* {left,right,top,bottom}-most coordinate */
+        int tsz;                /* text buffer size */
+        char *txt;              /* text buffer */
+        char a;                 /* action type (0, HTA_HREF, HTA_HREF_C or HTA_SUBMIT) */
+        int argsz;              /* size of arg buffer */
+        char *arg;              /* HREF URL */
+        int iarg;               /* integer argument */
+        int tr, tc;             /* table row and column */
+        int bg;                 /* background color */
 } edesc;
 
 /*
@@ -166,54 +166,54 @@ Document window.
 */
 typedef struct {
 
-    /*
-        Portion of the page being exhibited.
-    */
-    int x0,y0;
-    int hr,vr;
+        /*
+           Portion of the page being exhibited.
+         */
+        int x0, y0;
+        int hr, vr;
 
-    /*
-        Portion of the application X window being used
-        to display (part of) the page.
-    */
-    int dm,dt;
-    int dw,dh;
+        /*
+           Portion of the application X window being used
+           to display (part of) the page.
+         */
+        int dm, dt;
+        int dw, dh;
 
-    /* document total size */
-    int grx,gry;
+        /* document total size */
+        int grx, gry;
 
-    /* grid separation and width */
-    int gs,gw;
+        /* grid separation and width */
+        int gs, gw;
 
-    /* reduction factor */
-    int rf;
+        /* reduction factor */
+        int rf;
 
-    /* visibility flag */
-    char v;
+        /* visibility flag */
+        char v;
 
-    /* HTML flag */
-    char html;
+        /* HTML flag */
+        char html;
 
-    /* HTML source flag */
-    char hs;
+        /* HTML source flag */
+        char hs;
 
-    /* regenerate flag */
-    char rg;
+        /* regenerate flag */
+        char rg;
 
-    /* draw scrollbars flag */
-    char ds;
+        /* draw scrollbars flag */
+        char ds;
 
-    /* underline links flag */
-    char ulink;
+        /* underline links flag */
+        char ulink;
 
-    /* graphic elements */
-    edesc *p_ge;
-    int p_gesz;
-    int p_topge;
-    int p_curr_hti;
+        /* graphic elements */
+        edesc *p_ge;
+        int p_gesz;
+        int p_topge;
+        int p_curr_hti;
 
-    /* left margin */
-    int hm;
+        /* left margin */
+        int hm;
 
 } dwdesc;
 
@@ -223,7 +223,7 @@ Parameters of the current document window.
 
 */
 extern int CDW;
-extern int PAGE_CM,PATTERN_CM,HISTORY_CM,TUNE_CM;
+extern int PAGE_CM, PATTERN_CM, HISTORY_CM, TUNE_CM;
 extern dwdesc dw[];
 #define X0 (dw[CDW].x0)
 #define Y0 (dw[CDW].y0)
@@ -259,11 +259,11 @@ extern dwdesc dw[];
 Restricted clip window for the PAGE window.
 
 */
-extern int PHR,PVR,PDM,PDT;
+extern int PHR, PVR, PDM, PDT;
 
 /* closures for welcome page */
-extern cldesc c12,c13,c14,c15,c16,c17,c18,c19;
-extern int wx0,wx1,wy0,wy1;
+extern cldesc c12, c13, c14, c15, c16, c17, c18, c19;
+extern int wx0, wx1, wy0, wy1;
 
 /* tab labels */
 extern char *tabl[];
@@ -311,7 +311,7 @@ GE types.
 Sliding mode
 
 */
-extern int sliding,s0;
+extern int sliding, s0;
 
 /*
 
@@ -331,37 +331,35 @@ first word on the array of elements and are typed HTA_HREF_C.
 Divisors on PAGE tab.
 
 */
-int page_j1,page_j2,opage_j1,opage_j2;
+int page_j1, page_j2, opage_j1, opage_j2;
 
 /* current color */
 extern int COLOR;
 
 /* Various GUI elements... */
-GtkWidget *btnOcr, *btnStop,
-        *mnuPage, *mnuFatbits, 
-        *mainwin;
+GtkWidget *btnOcr, *btnStop, *mnuPage, *mnuFatbits, *mainwin;
 
 /* services */
 void edit_pattern(int change);
-cmdesc *addmenu(int a,char *tt,int m);
+cmdesc *addmenu(int a, char *tt, int m);
 
 /* html services */
 void new_ge(void);
 void text2ge(char *t);
-void html2ge(char *ht,int lm);
-int cmp_pattern(int i,int j);
-int cmp_gep(int a,int b);
+void html2ge(char *ht, int lm);
+int cmp_pattern(int i, int j);
+int cmp_gep(int a, int b);
 void ge2txt(void);
 void submit_form(int hti);
-void html_action(int x,int y);
+void html_action(int x, int y);
 void p2cf(void);
 
 /* page generation services */
 typedef enum {
-    OE_FULL_HTML = 0,
-    OE_ENCAP_HTML = 1,
-    OE_TEXT = 2,
-    OE_DJVU = 3,
+        OE_FULL_HTML = 0,
+        OE_ENCAP_HTML = 1,
+        OE_TEXT = 2,
+        OE_DJVU = 3,
 } output_encap;
 
 void mk_page_symbol(int c);
@@ -380,4 +378,4 @@ void redraw_inp_str(void);
 void redraw_document_window(void);
 void new_page();
 void redraw_flea(void);
-void show_message(const char* msg);
+void show_message(const char *msg);
