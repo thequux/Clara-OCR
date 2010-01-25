@@ -600,6 +600,9 @@ static gboolean clara_doc_view_expose(GtkWidget *doc,
 
         priv->use_position = TRUE;
 
+        if (cl == NULL)
+                return TRUE;
+
         // figure out what we want to draw...
         clara_doc_view_calc_viewport(self, &vp, &zoom);
         priv->oldzoom = zoom;
@@ -634,7 +637,7 @@ static gboolean clara_doc_view_expose(GtkWidget *doc,
                     (sym->r >= vp.x) &&
                     (sym->t <= vp.y + vp.height) && (sym->b >= vp.y)) {
                         guint options = DV_BBOX;
-                        if (curr_mc == c)
+                        if (curr_mc == c && gtk_widget_has_focus(doc))
                                 options |= DV_SELECTED;
 
                         if (uncertain(mc[c].tc))

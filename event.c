@@ -5531,6 +5531,14 @@ static void quit_callback(GtkMenuItem *object, void *user_ptr) {
         continue_ocr();
         gtk_main_quit();
 }
+static void save_session_cb(GtkMenuItem *object, void *user_ptr) {
+        start_ocr(-2, OCR_SAVE, 0);
+}
+
+static void set_flag_cb(GtkCheckMenuItem *object, void *user_ptr) {
+        flag_t fl = GPOINTER_TO_INT(user_ptr);
+        set_flag(fl,object->active);
+}
 
 /*
 
@@ -5576,13 +5584,14 @@ static void init_context_menus(void) {
                          G_CALLBACK(cb),NULL);                  \
         gtk_menu_shell_append(GTK_MENU_SHELL(submenu),mi);      \
     } while(0)
-#define MCHECK(text,cb)                                         \
+#define MCHECK_(text,cb,ptr)                                    \
     do {                                                        \
         mi = gtk_check_menu_item_new_with_label(text);          \
         g_signal_connect(G_OBJECT(mi),"activate",               \
-                         G_CALLBACK(cb),NULL);                  \
+                         G_CALLBACK(cb),ptr);                   \
         gtk_menu_shell_append(GTK_MENU_SHELL(submenu),mi);      \
     } while(0)
+#define MCHECK(text,cb) MCHECK_(text,cb,NULL)
 #define MRADIO_START()  group = NULL
 #define MRADIO(text,cb)                                                 \
     do {                                                                \
@@ -5609,7 +5618,7 @@ static void init_context_menus(void) {
            Save on disk the page session (file page.session), the patterns
            (file "pattern") and the revision acts (file "acts").
          */
-        MITEM("Save session", null_callback);   // CM_F_SAVE, CMA_PAGE A
+        MITEM("Save session", save_session_cb);   // CM_F_SAVE, CMA_PAGE A
 
         /* (book)
 
@@ -5666,7 +5675,7 @@ static void init_context_menus(void) {
            PATTERN or the PATTERN PROPS windows will move to the next
            or the previous untransliterated patterns.
          */
-        MCHECK("Only doubts", null_callback);   // CM_E_OD, 0 B
+        MCHECK_("Only doubts", set_flag_cb, GINT_TO_POINTER(FL_ONLY_DOUBTS));   // CM_E_OD, 0 B
 
         /* (book)
 
@@ -5677,7 +5686,7 @@ static void init_context_menus(void) {
            to resolve the unclassified symbols using a second
            classification method.
          */
-        MCHECK("Re-scan all patterns", null_callback);  // CM_E_RESCAN, 0 B
+        MCHECK_("Re-scan all patterns", set_flag_cb, GINT_TO_POINTER(FL_RESCAN));  // CM_E_RESCAN, 0 B
 
         /* (book)
 
@@ -5688,7 +5697,7 @@ static void init_context_menus(void) {
            "a" remain unclassified, training one of them will perhaps
            recognize some othersm helping to complete the recognition.
          */
-        MCHECK("Auto-classify", null_callback); // CM_E_AC, 0 B
+        MCHECK_("Auto-classify", set_flag_cb, GINT_TO_POINTER(FL_AUTO_CLASSIFY)); // CM_E_AC, 0 B
 
         MSEP();
         /* (book)
@@ -6866,18 +6875,12 @@ void recog_data_func(GtkTreeViewColumn *tree_column,
         g_free(str);
 }
 
-GtkTreeViewColumn *gtk_tree_view_column_new_with_data_func(const gchar
-                                                           *title,
-                                                           GtkCellRenderer
-                                                           *cell,
-                                                           GtkTreeCellDataFunc
-                                                           func,
-                                                           gpointer
-                                                           func_data,
-                                                           GDestroyNotify
-                                                           destroy,
-                                                           gboolean
-                                                           expands) {
+GtkTreeViewColumn *gtk_tree_view_column_new_with_data_func(const gchar *title,
+                                                           GtkCellRenderer *cell,
+                                                           GtkTreeCellDataFunc func,
+                                                           gpointer func_data,
+                                                           GDestroyNotify destroy,
+                                                           gboolean expands) {
         GtkTreeViewColumn *col = gtk_tree_view_column_new();
 
         gtk_tree_view_column_set_title(col, title);
@@ -6929,7 +6932,7 @@ static void page_view_symbol_changed_cb(ClaraDocView *docView, int symNo,
 static void page_view_translit_given_cb(ClaraDocView *docView, int symNo,
                                         const gchar *translit,
                                         gpointer data G_GNUC_UNUSED) {
-        g_print("Translit: %d -> %s", symNo, translit);
+        g_print("Translit: %d -> %s\n", symNo, translit);
         if (symNo >= 0) {
                 start_ocr(-2, OCR_REV, 0);
                 strcpy(to_tr, translit);
@@ -6958,16 +6961,15 @@ static GtkWidget *create_page_list_window() {
                                                  * to the next one.  There is
                                                  * intentionally no while body.
                                                  */
-                printf("%p %s\n", pagelist + pn, pagelist + pn);
-                gtk_list_store_insert_with_values(pageStore, pageIters + i, i, PL_COL_PAGENO, i, PL_COL_FILENAME, pagelist + pn,        // filename
+                gtk_list_store_insert_with_values(pageStore, pageIters + i, i,
+                                                  PL_COL_PAGENO, i,
+                                                  PL_COL_FILENAME, pagelist + pn,        // filename
                                                   PL_COL_NRUNS, dl_r[i],
                                                   PL_COL_TIME, dl_t[i],
                                                   PL_COL_WORDS, dl_w[i],
                                                   PL_COL_SYMBOLS, dl_ne[i],
                                                   PL_COL_DOUBTS, dl_db[i],
                                                   PL_COL_CLASSES, dl_c[i],
-                                                  //PL_COL_FACT, (dl_c[i] > 0) ? (((float) dl_ne[i]) / dl_c[i]) : 1.0,
-                                                  //PL_COL_RECOG, (dl_ne[i] > 0) ? (((float) dl_ne[i] - dl_db[i]) / dl_ne[i]) : 0.0,
                                                   -1);
         }
 
@@ -7074,10 +7076,9 @@ static void rebuild_page_contents() {
         gtk_text_buffer_get_end_iter(tbOutput, &it);
         mark_start =
             gtk_text_buffer_create_mark(tbOutput, "word-start", &it, TRUE);
-        for (lineNo = 0; lineNo < topln; ++lineNo) {
+        for (lineNo = 0; lineNo <= topln; ++lineNo) {
                 gboolean put_ch = FALSE;
                 int wordNo, chr;
-                gtk_text_buffer_insert(tbOutput, &it, "<ln>", -1);
                 for (wordNo = line[lineNo].f; wordNo >= 0;) {
                         new_word = TRUE;
                         for (chr = word[wordNo].F; chr >= 0;
@@ -7085,9 +7086,10 @@ static void rebuild_page_contents() {
                                 if (new_word && mc[chr].tc != DOT &&
                                     mc[chr].tc != COMMA) {
                                         new_word = FALSE;
-                                        gtk_text_buffer_insert(tbOutput,
-                                                               &it, " _",
-                                                               -1);
+                                        if(put_ch)
+                                                gtk_text_buffer_insert(tbOutput,
+                                                                       &it, " ",
+                                                                       -1);
                                         gtk_text_buffer_move_mark_by_name
                                             (tbOutput, "word-start", &it);
                                 }
@@ -7097,21 +7099,12 @@ static void rebuild_page_contents() {
                                             (tbOutput, &it, "\342\230\271",
                                              -1, "invalid", NULL);
                                 } else {
-                                        GtkTextMark *preins =
-                                            gtk_text_buffer_create_mark
-                                            (tbOutput, NULL, &it, TRUE);
                                         gtk_text_buffer_insert(tbOutput,
                                                                &it,
                                                                mc[chr].
                                                                tr->t, -1);
-                                        GtkTextIter preit;
-                                        gtk_text_buffer_get_iter_at_mark
-                                            (tbOutput, &preit, preins);
-                                        gtk_text_buffer_remove_all_tags
-                                            (tbOutput, &preit, &it);
-                                        gtk_text_buffer_delete_mark
-                                            (tbOutput, preins);
                                 }
+                                gtk_text_buffer_get_end_iter(tbOutput, &it);
                                 put_ch = TRUE;
 
                         }
@@ -7119,7 +7112,7 @@ static void rebuild_page_contents() {
                         if (!new_word) {
                                 GtkTextIter wordStart;
                                 gtk_text_buffer_get_iter_at_mark(tbOutput,
-                                                                 &it,
+                                                                 &wordStart,
                                                                  gtk_text_buffer_get_mark
                                                                  (tbOutput,
                                                                   "word-start"));
@@ -7169,8 +7162,13 @@ static GtkWidget *create_page_view_window(void) {
         vp2 = gtk_vpaned_new();
 
         tbOutput = gtk_text_buffer_new(NULL);
+
+
         g_object_ref_sink(tbOutput);
         wText = gtk_text_view_new_with_buffer(tbOutput);
+        PangoFontDescription *defaultFace = pango_font_description_from_string("Monospace");
+        gtk_widget_modify_font(wText, defaultFace);
+        pango_font_description_free(defaultFace);
 
         //tbOutput = gtk_text_view_get_buffer(GTK_TEXT_VIEW(wText));
         gtk_text_buffer_create_tag(tbOutput, "bold",
