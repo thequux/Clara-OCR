@@ -22,6 +22,23 @@ cm_o_pgo        -> FL_PAGE_ONLY
 cm_v_of         -> FL_OMIT_FRAGMENTS
 cm_v_cc         -> FL_SHOW_CLASS
 
-standard modeline:
-/* -*- mode: c; c-basic-offset: 8 -*-
- * vim: sw=8 */
+TODO
+-------
+-- restoring previous functionality
+pattern, doubts, and tuning views
+various display modes (show {words,lines,closures,symbol_merging,...})
+context menu on page view
+
+-- Cleanup
+
+Remove now-dead code
+Modify flags to be multivalued, where appropriate
+refactor data structures
+  bundle up page-related stuff
+run OCR in seperate thread
+refactor control structure
+Clean option parser
+Relace zfopen and friends with transparent zlib support.
+
+-- very long-term
+Replace file format, to kill off the last of cml.c

@@ -4967,10 +4967,10 @@ int main(int argc, char *argv[]) {
 
 
         if ((batch_mode) && (report)) {
-                mk_page_list();
+                //mk_page_list();
                 //DFW = 6;
-                html2ge(text, 0);
-                write_report("report.txt");
+                //html2ge(text, 0);
+                //write_report("report.txt");
                 mk_pattern_list();
                 //DFW = 6;
                 html2ge(text, 0);
