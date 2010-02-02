@@ -1530,6 +1530,9 @@ int prf(char *f) {
         return (1);
 }
 
+
+
+
 /*
 
 Read the bookfont handling options from the argument to the
@@ -1943,6 +1946,21 @@ void build_plist(void) {
         }
 }
 
+static GOptionEntry optDesc[] = {
+	{"batch", 'b', 0, G_OPTION_ARG_NONE, &batch_mode, "Run in batch mode (non-interactive)", NULL },
+	{"debug", 'd', 0, G_OPTION_ARG_NONE, &debug, "Enable debugging", NULL },
+	{"reviewer", 'r', 0, G_OPTION_ARG_STRING, &reviewer, "Reviewer name", "reviewer"},
+	{"reviewer-type", 't', 0, G_OPTION_ARG_CALLBACK, reviewer_type_cb, "Reviewer type", "A|N|T"},
+	{"page-dir", 'f', 0, G_OPTION_ARG_FILENAME, &page_dir, "Directory containing page images", "dir"},
+	{"output-format", 'o', 0, G_OPTION_ARG_CALLBACK, output_format_cb, "Output format", "text|html|djvu"},
+	{"selfthresh", 'T', 0, G_OPTION_ARG_NONE, &selfthresh, "Don't use session files. Intended for selfthresh script", NULL},
+	{"trace", 0, 0, G_OPTION_ARG_NONE, &trace, "Enable trace messages", NULL},
+	{"verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose, "Verbose mode", NULL},
+	{"workdir", 'w', 0, G_OPTION_ARG_FILENAME, &workdir, "Work directory", "dir"},
+	{"resolution", 'y', 0, G_OPTION_ARG_INT, &DENSITY, "Resolution of input page", "dpi"},
+	{"compress",'z', 0, G_OPTION_ARG_NONE, &zsession, "Prefer compressed session files"},
+	NULL
+};
 /*
 
 Print short help to stderr.
@@ -1953,18 +1971,7 @@ void print_help(void) {
         warn("Usage: clara [options]");
         warn("Available options:");
         warn("  -a list     bookfont handling options");
-        warn("  -A          allow presentation");
-        warn("  -b          run in batch mode");
         warn("  -c colors   colors (N|c|l|b|b,g,w,dg,vdg)");
-        warn("  -d          show debug messages on stderr");
-        warn("  -D display  X display to connect");
-        warn("  -e r,t      reviewer,type (type is A, T or N)");
-        warn("  -F font     X font to use");
-        warn("  -f path     page name or directory with scanned pages");
-        warn("  -G list     page geometry");
-        warn("  -g WxH+X+Y  X standard geometry");
-        warn("  -h          show this help");
-        warn("  -i          emulate dead keys");
         warn("  -k list     skeleton parms SA,RR,MA,MP,ML,MB,RX,BT");
         warn("  -N sjaqcxd  switch off s,j,a,q,c,x or d optimizations");
         warn("  -o t|h      select output format (text or html)");
