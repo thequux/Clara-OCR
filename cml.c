@@ -1601,18 +1601,15 @@ From the page name, recover its number.
 
 */
 int pagenbr(char *p) {
-        int n;
         int i;
 
         if (p == NULL)
-                return (-1);
+                return -1;
 
-        for (i = n = 0; n < npages; ++n) {
-                if (strcmp(p, pagelist + i) == 0)
-                        return (n);
-                while (pagelist[i++] != 0);
-        }
-        return (-1);
+        for (i = 0; i < npages; ++i)
+                if (strcmp(p,g_ptr_array_index(page_list,i)) == 0)
+                        return i;
+        return -1;
 }
 
 /*
@@ -1626,17 +1623,15 @@ are prepared here in order to simplify opening files.
 
 */
 void names_cpage(void) {
-        int i, j, n;
+        int i;
 
         /* locate the position at pagelist of the page cpage */
-        for (n = j = 0; n < cpage; ++n)
-                while (pagelist[j++] != 0);
-
-        /* page name (e.g. "1.pgm") */
-        strcpy(pagename, pagelist + j);
+        pagename = g_ptr_array_index(page_list,cpage);
 
         /* page base ("1", in our example) */
-        strcpy(pagebase, pagename);
+        if (pagebase != NULL)
+                g_free(pagebase);
+        pagebase = g_strdup(pagename);
         i = strlen(pagebase);
         if ((i > 4) &&
             ((strcmp(pagebase + i - 4, ".pbm") == 0) ||
@@ -1648,12 +1643,12 @@ void names_cpage(void) {
                 pagebase[i - 7] = 0;
 
         /* session (workdir path plus "1.session" in our example) */
-        strcpy(session, workdir);
-        strcat(session, pagebase);
-        if (zsession)
-                strcat(session, ".session.gz");
-        else
-                strcat(session, ".session");
+        if (session_file != NULL) {
+                g_free(session_file);
+        }
+        char* sessionbase = g_strconcat(pagebase,"session",zsession?".gz":"",NULL);
+        session_file = g_build_filename(workdir, sessionbase, NULL);
+        g_free(sessionbase);
 }
 
 /*
@@ -1664,7 +1659,6 @@ Load specified page.
 int load_page(int p, int reset, int bin) {
         int x0, y0;
         static int mode;
-        char f[MAXFNL + 1];
 
         /* prepare */
         if (reset) {
@@ -1686,32 +1680,29 @@ int load_page(int p, int reset, int bin) {
                 words = 0;
 
                 /* Try to start recovering the session file */
-                if (recover_session(session, 0, 1)) {
+                if (recover_session(session_file, 0, 1))
                         mode = 1;
-                }
 
                 /* Try to start reading the bitmap */
                 else {
-                        int t;
+                        char *f = NULL;
 
                         /* filename */
-                        strncpy(f, pagesdir, MAXFNL);
-                        strncat(f, pagename, MAXFNL);
-                        t = strlen(f);
+                        f = g_build_filename(pagesdir, pagename, NULL);
 
                         /* start binarization/segmentation */
                         if ((pixmap != NULL) && (bin)) {
 
                                 /* use the local thresholder */
                                 if (localbin_strong) {
-                                        find_thing(pixmap, 1, -1, -1);
+                                        find_thing(1, -1, -1);
                                         mode = 2;
                                 }
 
                                 /* use the global thresholder */
                                 else {
                                         sh_tries = 0;
-                                        pbm2bm(pixmap, 1);
+                                        pbm2bm((char*)pixmap, 1);
                                         mode = 2;
                                 }
                         }
@@ -1721,6 +1712,7 @@ int load_page(int p, int reset, int bin) {
                                 loadpgm(1, f, &pixmap, &XRES, &YRES);
                                 mode = 3;
                         }
+                        g_free(f);
                 }
 
                 return (1);
@@ -1743,7 +1735,7 @@ int load_page(int p, int reset, int bin) {
 
                 /* not finished yet */
                 if (localbin_strong) {
-                        if (find_thing(NULL, 0, -1, -1))
+                        if (find_thing(0, -1, -1))
                                 return (1);
                 }
 
@@ -1761,7 +1753,7 @@ int load_page(int p, int reset, int bin) {
         else {
 
                 /* continue reading */
-                if (loadpgm(0, f, &pixmap, &XRES, &YRES))
+                if (loadpgm(0, NULL, &pixmap, &XRES, &YRES))
                         return (1);
 
                 /* PAGE only is mandatory for graymaps */
@@ -1806,6 +1798,7 @@ int load_page(int p, int reset, int bin) {
         list_cl(0, 0, 0, 0, 1);
 
         /* parameters for page list display */
+        // TODO: Make this not suck
         dl_ne[p] = symbols;
         dl_db[p] = doubts;
         dl_r[p] = runs;

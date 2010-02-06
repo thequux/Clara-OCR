@@ -769,7 +769,7 @@ Search next interior pixel and apply the spyhole to extract the
 closure.
 
 */
-int find_thing(char *p, int reset, int x, int y) {
+int find_thing(int reset, int x, int y) {
         static int i, j;
         int u, v, k, l, f, r;
 
@@ -802,27 +802,20 @@ int find_thing(char *p, int reset, int x, int y) {
 
                                 /* abagar: display the seed and dump the spyhole buffer */
                                 if (abagar) {
-                                        printf("seed of topcl: (%d,%d)\n",
-                                               u, v);
-                                        bm2cb((unsigned char *) cmp_bmp, 0,
-                                              0);
+                                        printf("seed of topcl: (%d,%d)\n", u, v);
+                                        bm2cb((unsigned char *) cmp_bmp, 0, 0);
                                         dump_cb();
                                 }
 
                                 /* add as new closure */
-                                new_cl(cmp_bmp_x0, cmp_bmp_y0, FS, FS,
-                                       cmp_bmp);
+                                new_cl(cmp_bmp_x0, cmp_bmp_y0, FS, FS, cmp_bmp);
 
                                 /* remove from the pixmap */
                                 spyhole(0, 0, 1, 0);
                                 for (k = 0; k < FS; ++k) {
                                         for (l = 0; l < FS; ++l) {
-                                                if (pix
-                                                    (cmp_bmp, BLS, k, l)) {
-                                                        pixmap[(l +
-                                                                cmp_bmp_y0)
-                                                               * XRES + k +
-                                                               cmp_bmp_x0]
+                                                if (pix(cmp_bmp, BLS, k, l)) {
+                                                        pixmap[(l + cmp_bmp_y0) * XRES + k + cmp_bmp_x0]
                                                             = 255;
                                                 }
                                         }
@@ -837,8 +830,7 @@ int find_thing(char *p, int reset, int x, int y) {
                            is probably buggy.
                          */
                         else {
-                                db("hey, what's running on at %d %d?\n", u,
-                                   v);
+                                db("hey, what's running on at %d %d?\n", u, v);
                         }
                 }
 
@@ -1208,36 +1200,18 @@ int pbm2bm(char *f, int reset) {
                                                         if (*p & m) {
                                                                 int x, y;
 
-                                                                x = u +
-                                                                    ab
-                                                                    [j].x;
-                                                                y = v +
-                                                                    ab
-                                                                    [j].y;
+                                                                x = u + ab [j].x;
+                                                                y = v + ab [j].y;
 
                                                                 if (get_flag(FL_ABAGAR_ACTIVE) && (zones > 0) && (limits[0] <= x) && (x <= limits[6]) && (limits[1] <= y) && (y <= limits[3])) {
 
                                                                         warn("ABAGAR at (%d,%d)\n");
-                                                                        abagar
-                                                                            =
-                                                                            1;
+                                                                        abagar = 1;
                                                                 } else
-                                                                        abagar
-                                                                            =
-                                                                            0;
+                                                                        abagar = 0;
 
-                                                                if (pixmap
-                                                                    [x +
-                                                                     y *
-                                                                     XRES]
-                                                                    <=
-                                                                    thresh_val)
-                                                                {
-                                                                        find_thing
-                                                                            (NULL,
-                                                                             0,
-                                                                             x,
-                                                                             y);
+                                                                if (pixmap [x + y * XRES] <= thresh_val) {
+                                                                        find_thing(0, x, y);
                                                                         ++c;
                                                                 } else {
 
@@ -1251,9 +1225,7 @@ int pbm2bm(char *f, int reset) {
                                                                         eaten++;
                                                                 }
                                                                 f = 1;
-                                                        } else
-                                                            if ((m >>= 1)
-                                                                == 0) {
+                                                        } else if ((m >>= 1) == 0) {
                                                                 ++p;
                                                                 m = 128;
                                                         }

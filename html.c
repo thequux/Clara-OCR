@@ -1997,7 +1997,7 @@ resulting in having the diaeresis case in the function mk_page_output().
 */
 
 
-void mk_page_output(output_encap encap) {
+void mk_page_output(output_encap_t encap) {
         int i, a, s, f, w, nw;
         char nc;
 
@@ -2100,9 +2100,8 @@ void mk_page_output(output_encap encap) {
                                 if (mc[a].tr == NULL) {
                                         if (pass == 2) {
                                         } else if (encap == OE_FULL_HTML)
-                                                totext
-                                                    ("[<A HREF=symb/%d>%d</A>]",
-                                                     a, a);
+                                                totext("[<A HREF=symb/%d>%d</A>]",
+                                                       a, a);
                                         else if (encap != OE_DJVU)
                                                 totext("[%d]", a);
                                 }
@@ -2113,19 +2112,14 @@ void mk_page_output(output_encap encap) {
                                         char *sig = NULL, *sig2 = NULL;
 
                                         /* ISO-8859 encoding (Latin-only by now) */
-                                        for (ns = 0, k = mc[a].sl; k >= 0;
+                                        for (ns = 0, k = mc[a].sl;
+                                             k >= 0;
                                              k = mc[k].sl, ++ns) {
                                                 if (mc[k].tr != NULL) {
                                                         if (ns == 0)
-                                                                sig =
-                                                                    mc
-                                                                    [k].tr->
-                                                                    t;
+                                                                sig = mc[k].tr->t;
                                                         else
-                                                                sig2 =
-                                                                    mc
-                                                                    [k].tr->
-                                                                    t;
+                                                                sig2 = mc[k].tr->t;
                                                 }
                                         }
                                         if ((ns == 1) &&
@@ -2135,29 +2129,19 @@ void mk_page_output(output_encap encap) {
                                             (strlen(mc[a].tr->t) == 1)) {
                                                 int l, c;
 
-                                                l = ((unsigned char *)
-                                                     sig)[0];
-                                                c = ((unsigned char
-                                                      *) (mc[a].tr->t))[0];
+                                                l = ((unsigned char *)sig)[0];
+                                                c = ((unsigned char *)(mc[a].tr->t))[0];
                                                 compose(&l, c);
 
                                                 if (pass == 2)
-                                                        totext
-                                                            ("(char %d %d %d %d %d \"%c\")\n",
-                                                             mc[a].l,
-                                                             YRES - lb,
-                                                             mc[a].r,
-                                                             YRES - lt,
-                                                             mc[c].bm, l);
-                                                else if ((l == '"') &&
-                                                         (encap ==
-                                                          OE_DJVU))
+                                                        totext("(char %d %d %d %d %d \"%c\")\n",
+                                                               mc[a].l, YRES - lb,
+                                                               mc[a].r, YRES - lt,
+                                                               mc[c].bm, l);
+                                                else if ((l == '"') && (encap == OE_DJVU))
                                                         totext("\\042");
-                                                else if (encap ==
-                                                         OE_FULL_HTML)
-                                                        totext
-                                                            ("<A HREF=symb/%d>%c</A>",
-                                                             a, l);
+                                                else if (encap == OE_FULL_HTML)
+                                                        totext("<A HREF=symb/%d>%c</A>", a, l);
                                                 else
                                                         totext("%c", l);
                                         }
@@ -2166,12 +2150,10 @@ void mk_page_output(output_encap encap) {
                                                  (sig != NULL) &&
                                                  (strlen(sig) == 1) &&
                                                  (sig[0] == '.') &&
-                                                 (strlen(mc[a].tr->t) ==
-                                                  1)) {
+                                                 (strlen(mc[a].tr->t) == 1)) {
                                                 int c;
 
-                                                c = ((unsigned char
-                                                      *) (mc[a].tr->t))[0];
+                                                c = ((unsigned char *) (mc[a].tr->t))[0];
 
                                                 /* dot over dot -> colon (GL) */
                                                 if (c == '.')
@@ -2182,18 +2164,12 @@ void mk_page_output(output_encap encap) {
                                                         c = ';';
 
                                                 if (pass == 2)
-                                                        totext
-                                                            ("(char %d %d %d %d %d \"%c\")\n",
-                                                             mc[a].l,
-                                                             YRES - lb,
-                                                             mc[a].r,
-                                                             YRES - lt,
-                                                             mc[c].bm, c);
-                                                else if (encap ==
-                                                         OE_FULL_HTML)
-                                                        totext
-                                                            ("<A HREF=symb/%d>%c</A>",
-                                                             a, c);
+                                                        totext("(char %d %d %d %d %d \"%c\")\n",
+                                                               mc[a].l, YRES - lb,
+                                                               mc[a].r, YRES - lt,
+                                                               mc[c].bm, c);
+                                                else if (encap == OE_FULL_HTML)
+                                                        totext("<A HREF=symb/%d>%c</A>", a, c);
                                                 else
                                                         totext("%c", c);
                                         }
@@ -2206,28 +2182,20 @@ void mk_page_output(output_encap encap) {
                                                  (sig2 != NULL) &&
                                                  (strlen(sig2) == 1) &&
                                                  (sig2[0] == '.') &&
-                                                 (strlen(mc[a].tr->t) ==
-                                                  1)) {
+                                                 (strlen(mc[a].tr->t) == 1)) {
                                                 int l, c;
 
                                                 l = '"';
-                                                c = ((unsigned char
-                                                      *) (mc[a].tr->t))[0];
+                                                c = ((unsigned char *) (mc[a].tr->t))[0];
                                                 compose(&l, c);
 
                                                 if (pass == 2)
-                                                        totext
-                                                            ("(char %d %d %d %d %d \"%c\")\n",
-                                                             mc[a].l,
-                                                             YRES - lb,
-                                                             mc[a].r,
-                                                             YRES - lt,
+                                                        totext ("(char %d %d %d %d %d \"%c\")\n",
+                                                             mc[a].l, YRES - lb,
+                                                             mc[a].r, YRES - lt,
                                                              mc[c].bm, l);
-                                                else if (encap ==
-                                                         OE_FULL_HTML)
-                                                        totext
-                                                            ("<A HREF=symb/%d>%c</A>",
-                                                             a, l);
+                                                else if (encap == OE_FULL_HTML)
+                                                        totext("<A HREF=symb/%d>%c</A>", a, l);
                                                 else
                                                         totext("%c", l);
                                         }
@@ -2235,71 +2203,34 @@ void mk_page_output(output_encap encap) {
                                         else {
 
                                                 /* first the signals */
-                                                for (k = mc[a].sl; k >= 0;
-                                                     k = mc[k].sl) {
-                                                        if (mc[k].tr !=
-                                                            NULL) {
-                                                                if (pass ==
-                                                                    2)
-                                                                        totext
-                                                                            ("(char %d %d %d %d %d \"%s\")\n",
-                                                                             mc
-                                                                             [k].l,
-                                                                             YRES
-                                                                             -
-                                                                             lb,
-                                                                             mc
-                                                                             [k].r,
-                                                                             YRES
-                                                                             -
-                                                                             lt,
-                                                                             mc
-                                                                             [k].bm,
-                                                                             mc
-                                                                             [k].tr->t);
-                                                                else if
-                                                                    (encap
-                                                                     ==
-                                                                     OE_FULL_HTML)
-                                                                        totext
-                                                                            ("<A HREF=symb/%d>\\%s</A>",
-                                                                             k,
-                                                                             mc
-                                                                             [k].tr->t);
+                                                for (k = mc[a].sl; k >= 0; k = mc[k].sl) {
+                                                        if (mc[k].tr != NULL) {
+                                                                if (pass == 2)
+                                                                        totext("(char %d %d %d %d %d \"%s\")\n",
+                                                                               mc[k].l, YRES - lb,
+                                                                               mc[k].r, YRES - lt,
+                                                                               mc[k].bm, mc[k].tr->t);
+                                                                else if (encap == OE_FULL_HTML)
+                                                                        totext("<A HREF=symb/%d>\\%s</A>",
+                                                                                k, mc[k].tr->t);
                                                                 else
-                                                                        totext
-                                                                            ("\\%s",
-                                                                             mc
-                                                                             [k].tr->t);
+                                                                        totext("\\%s", mc[k].tr->t);
                                                         }
                                                 }
 
                                                 /* now the symbol */
                                                 if (pass == 2)
-                                                        totext
-                                                            ("(char %d %d %d %d %d \"%s\")\n",
-                                                             mc[a].l,
-                                                             YRES - lb,
-                                                             mc[a].r,
-                                                             YRES - lt,
-                                                             mc[a].bm,
-                                                             mc[a].tr->t);
-                                                else if ((strcmp
-                                                          (mc[a].tr->t,
-                                                           "\"") == 0) &&
-                                                         (encap ==
-                                                          OE_DJVU))
+                                                        totext("(char %d %d %d %d %d \"%s\")\n",
+                                                               mc[a].l, YRES - lb,
+                                                               mc[a].r, YRES - lt,
+                                                               mc[a].bm, mc[a].tr->t);
+                                                else if ((strcmp(mc[a].tr->t, "\"") == 0) &&
+                                                         (encap == OE_DJVU))
                                                         totext("\\\"");
-                                                else if (encap ==
-                                                         OE_FULL_HTML)
-                                                        totext
-                                                            ("<A HREF=symb/%d>%s</A>",
-                                                             a,
-                                                             mc[a].tr->t);
+                                                else if (encap == OE_FULL_HTML)
+                                                        totext("<A HREF=symb/%d>%s</A>", a, mc[a].tr->t);
                                                 else
-                                                        totext("%s",
-                                                               mc[a].
-                                                               tr->t);
+                                                        totext("%s", mc[a].tr->t);
                                         }
                                 }
 
@@ -2481,9 +2412,7 @@ void mk_pattern_list(void) {
         if (pattern != NULL) {
                 if (slistsz <= topp)
                         slist =
-                            c_realloc(slist,
-                                      (slistsz =
-                                       topp + 256) * sizeof(int), NULL);
+                            c_realloc(slist, (slistsz = topp + 256) * sizeof(int), NULL);
                 for (i = 0; i <= topp; ++i)
                         slist[i] = i;
                 qsf(slist, 0, topp, 0, cmp_pattern);
@@ -2604,8 +2533,7 @@ void acc_alpha(int a) {
 
         /* lower */
         if (a != NUMBER) {
-                totext
-                    ("<TR><TD BGCOLOR=WHITE>SYMB</TD><TD BGCOLOR=WHITE>QTY</TD>");
+                totext("<TR><TD BGCOLOR=WHITE>SYMB</TD><TD BGCOLOR=WHITE>QTY</TD>");
 
                 /* names of the classification methods */
                 totext("<TD BGCOLOR=WHITE>sk</TD>");
@@ -2630,14 +2558,12 @@ void acc_alpha(int a) {
                         c = A[i].sc;
                         s = pt[cpt].sc[c];
 
-                        totext("<TR><TD>%s:</TD><TD>%d</TD>", A[i].ln,
-                               m[c]);
+                        totext("<TR><TD>%s:</TD><TD>%d</TD>", A[i].ln, m[c]);
 
                         for (j = CL_BOT; j <= CL_TOP; ++j) {
                                 C = (s & (1 << (j - 1))) ? " CHECKED" : "";
-                                totext
-                                    ("<TD><INPUT TYPE=CHECKBOX NAME=%d_%d%s></TD>",
-                                     j, c, C);
+                                totext("<TD><INPUT TYPE=CHECKBOX NAME=%d_%d%s></TD>",
+                                       j, c, C);
                         }
                 } else
                         totext("<TR>");
@@ -2650,9 +2576,8 @@ void acc_alpha(int a) {
 
                 for (j = CL_BOT; j <= CL_TOP; ++j) {
                         C = (s & (1 << (j - 1))) ? " CHECKED" : "";
-                        totext
-                            ("<TD><INPUT TYPE=CHECKBOX NAME=%d_%d%s></TD>",
-                             j, c, C);
+                        totext("<TD><INPUT TYPE=CHECKBOX NAME=%d_%d%s></TD>",
+                               j, c, C);
                 }
 
                 totext("</TR>\n");
@@ -2835,8 +2760,7 @@ void mk_pattern_props(void) {
                 if (s->tr == NULL)
                         totext("<INPUT TYPE=TEXT VALUE=\"\"><BR>");
                 else
-                        totext("<INPUT TYPE=TEXT VALUE=\"%s\"><BR>",
-                               s->tr);
+                        totext("<INPUT TYPE=TEXT VALUE=\"%s\"><BR>", s->tr);
         } else {
                 if (s->tr == NULL)
                         totext("(untransliterated)<BR>");
@@ -3120,11 +3044,9 @@ void mk_history(int n) {
         /* transliteration */
         if ((a->t == REV_TR) || (a->t == REV_PATT)) {
                 if (a->t == REV_TR)
-                        totext("%ssymbol</TD><TD>%d</TD></TR>\n", t,
-                               a->mc);
+                        totext("%ssymbol</TD><TD>%d</TD></TR>\n", t, a->mc);
                 else
-                        totext("%spattern</TD><TD>%d</TD></TR>\n", t,
-                               a->mc);
+                        totext("%spattern</TD><TD>%d</TD></TR>\n", t, a->mc);
                 totext("%salphabet</TD><TD> %s</TD></TR>\n", t,
                        aname(a->a));
                 totext("%stransliteration</TD><TD> %s</TD></TR>\n", t,

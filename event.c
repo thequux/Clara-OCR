@@ -6643,7 +6643,7 @@ static void page_view_translit_given_cb(ClaraDocView *docView, int symNo,
 // constructors...
 
 static GtkWidget *create_page_list_window() {
-        int i, pn;
+        int i;
         pageStore = gtk_list_store_new(PL_NCOL, G_TYPE_INT, G_TYPE_STRING,      /* filename */
                                        G_TYPE_INT,      /* runs */
                                        G_TYPE_INT,      // time
@@ -6654,16 +6654,10 @@ static GtkWidget *create_page_list_window() {
         pageIters = malloc(sizeof(GtkTreeIter) * npages);
         memset(pageIters, 0, sizeof(GtkTreeIter) * npages);
 
-        for (i = pn = 0; i < npages; i++) {
-                if (i > 0)
-                        while (pagelist[pn++]); /* pagelist is a continuous stream
-                                                 * of null-terminated strings. Skip
-                                                 * to the next one.  There is
-                                                 * intentionally no while body.
-                                                 */
+        for (i = 0; i < npages; i++) {
                 gtk_list_store_insert_with_values(pageStore, pageIters + i, i,
                                                   PL_COL_PAGENO, i,
-                                                  PL_COL_FILENAME, pagelist + pn,        // filename
+                                                  PL_COL_FILENAME, g_ptr_array_index(page_list, i),        // filename
                                                   PL_COL_NRUNS, dl_r[i],
                                                   PL_COL_TIME, dl_t[i],
                                                   PL_COL_WORDS, dl_w[i],

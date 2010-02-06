@@ -136,10 +136,10 @@ void recog_validation(int i) {
            Apply add-hoc filtering rules.
          */
         {
-                unsigned char *t;
+                char *t;
 
                 if ((m->tr != NULL) &&
-                    (strlen(t = (unsigned char *) ((m->tr)->t)) == 1) &&
+                    (strlen(t = (char *) (m->tr->t)) == 1) &&
                     (avoid(k, t[0]))) {
 
                         rmvotes(SHAPE, k, -1, 0);
@@ -596,10 +596,10 @@ void wprops(int i) {
                 w->a = UNDEF;
                 for (j = word[i].F; j >= 0; j = mc[j].E) {
                         if (!uncertain(mc[j].tc)) {
-                                unsigned char *t;
+                                char *t;
                                 int c, w, h, p;
 
-                                t = ((unsigned char *) (mc[j].tr->t));
+                                t = ((char *) (mc[j].tr->t));
                                 if (strlen(t) == 1) {
 
                                         c = t[0];

@@ -95,13 +95,15 @@ CFLAGS = -g -Wall $(COPTS) -O0
 #CFLAGS = $(INCLUDE) -g -O2 -pedantic $(COPTS)
 #CFLAGS = $(INCLUDE) -g -O2 $(COPTS)
 
-CFLAGS += $(shell pkg-config --cflags gtk+-2.0 webkit-1.0 )
+PKG_CONFIG_PKGS = gtk+-2.0 webkit-1.0 imlib2
+
+CFLAGS += $(shell pkg-config --cflags $(PKG_CONFIG_PKGS) )
 
 #
 # Add or remove flags if necessary:
 #
 LDFLAGS = -g -rdynamic
-LDFLAGS += $(shell pkg-config --libs gtk+-2.0 webkit-1.0 )
+LDFLAGS += $(shell pkg-config --libs $(PKG_CONFIG_PKGS) )
 #
 # If your system requires additional libs, please add them:
 #

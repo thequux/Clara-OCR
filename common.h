@@ -1198,14 +1198,17 @@ extern int mf_i, mf_b, mf_c, mf_r, mf_l;
 extern int overr_cb;
 
 /* paths */
-extern char pagename[];
-extern char pagebase[];
-//extern char* pagesdir;
-//extern char* workdir;
+extern char* pagename;
+extern char* pagebase;
+extern GPtrArray *page_list;
+extern char *session_file,
+        *acts_file,
+        *patterns_file;
+extern char* pagesdir;
+extern char* workdir;
 extern char urlpath[];
 extern char host[];
 extern char *doubtsdir;
-extern char *pagelist;
 extern int npages, cpage;
 
 /* used for revision */
@@ -1757,6 +1760,8 @@ FILE *zfopen(char *f, char *mode, int *pio);
 void zfclose(FILE *F, int pio);
 size_t zfread(void *ptr, size_t size, size_t nmemb, FILE *stream);
 size_t zfwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream);
+int zfgetc(FILE *stream);
+
 
 /* bitmap comparison heuristics */
 int bmpcmp_map(int c, int st, int k, int direct);
@@ -1812,7 +1817,7 @@ int byteat(int b);
 void bm2byte(char *c, unsigned char *b);
 int wrzone(char *s1, int all);
 int pbm2bm(char *f, int reset);
-int find_thing(char *p, int reset, int x, int y);
+int find_thing(int reset, int x, int y);
 
 /* OCR startup and steps */
 void start_ocr(int p, int s, int r);

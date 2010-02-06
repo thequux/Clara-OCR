@@ -353,11 +353,14 @@ doubtsdir will be the concatenation of workdir with the string
 
 */
 char book[MAXFNL + 1];
-char* page_dir = NULL;
-char pagename[MAXFNL + 1];
-char pagebase[MAXFNL + 1];
+char *page_dir = NULL;
+char *pagename = NULL;
+char *pagebase = NULL;
 char *pagesdir = NULL;
 char *workdir = NULL;
+char *patterns_file = NULL;
+char *acts_file = NULL;
+char *session_file = NULL;
 char urlpath[MAXFNL + 1];
 char fqdn[MAXFNL + 1] = "";
 char host[MAXFNL + 1] = "";
@@ -1857,8 +1860,7 @@ void build_plist(const gchar* source) {
                 }
                 for (cpage = 0; cpage < npages; ++cpage) {
                         names_cpage();
-                        gchar* session = g_build_filename(workdir, "session");
-                        if (recover_session(session, 1, 1)) {
+                        if (recover_session(session_file, 1, 1)) {
                                 while (recover_session(NULL, 1, 0));
                                 dl_ne[cpage] = symbols;
                                 dl_db[cpage] = doubts;
@@ -2176,9 +2178,46 @@ int checkvar(char *c) {
         return (r);
 }
 
-void set_cl_defaults() {
+static gboolean preinit_arg_hook(GOptionContext* context,
+                                 GOptionGroup* group,
+                                 gpointer data,
+                                 GError** err) {
+        spcpy(SP_GLOBAL, SP_DEF);
+
+        if (workdir != NULL)
+                g_free(workdir);
+        if (page_dir != NULL)
+                g_free(page_dir);
+        workdir = page_dir = NULL;
+
+        return TRUE;
+}
+
+static gboolean postinit_arg_hook(GOptionContext* context,
+                                  GOptionGroup* group,
+                                  gpointer data,
+                                  GError** err) {
+        /* book font path */
+        patterns_file = g_build_filename(workdir, zsession? "patterns.gz":"patterns", NULL);
+        acts_file = g_build_filename(workdir, zsession? "acts.gz":"acts", NULL);
+
+        /* doubts dir */
+        if (web) {
+                doubtsdir = g_build_filename(workdir,doubts, NULL);
+        }
+
+        /* no current page by now */
+        cpage = -1;
+
+        /* use default skeleton parameters */
+        //if (havek == 0)
+        skel_parms(",,,,,,,");
+
         if(page_dir == NULL)
                 page_dir = g_strdup("./");
+        if(workdir == NULL)
+                workdir = g_strdup(page_dir);
+        return TRUE;
 }
 
 /*
@@ -2202,8 +2241,6 @@ void process_cl(int argc, char *argv[]) {
          */
 
         /* use the default skeleton parameters */
-        spcpy(SP_GLOBAL, SP_DEF);
-
 
         /* filter out/translate long options */
         {
@@ -2303,95 +2340,6 @@ void process_cl(int argc, char *argv[]) {
                         read_bf(optarg);
                 }
 
-                /* (book)
-
-                   -b
-
-                   Run in batch mode.
-
-                   The application window will not be created, and the OCR
-                   will automatically execute a full OCR run on all pages
-                   (or on the page specified through -f).
-
-                   Implies -u.
-                 */
-                else if (c == 'b') {
-                        batch_mode = 1;
-                        // UNPATCHED: use_xb = 0;
-                }
-
-                /* (book)
-
-                   -d
-
-                   Run in debug mode. Debug messages will be sent to stderr.
-                   Debug messages are generated when an acceptable but
-                   not reasonable event is detected.
-                 */
-                else if (c == 'd') {
-                        debug = 1;
-                        verbose = 1;
-                }
-
-                /* (book)
-
-                   -e reviewer,type
-
-                   Reviewer and reviewer type.
-
-                   All revision data is assigned by Clara to its originator.
-                   By default the reviewer name is "nobody" and its type
-                   is "A".
-
-                   The reviewer generally will be an email address or a
-                   nickname, The type may be T (trusted), A (arbiter) or
-                   N (anonymous). Example:
-
-                   -e ueda@ime.usp.br,T
-
-                 */
-                else if (c == 'e') {
-                        int a, t;
-
-                        t = strlen(optarg);
-                        a = optarg[t - 1];
-                        if ((t < 3) ||
-                            (optarg[t - 2] != ',') ||
-                            ((a != 'T') && (a != 'A') && (a != 'N'))) {
-
-                                fatal(DI,
-                                      "argument to -e must be reviewer,type");
-                        }
-                        reviewer = c_realloc(NULL, t - 1, NULL);
-                        strncpy(reviewer, optarg, t - 2);
-                        reviewer[t - 2] = 0;
-                        revtype =
-                            (a ==
-                             'A') ? ARBITER : ((a ==
-                                                'T') ? TRUSTED : ANON);
-                }
-
-                /* (book)
-
-                   -h
-
-                   Display short help and exit.
-                 */
-                else if (c == 'h') {
-
-                        print_help();
-                        exit(0);
-                }
-
-                /* (book)
-
-                   -i
-
-                   Emulate dead keys functionality.
-                 */
-                else if (c == 'i') {
-                        dkeys = 1;
-                }
 
                 /* (book)
 
@@ -2456,26 +2404,6 @@ void process_cl(int argc, char *argv[]) {
 
                 /* (book)
 
-                   -o t|h
-
-                   Select output format (t=text, h=html, d=djvu). The
-                   default is HTML.
-                 */
-                else if (c == 'o') {
-
-                        if (optarg[0] == 't')
-                                outp_format = 2;
-                        else if (optarg[0] == 'h')
-                                outp_format = 1;
-                        else if (optarg[0] == 'd')
-                                outp_format = 3;
-                        else
-                                fatal(BI, "unknown output format %c",
-                                      optarg[0]);
-                }
-
-                /* (book)
-
                    -P PNT1,PNT2,MD
 
                    Parameters for filtering symbol comparison.
@@ -2527,71 +2455,6 @@ void process_cl(int argc, char *argv[]) {
                                 max_doubts = 1;
                 }
 
-                /*
-
-                   -r
-
-                   Reset the book (destroy the sessions, the patterns
-                   and reprocess all revision acts).
-                 */
-                /*
-                   else if (c == 'r') {
-                   reset_book = 1;
-                   }
-                 */
-
-                /* (book)
-
-                   -T
-
-                   Avoid loading and creation of session files. Also reports bookfont size on
-                   stdout before exiting. This option is intended to be used by the selthresh
-                   script.
-                 */
-                else if (c == 'T') {
-                        selthresh = 1;
-                }
-
-                /* (book)
-
-                   -t
-
-                   Switch on trace messages. Trace messages depict
-                   the execution flow, and are useful for developers.
-                   Trace messages are written to stderr.
-                 */
-                else if (c == 't') {
-                        trace = 1;
-                }
-
-                /*
-
-                   -U URL
-
-                   URL revision path to be inserted on the output.
-                 */
-                /*
-                   else if (c == 'U') {
-                   if (strlen(optarg) > MAXFNL) {
-                   fatal(BO,"URL string too long");
-                   }
-                   strncpy(urlpath,optarg,MAXFNL);
-                   web = 1;
-                   }
-                 */
-
-                /* (book)
-
-                   -v
-
-                   Verbose mode. Without this option, Clara runs quietly
-                   (default). Otherwise, informative warnings about
-                   potentially relevant events are sent to stderr.
-                 */
-                else if (c == 'v') {
-                        verbose = 1;
-                }
-
                 /* (book)
 
                    -V
@@ -2632,35 +2495,6 @@ void process_cl(int argc, char *argv[]) {
 
                 /* (book)
 
-                   -w path
-
-                   Work directory. Defaults to the page
-                   directory (see -f).
-
-                   The path of the directory where the OCR will write
-                   the output, the acts, the book font and the session
-                   files. The doubts directory (web operation) is assumed
-                   to be a subdirectory of the work directory.
-                 */
-                else if (c == 'w') {
-                        int t;
-
-                        t = strlen(optarg);
-                        if (t + 1 > MAXFNL) {
-                                fatal(BO, "workdir path too long");
-                        }
-                        strncpy(workdir, optarg, MAXFNL);
-                        if (t == 0)
-                                strcpy(workdir, "./");
-                        else if (workdir[t - 1] != '/') {
-                                workdir[t] = '/';
-                                workdir[t + 1] = 0;
-                        }
-                        complexdir = 1;
-                }
-
-                /* (book)
-
                    -X 0|1
 
                    Switch off (0) or on (1) index checking. Index checking is
@@ -2683,40 +2517,6 @@ void process_cl(int argc, char *argv[]) {
                         }
                 }
 
-                /* (book)
-
-                   -y resolution
-
-                   Inform the resolution of the scanned image in dots per inch
-                   (default 600). This resolution applies for all pages to be
-                   processed until the program exits.
-                 */
-                else if (c == 'y') {
-                        DENSITY = atoi(optarg);
-                        consist_density();
-                }
-
-                /* (book)
-
-                   -z
-
-                   Write (and read) compressed session files (*.session, acts
-                   and patters will be compressed using GNU zip).
-
-                   Be careful: if -z is used, any existing uncompressed file
-                   (*.session, acts or patterns) will be ignored. So if you
-                   start using uncompressed files and suddenly decides to
-                   begin using compressed files, then compress manually all
-                   existing files before starting Clara with the -z switch.
-
-                   Clara OCR support for reading and writing compressed files
-                   depends on the platform, and requires gzip and gunzip to
-                   be installed in some directory of binaries included in
-                   the PATH.
-                 */
-                else if (c == 'z') {
-                        zsession = 1;
-                }
 
                 /* (book)
 
@@ -2758,29 +2558,10 @@ void process_cl(int argc, char *argv[]) {
 
         /* workdir */
         if (!complexdir) {
-                strcpy(workdir, pagesdir);
+                workdir = g_strdup(pagesdir);
         }
 
-        /* book font path */
-        if (zsession) {
-                mkpath(patterns, workdir, "patterns.gz");
-                mkpath(acts, workdir, "acts.gz");
-        } else {
-                mkpath(patterns, workdir, "patterns");
-                mkpath(acts, workdir, "acts");
-        }
 
-        /* doubts dir */
-        if (web) {
-                doubtsdir = g_build_filename(workdir,doubts, NULL);
-        }
-
-        /* no current page by now */
-        cpage = -1;
-
-        /* use default skeleton parameters */
-        if (havek == 0)
-                skel_parms(",,,,,,,");
 
         /* free buffers */
         c_free(argb);
@@ -3015,7 +2796,7 @@ int save_session(int reset) {
                 }
 
                 /* still saving */
-                else if (dump_acts(acts, myreset))
+                else if (dump_acts(acts_file, myreset))
                         myreset = 0;
 
                 /* just finished */
@@ -3038,7 +2819,7 @@ int save_session(int reset) {
                 }
 
                 /* still saving */
-                else if (dump_patterns(patterns, myreset)) {
+                else if (dump_patterns(patterns_file, myreset)) {
                         myreset = 0;
                         r = 1;
                 }
@@ -3077,7 +2858,7 @@ int save_session(int reset) {
                 }
 
                 /* still saving */
-                else if (dump_session(session, myreset)) {
+                else if (dump_session(session_file, myreset)) {
                         myreset = 0;
                         r = 1;
                 }
@@ -3114,7 +2895,7 @@ int step_2(int reset) {
         /* read acts */
         if (st == 0) {
                 if (act == NULL)
-                        recover_acts(acts);
+                        recover_acts(acts_file);
                 st = 1;
                 myreset = 1;
                 r = 1;
@@ -3123,7 +2904,7 @@ int step_2(int reset) {
         /* read patterns */
         else if (st == 1) {
                 if (pattern == NULL) {
-                        recover_patterns(patterns);
+                        recover_patterns(patterns_file);
                         st = 2;
                         k = 0;
                 } else
@@ -3138,8 +2919,7 @@ int step_2(int reset) {
 
                 if (k < topp) {
                         if (k % DPROG == 0)
-                                show_hint(0, "computing skeleton %d/%d", k,
-                                          topp);
+                                show_hint(0, "computing skeleton %d/%d", k, topp);
                         pskel(k++);
                         myreset = 0;
                 } else {
@@ -4789,21 +4569,31 @@ int main(int argc, char *argv[]) {
         signal(SIGPIPE, handle_pipe);
         signal(SIGALRM, handle_alrm);
 #endif
-        if (!g_thread_supported ()) g_thread_init (NULL);
+        if (!g_thread_supported()) g_thread_init(NULL);
         imlib_lock = g_mutex_new();
         /*
            Process command-line parameters.
          */
 
-        if (!gtk_parse_args(&argc, &argv)) {
-                fprintf(stderr,
-                        "GTK failed to initialize, for some reason. Bailing\n");
-                exit(1);
+        init_flags();
+        {
+                GOptionContext *context;
+                GError *error = NULL;
+
+                context = g_option_context_new("");
+                g_option_context_add_main_entries(context, optDesc, NULL);
+                g_option_group_set_parse_hooks(g_option_context_get_main_group(context),
+                                               preinit_arg_hook,
+                                               postinit_arg_hook);
+                g_option_context_add_group(context, gtk_get_option_group(FALSE));
+
+                if (!g_option_context_parse(context, &argc, &argv, &error)) {
+                        g_print("option parsing failed: %s\n", error->message);
+                        exit(1);
+                }
+                g_option_context_free(context);
         }
 
-        init_flags();
-
-        process_cl(argc, argv);
 
         /*
            Initialize main data structures.

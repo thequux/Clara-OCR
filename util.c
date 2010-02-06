@@ -106,7 +106,7 @@ static void cf_plain_close(gpointer handle) {
 }
 
 
-static CFileFuncs[] file_handlers = {
+static CFileFuncs file_handlers[] = {
 #ifdef HAVE_LIBLZMA
         { ".xz", cf_xz_open, cf_lzma_read, cf_lzma_write, cf_lzma_flush, cf_lzma_close },
         { ".lzma", cf_lzma_open, cf_lzma_read, cf_lzma_write, cf_lzma_flush, cf_lzma_close },
@@ -122,7 +122,7 @@ static CFileFuncs[] file_handlers = {
 };
 
 // generic file utils...
-CFile* cfopen(const gchar* path, const gchar* mode, const gchar* filetype) {
+CFile* cfopen(const gchar* path, const gchar* mode) {
         gpointer handle = NULL;
         CFileFuncs *vt;
         CFileFuncs *preferred = NULL;

@@ -35,7 +35,7 @@ Reviewer data
 
 */
 char *reviewer = "nobody";
-int revtype = ANON;
+revtype_t revtype = ANON;
 
 /*
 
@@ -950,15 +950,14 @@ void reset() {
 
                         printf("going to dump page %s\n", pagename);
 
-                        if (dump_session(session, 1)) {
-                                while (dump_session(session, 0));
+                        if (dump_session(session_file, 1)) {
+                                while (dump_session(session_file, 0));
                         }
                         free_page();
 
                         c = pagenbr(a->d);
                         if (c < 0)
-                                fatal(DI,
-                                      "page not found, cannot proceed");
+                                fatal(DI, "page not found, cannot proceed");
 
                         printf("going to read page %s\n", a->d);
 
