@@ -1207,7 +1207,6 @@ extern char *session_file,
 extern char* pagesdir;
 extern char* workdir;
 extern char urlpath[];
-extern char host[];
 extern char *doubtsdir;
 extern int npages, cpage;
 
@@ -1547,7 +1546,6 @@ extern char *reviewer;
 extern revtype_t revtype;
 
 /* host name with domain */
-extern char fqdn[MAXFNL + 1];
 
 /* for list_cl */
 extern int *clx, *cly;

@@ -362,8 +362,6 @@ char *patterns_file = NULL;
 char *acts_file = NULL;
 char *session_file = NULL;
 char urlpath[MAXFNL + 1];
-char fqdn[MAXFNL + 1] = "";
-char host[MAXFNL + 1] = "";
 gchar *doubtsdir = NULL;
 GPtrArray *page_list = NULL;
 GStringChunk *pagelist_store = NULL;
@@ -1482,22 +1480,17 @@ Generates a web revision file.
 */
 void gen_wrf() {
         int F;
-        char n[MAXFNL + 1];
-
-        /* make sure that MAXFNL suffices */
-        if (strlen(doubtsdir) + strlen(pagebase) + 18 + strlen(host) >
-            MAXFNL) {
-                fatal(BO, "filenames for revision material too long!\n");
-        }
+        char *n;
 
         /* revision filename */
-        sprintf(n, "%s%s.%d.%d.%s", doubtsdir, pagebase, (int) time(NULL),
-                getpid(), host);
+        n = g_strdup_printf("%s%s.%d.%d.%s", doubtsdir, pagebase, (int) time(NULL),
+                            getpid(), g_get_host_name());
 
         /* write new record */
         F = open(n, O_WRONLY | O_CREAT, 0660);
         write(F, text, strlen(text));
         close(F);
+        g_free(n);
 }
 
 /*
@@ -2610,24 +2603,6 @@ void init_ds(void) {
                         cfont[i + j * FS] = 0;
                 }
 
-        /* read host name */
-        if (host[0] == 0) {
-                struct utsname b;
-
-                if (uname(&b) != 0)
-                        strncpy(fqdn, "unknown", MAXFNL);
-                else {
-                        snprintf(fqdn, MAXFNL, "%s (%s %s)", b.nodename,
-                                 b.machine, b.sysname);
-                }
-                fqdn[MAXFNL] = 0;
-                strcpy(host, fqdn);
-                for (i = 0;
-                     (host[i] != '.') && (host[i] != ' ') &&
-                     (host[i] != 0); ++i);
-                host[i] = 0;
-        }
-
         /* pattern types initial size */
         enlarge_pt(10);
 
@@ -3209,18 +3184,12 @@ void process_webdata(void) {
         int i, j;
         DIR *D;
         struct dirent *e;
-        char r[MAXFNL + 1], *a;
+        char *r, *a;
 
         /*
            The variable r must be long enough to store
            the complete path and filename for revision files.
          */
-        if ((web) &&
-            (strlen(doubtsdir) + strlen(pagebase) + 18 + strlen(host) >
-             MAXFNL)) {
-                fatal(BO, "filenames for revision material too long!");
-                exit(1);
-        }
 
         /*
            Process revision data (web case).
@@ -3261,13 +3230,13 @@ void process_webdata(void) {
                         if ((i > j) && (a[i] == 0)) {
 
                                 if (trace)
-                                        tr("revision data file %s found",
-                                           a);
+                                        tr("revision data file %s found", a);
 
                                 /* process and remove revision file */
-                                sprintf(r, "%s%s", doubtsdir, a);
+                                r = g_strconcat(doubtsdir, a, NULL);
                                 prf(r);
                                 unlink(r);
+                                g_free(r);
                         }
                 }
                 closedir(D);

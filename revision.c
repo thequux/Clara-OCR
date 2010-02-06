@@ -682,7 +682,7 @@ void reviewer_data(adesc *a) {
         /* reviewer data */
         a->r = reviewer;
         a->rt = revtype;
-        a->sa = fqdn;
+        a->sa = g_get_host_name();
         a->dt = time(NULL);
 
         /* original revision data */
