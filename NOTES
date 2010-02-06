@@ -22,6 +22,13 @@ cm_o_pgo        -> FL_PAGE_ONLY
 cm_v_of         -> FL_OMIT_FRAGMENTS
 cm_v_cc         -> FL_SHOW_CLASS
 
+Image formats:
+--------------
+
+pbm2bm needs to be split into two steps: reading the pixmap and splitting into closures.
+
+the call to pbm2bm in load_page needs to be changed massively.
+
 TODO
 -------
 -- restoring previous functionality
@@ -39,6 +46,7 @@ run OCR in seperate thread
 refactor control structure
 Clean option parser
 Relace zfopen and friends with transparent zlib support.
+Add tests
 
 -- very long-term
 Replace file format, to kill off the last of cml.c

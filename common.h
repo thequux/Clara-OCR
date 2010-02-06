@@ -97,6 +97,8 @@ extern int latin_sz,
     cyrillic_sz,
     hebrew_sz, arabic_sz, kana_sz, number_sz, max_sz, alpha_sz, alpha_cols;
 
+typedef struct _CFile CFile;
+
 /*
 
 Per-alphabet alignments.
@@ -526,6 +528,7 @@ Closure struct.
 #define MAXSUP 10
 #define MDV 20
 typedef struct {
+        int id;
         char type;              /* graphic component type */
         int l, r, t, b;         /* {left,right,top,bottom}-most coordinate */
         unsigned char *bm;      /* bitmap */
@@ -715,7 +718,7 @@ different heights.
 */
 #define MAXPS 100
 typedef struct {
-
+        int id;
         /* fundamental */
         int ncl;                /* number of closures */
         int *cl;                /* list of closures */
@@ -792,9 +795,11 @@ General statuses, that apply for various structure fields.
 Type of the transliteration source.
 
 */
-#define ANON 1
-#define TRUSTED 2
-#define ARBITER 3
+typedef enum {
+        ANON = 1,
+        TRUSTED = 2,
+        ARBITER = 3,
+} revtype_t;
 
 /*
 
@@ -1195,12 +1200,8 @@ extern int overr_cb;
 /* paths */
 extern char pagename[];
 extern char pagebase[];
-extern char pagesdir[];
-extern char workdir[];
-extern char patterns[];
-extern char acts[];
-extern char session[];
-extern char xfont[];
+//extern char* pagesdir;
+//extern char* workdir;
 extern char urlpath[];
 extern char host[];
 extern char *doubtsdir;
@@ -1540,7 +1541,7 @@ Reviewer data
 
 */
 extern char *reviewer;
-extern int revtype;
+extern revtype_t revtype;
 
 /* host name with domain */
 extern char fqdn[MAXFNL + 1];
@@ -1745,11 +1746,17 @@ void *c_realloc(void *p, int m, const char *s);
 void c_free(void *p);
 
 /* I/O selector */
+CFile* cfopen(const gchar* path, const gchar* mode);
+gint cfread(CFile *f, gpointer buf, gsize len);
+gint cfwrite(CFile *f, gpointer buf, gsize len);
+void cfflush(CFile *f);
+void cfclose(CFile* f);
+
+
 FILE *zfopen(char *f, char *mode, int *pio);
 void zfclose(FILE *F, int pio);
 size_t zfread(void *ptr, size_t size, size_t nmemb, FILE *stream);
 size_t zfwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream);
-int zfgetc(FILE *stream);
 
 /* bitmap comparison heuristics */
 int bmpcmp_map(int c, int st, int k, int direct);
@@ -1762,7 +1769,6 @@ void display_match(void *c, void *s, int r);
 void force_redraw(void);
 void set_mclip(int f);
 void swn(char *);
-void set_xfont(void);
 void redraw(void);
 void show_hint(int f, char *s, ...);
 void enter_wait(char *s, int f, int m);
@@ -1920,16 +1926,12 @@ int snbp(int s, int *bp, int *sp);
 /* major gui services */
 void xevents(void);
 void set_alpha(void);
-void set_xfont(void);
 void xpreamble();
 void comp_wnd_size(int ww, int wh);
 void cmi(void) __attribute__ ((deprecated));
 int mb_item(int x, int y);
 void init_welcome(void);
-//void right(void);
-//void prior(void);
 void get_pointer(int *x, int *y) __attribute__ ((deprecated));
-void set_xfont(void);
 void setview(int mode) G_GNUC_DEPRECATED;
 void check_dlimits(int cursoron);
 void set_buttons(int s, int p);

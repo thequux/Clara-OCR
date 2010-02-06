@@ -31,50 +31,9 @@ gui.h: Declarations that depend on X11
 X display and contexts.
 
 */
-extern char *displayname;
-// extern Display *xd;
-// extern GC xgc;
 
-/* The application X window */
-// extern Window XW;
-// extern XID xw;
-// extern Pixmap pm;
 extern int have_xw, have_pm, use_xb;
-
-/* Xcolors */
-// extern XColor white,black,gray,darkgray,vdgray;
-
-
-/* default font */
-//extern XFontStruct *dfont;
-//extern int DFH,DFW,DFA,DFD;
-
-/* the event */
-//extern int have_s_ev;
-//extern XEvent xev;
-
-/* some geometric parameters */
-//extern int WW, WH;
-
-/* vertical separation between text lines */
-//extern int VS;
-
-/* redraw flags */
-/*extern int redraw_button,
-    redraw_bg,
-    redraw_grid,
-    redraw_stline,
-    redraw_dw,
-    redraw_inp,
-    redraw_tab,
-    redraw_zone,
-    redraw_menu,
-    redraw_pbar,
-    redraw_j1,
-    redraw_j2,
-    redraw_map,
-    redraw_flea;
-*/
+extern GMutex* imlib_lock;
 /*
 
 Graphic elements
@@ -360,10 +319,10 @@ typedef enum {
         OE_ENCAP_HTML = 1,
         OE_TEXT = 2,
         OE_DJVU = 3,
-} output_encap;
+} output_encap_t;
 
 void mk_page_symbol(int c);
-void mk_page_output(output_encap encap);
+void mk_page_output(output_encap_t encap);
 void mk_pattern_list(void);
 void mk_pattern_types(void);
 void mk_pattern_props(void);

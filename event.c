@@ -1278,7 +1278,7 @@ int cma(int it, int check) {
                     (it == CM_V_LARGE) || (it == CM_V_DEF)) {
 
                         /* set new font */
-                        set_xfont();
+                        //set_xfont();
 
                         /* recompute window size and components placement */
                         set_mclip(0);
@@ -5169,68 +5169,6 @@ void set_alpha(void) {
                 alpha_cols = 1;
         } else
                 alpha = NULL;
-}
-#endif
-#if 0
-/*
-
-Set the default font. Clara uses one same font for all (menus,
-button labels, HTML rendering, etc. The font to be set is
-obtained from the Options menu status.
-
-*/
-
-void set_xfont(void) {
-        XCharStruct *x;
-
-        /* free current font */
-        if (dfont != NULL)
-                XFreeFont(xd, dfont);
-
-        /* use small font */
-        if (*cm_v_small == 'X') {
-                if (((dfont = XLoadQueryFont(xd, "6x13")) == NULL) &&
-                    verbose)
-                        warn("oops.. could not read font 6x13\n");
-        }
-
-        /* use medium font */
-        else if (*cm_v_medium == 'X') {
-                if (((dfont = XLoadQueryFont(xd, "9x15")) == NULL) &&
-                    verbose)
-                        warn("oops.. could not read font 9x15\n");
-        }
-
-        /* use large font */
-        else if (*cm_v_large == 'X') {
-                if (((dfont = XLoadQueryFont(xd, "10x20")) == NULL) &&
-                    verbose)
-                        warn("oops.. could not read font 10x20\n");
-        }
-
-        /* use the font informed as command-line parameter */
-        else {
-                if (((dfont = XLoadQueryFont(xd, xfont)) == NULL) &&
-                    verbose)
-                        warn("oops.. could not read font %s\n", xfont);
-        }
-
-        /* try "fixed" */
-        if ((dfont == NULL) && (strcmp(xfont, "fixed") != 0)) {
-                if (((dfont = XLoadQueryFont(xd, "fixed")) == NULL) &&
-                    verbose)
-                        warn("oops.. could not read font fixed\n");
-        }
-
-        /* no font loaded: abandon */
-        if (dfont == NULL) {
-                fatal(XE, "could not load a font, giving up");
-        }
-
-        /* text font height and width */
-        x = &(dfont->max_bounds);
-        DFH = (DFA = x->ascent) + (DFD = x->descent);
-        DFW = x->width;
 }
 #endif
 /*

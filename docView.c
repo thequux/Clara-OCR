@@ -542,7 +542,7 @@ static void draw_symbol(cairo_t *cr, drawmode_t mode, sdesc *sym) {
                 cairo_stroke(cr);
         }
 
-
+	if (0)
         for (cn = 0; cn < sym->ncl; cn++) {
                 char buf[50];
                 cldesc *closure = cl + sym->cl[cn];
@@ -636,7 +636,7 @@ static gboolean clara_doc_view_expose(GtkWidget *doc,
                 if ((sym->l <= vp.x + vp.width) &&
                     (sym->r >= vp.x) &&
                     (sym->t <= vp.y + vp.height) && (sym->b >= vp.y)) {
-                        guint options = DV_BBOX;
+                        guint options = 0; // DV_BBOX;
                         if (curr_mc == c && gtk_widget_has_focus(doc))
                                 options |= DV_SELECTED;
 

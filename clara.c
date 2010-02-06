@@ -27,6 +27,7 @@ char *version = "20031214";
 int finish = 0;
 /* system headers */
 #include <stdio.h>
+#include <assert.h>
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
@@ -40,6 +41,7 @@ int finish = 0;
 #include <time.h>
 #include <sys/utsname.h>
 #include <stdarg.h>
+#include <Imlib2.h>
 #ifdef HAVE_SIGNAL
 #include <signal.h>
 #endif
@@ -47,6 +49,8 @@ int finish = 0;
 /* Clara headers */
 #include "common.h"
 #include "gui.h"
+
+GMutex* imlib_lock;
 
 /*
 
@@ -99,7 +103,7 @@ wdesc *word = NULL;
 char *text = NULL, *ptext = NULL;
 int textsz = 0, topt = -1;
 int ptextsz = 0, ptopt = -1;
-int outp_format = 1;
+output_encap_t outp_format = OE_ENCAP_HTML;
 
 /* per-page statistics */
 int *dl_ne = NULL,
@@ -135,7 +139,7 @@ int np8[256];
 Page size and image resolution (density).
 
 */
-int XRES, YRES, DENSITY;
+int XRES, YRES, DENSITY = 600;
 
 /*
 
@@ -349,22 +353,18 @@ doubtsdir will be the concatenation of workdir with the string
 
 */
 char book[MAXFNL + 1];
-char f_arg[MAXFNL + 1];
+char* page_dir = NULL;
 char pagename[MAXFNL + 1];
 char pagebase[MAXFNL + 1];
-char pagesdir[MAXFNL + 1];
-char workdir[MAXFNL + 1];
-char bfp[MAXFNL + 1];
-char patterns[MAXFNL + 1];
-char acts[MAXFNL + 1];
-char xfont[MAXFNL + 1];
+char *pagesdir = NULL;
+char *workdir = NULL;
 char urlpath[MAXFNL + 1];
-char session[MAXFNL + 1];
 char fqdn[MAXFNL + 1] = "";
 char host[MAXFNL + 1] = "";
-char *doubtsdir = NULL;
-char *pagelist = NULL;
-int dls = 0, npages, cpage;
+gchar *doubtsdir = NULL;
+GPtrArray *page_list = NULL;
+GStringChunk *pagelist_store = NULL;
+int npages, cpage;
 
 /* session flags */
 int dontblock = 1;
@@ -622,7 +622,7 @@ int curr_doubt,editing_doubts=0;
 char **revstr,*rbuffer;
 */
 
-int max_doubts;
+int max_doubts = 30;
 
 /*
 
@@ -1712,35 +1712,28 @@ int sdim(int k) {
 Compares two filenames as numbers.
 
 */
-int cmp_fn(int a, int b) {
-        int i, na, nb, r;
-
-        /* the first filename is a number? */
-        for (i = a, na = 0; ('0' <= pagelist[i]) && (pagelist[i] <= '9');
-             ++i) {
-                na += (na * 10) + (pagelist[i] - '0');
+int strnatcmp(const gchar* a, const gchar* b) {
+        gchar *ua, *ub; // a and b in utf-8
+        ua = g_filename_to_utf8(a,-1,NULL,NULL,NULL);
+        ub = g_filename_to_utf8(a,-1,NULL,NULL,NULL);
+        if (ua == NULL || ub == NULL ||
+            !g_utf8_validate(ua, -1, NULL) ||
+            !g_utf8_validate(ub, -1, NULL)) {
+                if (ua != NULL)
+                        g_free(ua);
+                if (ub == NULL)
+                        g_free(ub);
+                return strcmp(a,b);
+        } else {
+                gchar *ca, *cb;
+                assert(ua != NULL && ub != NULL);
+                ca = g_utf8_collate_key_for_filename(ua, -1);
+                cb = g_utf8_collate_key_for_filename(ub, -1);
+                g_free(ua); g_free(ub);
+                int r = strcmp(ca,cb);
+                g_free(ca); g_free(cb);
+                return r;
         }
-        if (pagelist[i] != '.')
-                na = -1;
-
-        /* the second filename is a number? */
-        for (i = b, nb = 0; ('0' <= pagelist[i]) && (pagelist[i] <= '9');
-             ++i) {
-                nb += (nb * 10) + (pagelist[i] - '0');
-        }
-        if (pagelist[i] != '.')
-                nb = -1;
-
-        /* compare the filenames as numbers */
-        if ((na >= 0) && (nb >= 0))
-                r = (na < nb) ? -1 : ((na > nb) ? 1 : 0);
-
-        /* compare the filenames as strings */
-        else {
-                r = strcmp(pagelist + a, pagelist + b);
-        }
-
-        return (r);
 }
 
 /*
@@ -1748,124 +1741,82 @@ int cmp_fn(int a, int b) {
 Build list of pages.
 
 */
-void build_plist(void) {
+static gboolean try_load_page(const gchar* filename) {
+        Imlib_Image* img;
+        gchar* path = g_build_filename(pagesdir, filename, NULL);
+        g_mutex_lock(imlib_lock);
+        img = imlib_load_image(path);
+        g_mutex_unlock(imlib_lock);
+        if (img != NULL) {
+                g_mutex_lock(imlib_lock);
+                imlib_context_set_image(img);
+                imlib_free_image();
+                g_mutex_unlock(imlib_lock);
+                g_free(path);
+                g_ptr_array_add(page_list,(gpointer)g_string_chunk_insert(pagelist_store, filename));
+                npages++;
+                return TRUE;
+        } else
+                return FALSE;
+}
+static int ptr_nat_strcmp(gconstpointer a, gconstpointer b) {
+        return strnatcmp(*(const gchar**)a, *(const gchar**)b);
+}
+void build_plist(const gchar* source) {
         struct stat statbuf;
-        int i;
 
+        assert(source != NULL);
+
+        if (page_list == NULL)
+                page_list = g_ptr_array_new();
+        else
+                g_ptr_array_set_size(page_list, 0);
+
+        if (pagelist_store == NULL)
+                pagelist_store = g_string_chunk_new(256);
+        else
+                g_string_chunk_clear(pagelist_store);
+
+        if (pagesdir != NULL)
+                g_free(pagesdir);
+        pagesdir = NULL;
         npages = 0;
-        pagesdir[0] = 0;
         book[0] = 0;
 
         /* bad argument */
-        if (stat(f_arg, &statbuf) != 0) {
-                snprintf(mba, MMB + 1, "could not stat %s", f_arg);
+        if (stat(source, &statbuf) != 0) {
+                snprintf(mba, MMB + 1, "could not stat %s", source);
                 show_hint(2, mba);
         }
 
         /* -f argument is a file */
         if (S_ISREG(statbuf.st_mode)) {
-
-                /* build pagelist */
-                for (i = strlen(f_arg) - 1; (i >= 0) && (f_arg[i] != '/');
-                     --i);
-                pagelist = c_realloc(NULL, dls =
-                                     strlen(f_arg + i + 1) + 1, NULL);
-                strcpy(pagelist, f_arg + i + 1);
-                npages = 1;
-
-                /* compute pagesdir */
-                strcpy(pagesdir, f_arg);
-                for (i = strlen(pagesdir);
-                     (--i >= 0) && (pagesdir[i] != '/'););
-                if (i >= 0)
-                        pagesdir[i + 1] = 0;
-                else
-                        strcpy(pagesdir, "./");
+                gchar* basename;
+                pagesdir = g_path_get_dirname(source);
+                basename = g_path_get_basename(source);
+                try_load_page(basename);
+                g_free(basename);
         }
 
         /* argument to -f is a directory */
         else if (S_ISDIR(statbuf.st_mode)) {
-                DIR *D;
-                int t, s;
-                struct dirent *e;
-                char *a;
+                GDir *dir;
+                GError *err;
+                char const* fname;
 
-                /* f_arg becomes pagesdir */
-                strcpy(pagesdir, f_arg);
-                t = strlen(pagesdir);
-                if (pagesdir[t - 1] != '/') {
-                        if (t < MAXFNL)
-                                strcpy(pagesdir + t, "/");
-                        else {
-                                fatal(DI, "argument to -f too long");
-                        }
-                }
+                pagesdir = g_strdup(source);
 
                 /* search all pages on the pagesdir directory */
-                if ((D = opendir(pagesdir)) == NULL) {
-                        fatal(IO, "could not open directory \"%s\"",
-                              pagesdir);
+                if ((dir = g_dir_open(pagesdir, 0, &err)) == NULL) {
+                        g_critical("could not open directory \"%s\": %s", pagesdir, err->message);
                 }
-                for (s = npages = 0; ((e = readdir(D)) != NULL);) {
-                        int pn;
-
-                        /* if the spec match, append to pagelist */
-                        a = e->d_name;
-                        t = strlen(a);
-
-                        pn = atoi(a);
-
-                        if (((start_at < 0) ||
-                             ((start_at <= pn) && (pn <= stop_at))) &&
-                            (((t >= 5) && (strcmp(a + t - 4, ".pbm") == 0))
-                             || ((t >= 5) &&
-                                 (strcmp(a + t - 4, ".pgm") == 0)) ||
-                             ((t >= 8) &&
-                              (strcmp(a + t - 7, ".pbm.gz") == 0)) ||
-                             ((t >= 8) &&
-                              (strcmp(a + t - 7, ".pgm.gz") == 0)))) {
-
-                                while (s + t + 1 > dls)
-                                        pagelist =
-                                            c_realloc(pagelist, dls +=
-                                                      1000, NULL);
-                                strcpy(pagelist + s, a);
-                                s += t + 1;
-                                ++npages;
-                        }
+                while ((fname = g_dir_read_name(dir)) != NULL) {
+                        try_load_page(fname);
                 }
-                closedir(D);
+                g_dir_close(dir);
 
                 /* sort pages */
-                {
-                        char *a;
-                        int i, j, *p, t, l;
-
-                        /* sorting buffers */
-                        p = alloca(npages * sizeof(int));
-                        a = alloca(s);
-
-                        /* sort the filenames */
-                        for (i = j = 0; i < npages; ++i) {
-                                p[i] = j;
-                                while (pagelist[j++] != 0);
-                        }
-                        qsf(p, 0, npages - 1, 0, cmp_fn);
-
-                        /* rebuild the list of names */
-                        for (i = t = 0; i < npages; ++i) {
-                                l = strlen(pagelist + p[i]);
-
-#ifdef MEMCHECK
-                                checkidx(t + l, s, "build_plist");
-#endif
-
-                                strcpy(a + t, pagelist + p[i]);
-                                t += (l + 1);
-                        }
-                        memcpy(pagelist, a, s);
-                }
-
+                g_ptr_array_sort(page_list, ptr_nat_strcmp);
                 if (npages <= 0) {
                         show_hint(2, "no pages found");
                 }
@@ -1874,40 +1825,17 @@ void build_plist(void) {
         /* argument is nor a regular file nor a directory */
         else {
                 snprintf(mba, MMB, "%s is not a file nor a directory",
-                         f_arg);
+                         page_dir);
                 show_hint(2, mba);
         }
 
-        /* The directory name is assumed to be the book name */
-        /*
-           if (pagesdir[0] != 0) {
-           char cdir[MAXFNL+1];
-
-           cdir[0] = 0;
-           getcwd(cdir,MAXFNL);
-           chdir(pagesdir);
-           if (getcwd(book,MAXFNL) == NULL)
-           strncpy(book,"unknown",MAXFNL);
-           else {
-           int t;
-           t = strlen(book);
-           if ((t>0) && (book[t-1] == '/'))
-           book[--t] = 0;
-           while ((t>=0) && (book[t]!='/'))
-           --t;
-           if (t >= 0)
-           memmove(book,book+t+1,strlen(book+t+1)+1);
-           }
-           if (cdir[0] != 0)
-           chdir(cdir);
-           }
-         */
 
         /* book name unknown */
         if (book[0] == 0)
                 strncpy(book, "unknown", MAXFNL);
 
         /* per-page counters for symbols and doubts */
+        // TODO: make this not suck.
         if (npages > 0) {
                 int i;
 
@@ -1929,6 +1857,7 @@ void build_plist(void) {
                 }
                 for (cpage = 0; cpage < npages; ++cpage) {
                         names_cpage();
+                        gchar* session = g_build_filename(workdir, "session");
                         if (recover_session(session, 1, 1)) {
                                 while (recover_session(NULL, 1, 0));
                                 dl_ne[cpage] = symbols;
@@ -1946,20 +1875,49 @@ void build_plist(void) {
         }
 }
 
+static gboolean reviewer_type_cb(const gchar* opt_name, const gchar* opt_value, gpointer data, GError** err) {
+        if (g_strcmp0(opt_value, "A") == 0)
+                revtype = ARBITER;
+        else if (g_strcmp0(opt_value, "T") == 0)
+                revtype = TRUSTED;
+        else if (g_strcmp0(opt_value, "N") == 0)
+                revtype = ANON;
+        else {
+                g_set_error(err, G_OPTION_ERROR, G_OPTION_ERROR_BAD_VALUE, "Invalid reviewer type %s", opt_value);
+                return FALSE;
+        }
+        return TRUE;
+}
+static gboolean output_format_cb(const gchar* opt_name, const gchar* opt_value, gpointer data, GError** err) {
+        // text,html,djvu
+        if (g_strcmp0(opt_value, "text") == 0)
+                outp_format = OE_TEXT;
+        else if (g_strcmp0(opt_value, "html") == 0)
+                outp_format = OE_ENCAP_HTML;
+        else if (g_strcmp0(opt_value, "djvu") == 0) {
+                g_warning("DJVu output not yet supported");
+                outp_format = OE_DJVU;
+        } else {
+                g_set_error(err, G_OPTION_ERROR, G_OPTION_ERROR_BAD_VALUE, "Invalid output format %s", opt_value);
+                return FALSE;
+        }
+        return TRUE;
+}
+
 static GOptionEntry optDesc[] = {
-	{"batch", 'b', 0, G_OPTION_ARG_NONE, &batch_mode, "Run in batch mode (non-interactive)", NULL },
-	{"debug", 'd', 0, G_OPTION_ARG_NONE, &debug, "Enable debugging", NULL },
-	{"reviewer", 'r', 0, G_OPTION_ARG_STRING, &reviewer, "Reviewer name", "reviewer"},
-	{"reviewer-type", 't', 0, G_OPTION_ARG_CALLBACK, reviewer_type_cb, "Reviewer type", "A|N|T"},
-	{"page-dir", 'f', 0, G_OPTION_ARG_FILENAME, &page_dir, "Directory containing page images", "dir"},
-	{"output-format", 'o', 0, G_OPTION_ARG_CALLBACK, output_format_cb, "Output format", "text|html|djvu"},
-	{"selfthresh", 'T', 0, G_OPTION_ARG_NONE, &selfthresh, "Don't use session files. Intended for selfthresh script", NULL},
-	{"trace", 0, 0, G_OPTION_ARG_NONE, &trace, "Enable trace messages", NULL},
-	{"verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose, "Verbose mode", NULL},
-	{"workdir", 'w', 0, G_OPTION_ARG_FILENAME, &workdir, "Work directory", "dir"},
-	{"resolution", 'y', 0, G_OPTION_ARG_INT, &DENSITY, "Resolution of input page", "dpi"},
-	{"compress",'z', 0, G_OPTION_ARG_NONE, &zsession, "Prefer compressed session files"},
-	NULL
+        {"batch", 'b', 0, G_OPTION_ARG_NONE, &batch_mode, "Run in batch mode (non-interactive)", NULL },
+        {"debug", 'd', 0, G_OPTION_ARG_NONE, &debug, "Enable debugging", NULL },
+        {"reviewer", 'r', 0, G_OPTION_ARG_STRING, &reviewer, "Reviewer name", "reviewer"},
+        {"reviewer-type", 't', 0, G_OPTION_ARG_CALLBACK, reviewer_type_cb, "Reviewer type", "A|N|T"},
+        {"page-dir", 'f', 0, G_OPTION_ARG_FILENAME, &page_dir, "Directory containing page images", "dir"},
+        {"output-format", 'o', 0, G_OPTION_ARG_CALLBACK, output_format_cb, "Output format", "text|html|djvu"},
+        {"selthresh", 'T', 0, G_OPTION_ARG_NONE, &selthresh, "Don't use session files. Intended for selthresh script", NULL},
+        {"trace", 0, 0, G_OPTION_ARG_NONE, &trace, "Enable trace messages", NULL},
+        {"verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose, "Verbose mode", NULL},
+        {"workdir", 'w', 0, G_OPTION_ARG_FILENAME, &workdir, "Work directory", "dir"},
+        {"resolution", 'y', 0, G_OPTION_ARG_INT, &DENSITY, "Resolution of input page", "dpi"},
+        {"compress",'z', 0, G_OPTION_ARG_NONE, &zsession, "Prefer compressed session files", NULL},
+        {},
 };
 /*
 
@@ -2176,10 +2134,6 @@ int checkvar(char *c) {
         else if (strcmp(id, "djvu_char") == 0)
                 criticize_int(val, &djvu_char, 0, 1);
 
-        /* name of the patterns file */
-        else if (strcmp(id, "patterns") == 0)
-                criticize_str(val, (char *) (&(bfp[0])), 1, MAXFNL);
-
         /* book geometry */
         else if (strcmp(id, "LW") == 0)
                 criticize_float(val, &LW, 0, 50.0);
@@ -2222,6 +2176,11 @@ int checkvar(char *c) {
         return (r);
 }
 
+void set_cl_defaults() {
+        if(page_dir == NULL)
+                page_dir = g_strdup("./");
+}
+
 /*
 
 Process command-line parameters.
@@ -2242,25 +2201,9 @@ void process_cl(int argc, char *argv[]) {
            Some default values not specified elsewhere.
          */
 
-        /* directory where the PBM files are */
-        strncpy(f_arg, "./", MAXFNL);
-        f_arg[MAXFNL] = 0;
-
-        /* default X font to use */
-        strncpy(xfont, "7x13", MAXFNL);
-        xfont[MAXFNL] = 0;
-
-        /* maximum number of web doubts to generate */
-        max_doubts = 30;
-
-        /* density */
-        DENSITY = 600;
-
         /* use the default skeleton parameters */
         spcpy(SP_GLOBAL, SP_DEF);
 
-        /* others */
-        strcpy(bfp, "patterns");
 
         /* filter out/translate long options */
         {
@@ -2427,33 +2370,6 @@ void process_cl(int argc, char *argv[]) {
                              'A') ? ARBITER : ((a ==
                                                 'T') ? TRUSTED : ANON);
                 }
-
-                /* (book)
-
-                   -f path
-
-                   Scanned page or page directory. Defaults
-                   to the current directory.
-
-                   The argument must be a pbm file (with absolute or relative
-                   path) or the path (absolute or relative) of the directory
-                   where the pbm file(s) was (were) placed.
-
-                   To specify a range of pages, use the restrictors start_at
-                   and stop_at. Example:
-
-                   $ clara start_at=12 stop_at=122
-
-                   In this case pages like 12.pbm or 0033.pbm will be processed,
-                   but pages like 9.pbm, 0009.pbm or 590.pbm won't.
-                 */
-                else if (c == 'f') {
-                        if (strlen(optarg) > MAXFNL) {
-                                fatal(BO, "argument to -f too long");
-                        }
-                        strncpy(f_arg, optarg, MAXFNL);
-                }
-
 
                 /* (book)
 
@@ -2847,18 +2763,16 @@ void process_cl(int argc, char *argv[]) {
 
         /* book font path */
         if (zsession) {
-                mkpath(patterns, workdir, bfp);
-                mkpath(patterns, patterns, ".gz");
+                mkpath(patterns, workdir, "patterns.gz");
                 mkpath(acts, workdir, "acts.gz");
         } else {
-                mkpath(patterns, workdir, bfp);
+                mkpath(patterns, workdir, "patterns");
                 mkpath(acts, workdir, "acts");
         }
 
         /* doubts dir */
         if (web) {
-                doubtsdir = c_realloc(NULL, MAXFNL + 1, NULL);
-                mkpath(doubtsdir, workdir, "doubts/");
+                doubtsdir = g_build_filename(workdir,doubts, NULL);
         }
 
         /* no current page by now */
@@ -2874,25 +2788,6 @@ void process_cl(int argc, char *argv[]) {
         c_free(disp);
 }
 
-/*
-
-Register new GUI button.
-
-*/
-#if 0
-void register_button(int b, char *l) {
-
-        if (BUTT_PER_COL >= bl_sz) {
-                bl_sz = BUTT_PER_COL + 16;
-                BL = c_realloc(BL, sizeof(char *) * bl_sz, NULL);
-                button = c_realloc(button, bl_sz, NULL);
-        }
-        BL[BUTT_PER_COL] = c_realloc(NULL, strlen(l) + 1, NULL);
-        strcpy(BL[BUTT_PER_COL], l);
-        button[BUTT_PER_COL] = 0;
-        ++BUTT_PER_COL;
-}
-#endif
 /*
 
 Initialize main data structures
@@ -2922,7 +2817,7 @@ void init_ds(void) {
         init_alphabet();
 
         /* build list of pages */
-        build_plist();
+        build_plist(page_dir);
 
         /* alloc HTML text buffer */
         text = c_realloc(NULL, textsz = 15000, NULL);
@@ -4894,7 +4789,8 @@ int main(int argc, char *argv[]) {
         signal(SIGPIPE, handle_pipe);
         signal(SIGALRM, handle_alrm);
 #endif
-
+        if (!g_thread_supported ()) g_thread_init (NULL);
+        imlib_lock = g_mutex_new();
         /*
            Process command-line parameters.
          */
