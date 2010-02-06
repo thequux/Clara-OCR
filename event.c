@@ -556,22 +556,6 @@ Context-dependent "right" action.
 */
 void right(void) {
 
-        if ((dw[PAGE_SYMBOL].v) || (dw[PATTERN].v) ||
-            (dw[PATTERN_TYPES].v)) {
-                form_auto_submit();
-        }
-
-        /* select next menu of the menu bar */
-        if (cmenu != NULL) {
-                if (cmenu->a == 1) {
-                        if ((cmenu - CM >= TOP_CM) || ((++cmenu)->a != 1))
-                                cmenu = CM;
-                        CY0_orig = -1;
-                        force_redraw();
-                        set_mclip(0);
-                }
-        }
-
         /* go to the next pattern */
         else if ((CDW == PATTERN) || (dw[TUNE_PATTERN].v)) {
                 if (topp >= 0) {
@@ -594,22 +578,6 @@ void right(void) {
                         /* ..and recompute skeleton */
                         dw[TUNE_PATTERN].rg = 1;
                         dw[TUNE_SKEL].rg = 1;
-                        redraw_document_window();
-                }
-        }
-
-        /* move the graphic cursor to the next symbol */
-        else if (CDW == PAGE) {
-                int l;
-
-                if (curr_mc >= 0) {
-                        if (mc[curr_mc].E >= 0)
-                                curr_mc = mc[curr_mc].E;
-                        else if ((l = rsymb(curr_mc, 1)) >= 0)
-                                curr_mc = l;
-                        check_dlimits(1);
-                        if (dw[PAGE_SYMBOL].v)
-                                dw[PAGE_SYMBOL].rg = 1;
                         redraw_document_window();
                 }
         }
@@ -719,22 +687,6 @@ void left(void) {
                 }
         }
 
-        /* move the current symbol to the previous one */
-        else if (CDW == PAGE) {
-                int l;
-
-                if (curr_mc >= 0) {
-                        if (mc[curr_mc].W >= 0)
-                                curr_mc = mc[curr_mc].W;
-                        else if ((l = lsymb(curr_mc, 1)) >= 0)
-                                curr_mc = l;
-                        check_dlimits(1);
-                        if (dw[PAGE_SYMBOL].v)
-                                dw[PAGE_SYMBOL].rg = 1;
-                        redraw_document_window();
-                }
-        }
-
         /* go to the previous pattern type */
         else if (CDW == PATTERN_TYPES) {
 
@@ -806,22 +758,6 @@ void up(void) {
                         cmenu->c = -1;
         }
 
-        /* move the graphic cursor to the symbol above the current one */
-        else if (CDW == PAGE) {
-                int l;
-
-                if (curr_mc >= 0) {
-                        if (mc[curr_mc].N >= 0)
-                                curr_mc = mc[curr_mc].N;
-                        else if ((l = tsymb(curr_mc, 1)) >= 0)
-                                curr_mc = l;
-                        check_dlimits(1);
-                        if (dw[PAGE_SYMBOL].v)
-                                dw[PAGE_SYMBOL].rg = 1;
-                        redraw_document_window();
-                }
-        }
-
         /* scroll down HTML documents by one line */
         else if (HTML) {
                 if (Y0 > 0) {
@@ -856,22 +792,6 @@ void down(void) {
                         // UNPATCHED: // UNPATCHED: redraw_menu = 1;
                 } else
                         cmenu->c = -1;
-        }
-
-        /* move the graphic cursor to the symbol below the current one */
-        else if (CDW == PAGE) {
-                int l;
-
-                if (curr_mc >= 0) {
-                        if (mc[curr_mc].S >= 0)
-                                curr_mc = mc[curr_mc].S;
-                        else if ((l = bsymb(curr_mc, 1)) >= 0)
-                                curr_mc = l;
-                        check_dlimits(1);
-                        if (dw[PAGE_SYMBOL].v)
-                                dw[PAGE_SYMBOL].rg = 1;
-                        redraw_document_window();
-                }
         }
 
         /* scroll down HTML documents by one line */

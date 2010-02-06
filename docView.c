@@ -1,4 +1,5 @@
 #include <math.h>
+#include <gdk/gdkkeysyms.h>
 #include "common.h"
 #include "gui.h"
 #include "docView.h"
@@ -430,16 +431,13 @@ static void clara_doc_view_adjust_position(ClaraDocView *self,
         if (priv->hadjustment != NULL) {
 
                 gdouble xpos = gtk_adjustment_get_value(priv->hadjustment);
-                gdouble hsize =
-                    gtk_adjustment_get_page_size(priv->hadjustment);
+                gdouble hsize = gtk_adjustment_get_page_size(priv->hadjustment);
                 gtk_adjustment_configure(priv->hadjustment,
                                          (priv->keep_position ?
-                                          CLAMP(xpos +
-                                                xanc * (page_width -
-                                                        hsize) / 2.0, 0,
-                                                XRES - page_width)
-                                          : 0), 0, XRES, 25,
-                                         page_width / 3.0, page_width);
+                                          CLAMP(xpos + xanc * (hsize - page_width) / 2.0,
+                                                0, XRES - page_width)
+                                          : 0), 0, XRES,
+                                         25, page_width / 3.0, page_width);
                 conf_triggered = TRUE;
         }
         if (priv->vadjustment != NULL) {
@@ -449,12 +447,10 @@ static void clara_doc_view_adjust_position(ClaraDocView *self,
 
                 gtk_adjustment_configure(priv->vadjustment,
                                          (priv->keep_position
-                                          ? CLAMP(ypos +
-                                                  yanc * (page_height -
-                                                          vsize) / 2.0, 0,
-                                                  YRES - page_height)
-                                          : 0), 0, YRES, 25,
-                                         page_height / 3.0, page_height);
+                                          ? CLAMP(ypos + yanc * (vsize - page_height) / 2.0,
+                                                  0, YRES - page_height)
+                                          : 0), 0, YRES,
+                                         25, page_height / 3.0, page_height);
                 conf_triggered = TRUE;
         }
 
@@ -469,7 +465,7 @@ static void clara_doc_view_adjust_position(ClaraDocView *self,
 static void copy_bm_to_buffer(guchar *src, guchar *dst,
                               int w, int h, int stride) {
         int i, j;
-        int src_stride = ((w + 8) >> 3);
+        int src_stride = ((w + 7) >> 3);
         for (j = 0; j < h; j++) {
                 for (i = 0; i < w; i++) {
                         // high bit is leftmost
@@ -514,8 +510,8 @@ static void draw_symbol(cairo_t *cr, drawmode_t mode, sdesc *sym) {
                 }
                 for (cn = 0; cn < sym->ncl; cn++) {
                         cldesc *closure = cl + sym->cl[cn];
-                        int w = closure->r - closure->l,
-                            h = closure->b - closure->t,
+                        int w = closure->r - closure->l + 1,
+                            h = closure->b - closure->t + 1,
                             x = closure->l, y = closure->t;
                         int stride =
                             cairo_format_stride_for_width(CAIRO_FORMAT_A8,
@@ -537,17 +533,17 @@ static void draw_symbol(cairo_t *cr, drawmode_t mode, sdesc *sym) {
 
         if (mode & DV_SELECTED) {
                 cairo_ellipse(cr, sym->l, sym->t,
-                              sym->r - sym->l, sym->b - sym->t);
+                              sym->r - sym->l + 1, sym->b - sym->t + 1);
                 cairo_set_source_rgb(cr, 0, 0, 1);
                 cairo_stroke(cr);
         }
 
-	if (0)
+        if (0)
         for (cn = 0; cn < sym->ncl; cn++) {
                 char buf[50];
                 cldesc *closure = cl + sym->cl[cn];
-                int w = closure->r - closure->l,
-                    h = closure->b - closure->t,
+                int w = closure->r - closure->l + 1,
+                    h = closure->b - closure->t + 1,
                     x = closure->l, y = closure->t;
                 cairo_set_source_rgba(cr, 0, 1, 0, 0.5);
                 cairo_rectangle(cr, x, y, w, h);
@@ -569,7 +565,7 @@ static void clara_doc_view_viewport_changed(GtkAdjustment *adj,
                 gdouble zoom;
                 clara_doc_view_calc_viewport(self, &rect, &zoom);
 #define SCR(x) ((int)((x) * zoom))
-                // floating point equality is actually CORRECT here. 
+                // floating point equality is actually CORRECT here.
                 // If it changed, even by F_EPSILON, we might need a redraw. Determining for sure involves actually redrawing, so...
                 if (priv->use_position && priv->oldzoom == zoom) {
                         gint dx = SCR(priv->oldx) - SCR(rect.x),
@@ -671,8 +667,7 @@ static void clara_doc_view_calc_viewport(ClaraDocView *self,
                 vp->width = alloc_doc.width;
         } else {
                 vp->x = gtk_adjustment_get_value(priv->hadjustment);
-                vp->width =
-                    gtk_adjustment_get_page_size(priv->hadjustment);
+                vp->width = gtk_adjustment_get_page_size(priv->hadjustment);
         }
 
         if (YRES < alloc_doc.height) {
@@ -680,8 +675,7 @@ static void clara_doc_view_calc_viewport(ClaraDocView *self,
                 vp->height = alloc_doc.height;
         } else {
                 vp->y = gtk_adjustment_get_value(priv->vadjustment);
-                vp->height =
-                    gtk_adjustment_get_page_size(priv->vadjustment);
+                vp->height = gtk_adjustment_get_page_size(priv->vadjustment);
         }
 
 
@@ -694,19 +688,33 @@ static void clara_doc_view_symbol_selected_cb(ClaraDocView *self,
         //if ((curr_mc = symNo) >= 1) {
         //      dw[PAGE_SYMBOL].rg = 1;
         //}
+        // recenter view
+        if (symNo >= 0) {
+                sdesc *sym = mc + symNo;
+                if (0) {
+                        int page_w = gtk_adjustment_get_page_size(priv->hadjustment),
+                                page_h = gtk_adjustment_get_page_size(priv->vadjustment);
+                        int cx = CLAMP((sym->l + sym->r + 1 - page_w) / 2, 0, XRES - page_w);
+                        int cy = CLAMP((sym->t + sym->b + 1 - page_h) / 2, 0, YRES - page_h);
+                        gtk_adjustment_set_value(priv->hadjustment, cx);
+                        gtk_adjustment_set_value(priv->vadjustment, cy);
+                } else {
+                        gtk_adjustment_clamp_page(priv->hadjustment, sym->l, sym->r+1);
+                        gtk_adjustment_clamp_page(priv->vadjustment, sym->t, sym->b+1);
+                }
+        }
         gtk_widget_queue_draw(GTK_WIDGET(self));
 }
 
 static void clara_doc_view_transliteration_given_cb(ClaraDocView *self,
                                                     int symNo,
-                                                    const gchar *translit) 
+                                                    const gchar *translit)
 {
 }
 
 static gint clara_doc_view_button_press_cb(GtkWidget *widget,
                                            GdkEventButton *evt) {
         ClaraDocView *self = CLARA_DOC_VIEW(widget);
-        ClaraDocViewPrivate *priv = CLARA_DOC_VIEW_GET_PRIVATE(self);
         DblRectangle vp;
         gdouble zoom;
         if (evt->type == GDK_BUTTON_PRESS) {
@@ -726,6 +734,32 @@ static gint clara_doc_view_button_press_cb(GtkWidget *widget,
         return TRUE;
 }
 
+static void clara_doc_view_select_char_dir(ClaraDocView* self, GtkDirectionType dir) {
+        ClaraDocViewPrivate *priv = CLARA_DOC_VIEW_GET_PRIVATE(self);
+        int newsym;
+#define NSYM(memb,func)                                                 \
+        do {                                                            \
+                if (mc[priv->curr_sym].memb >= 0)                       \
+                        newsym = mc[priv->curr_sym].memb;               \
+                else                                                    \
+                        newsym = func(priv->curr_sym, 1);               \
+        } while(0)
+
+        if (priv->curr_sym >= 0) {
+                switch(dir) {
+                case GTK_DIR_LEFT: NSYM(W,lsymb); break;
+                case GTK_DIR_RIGHT: NSYM(E,rsymb); break;
+                case GTK_DIR_UP: NSYM(N,tsymb); break;
+                case GTK_DIR_DOWN: NSYM(S,bsymb); break;
+                default: g_warn_if_reached();
+                }
+        }
+
+        if (newsym >= 0 && newsym != priv->curr_sym)
+                g_signal_emit(self,
+                              clara_doc_view_signals[SIG_SYMBOL_SELECTED],
+                              0, newsym);
+}
 static gint clara_doc_view_key_press_cb(GtkWidget *widget,
                                         GdkEventKey *evt) {
         ClaraDocView *self = CLARA_DOC_VIEW(widget);
@@ -733,12 +767,19 @@ static gint clara_doc_view_key_press_cb(GtkWidget *widget,
 
         gchar buf[10] = { 0 };
         guint32 ch = gdk_keyval_to_unicode(evt->keyval);
-        if (ch != 0) {
-                g_unichar_to_utf8(ch, buf);
-                g_signal_emit(self,
-                              clara_doc_view_signals[SIG_TRANSLIT_GIVEN],
-                              0, priv->curr_sym, buf);
-                return FALSE;
+        switch (evt->keyval) {
+        case GDK_Right: clara_doc_view_select_char_dir(self, GTK_DIR_RIGHT); return TRUE;
+        case GDK_Left: clara_doc_view_select_char_dir(self, GTK_DIR_LEFT); return TRUE;
+        case GDK_Up: clara_doc_view_select_char_dir(self, GTK_DIR_UP); return TRUE;
+        case GDK_Down: clara_doc_view_select_char_dir(self, GTK_DIR_DOWN); return TRUE;
+        default:
+                if (ch != 0) {
+                        g_unichar_to_utf8(ch, buf);
+                        g_signal_emit(self,
+                                      clara_doc_view_signals[SIG_TRANSLIT_GIVEN],
+                                      0, priv->curr_sym, buf);
+                        return TRUE;
+                }
         }
-        return TRUE;
+        return FALSE;
 }
