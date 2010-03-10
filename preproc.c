@@ -454,13 +454,11 @@ int deskew(int reset) {
 
 int pp_thresh() {
         int x, y;
-        static int st;
 
         {
                 if (pm_t != 8)
                         return 128;
                 show_hint(2, "computing threshold...");
-                st = 2;
                 for (x = 0; x <= MAXVAL; x++)
                         h0[x] = 0;
                 for (y = 0; y < YRES; y++)

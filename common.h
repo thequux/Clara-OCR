@@ -1822,8 +1822,6 @@ void start_ocr(int p, int s, int r);
 int build(int reset);
 int load_page(int p, int reset, int bin);
 int loadpgm(int reset, char *f, unsigned char **pb, int *w, int *h);
-int unload_page(int reset);
-int ocr_prep(int reset);
 
 /* code-to-string services */
 char *statusname(int s);

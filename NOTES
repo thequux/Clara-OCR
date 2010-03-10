@@ -29,6 +29,46 @@ pbm2bm needs to be split into two steps: reading the pixmap and splitting into c
 
 the call to pbm2bm in load_page needs to be changed massively.
 
+Multicall functions:
+--------------------
+
+These are functions that are called multiple times to produce
+incremental results, the point usually being to keep the UI
+responsive. This comes at the cost of allowing action at a distance
+and making control flow non-obvious.
+
+Because run the UI in a seperate thread, we don't gain any advantage
+from multicall functions. They need to be rewritten in the standard
+style; i.e., a function does everything that it's told to in the first
+call.
+
+Multicall functions have several distinguishing features:
+1) Most (if not all) variables are static
+2) a "reset" parameter which handles setting the static variables to known values.
+3) A return value of 0 or 1, indicating that there is more work to be done.
+4) Often a "mode" (sometimes called "st") variable which handles multiple cases.
+
+Known multicalls: (not complete list)
+- pbm2bm
+- find_thing
+- build (st is the mode var)
+- load_page
+- loadpgm
+- review (partially. Needs to be rewritten anyway)
+- dump_session
+- dump_acts
+- dump_patterns
+- cons
+- tune_skel_global
+- prepare_patterns
+- blockfind
+- deskew
+- dump_dict
+- tune_skel (?)
+- review_tr
+- st (kinda)
+
+
 TODO
 -------
 -- restoring previous functionality
