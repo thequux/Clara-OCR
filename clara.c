@@ -1853,8 +1853,7 @@ void build_plist(const gchar* source) {
                 }
                 for (cpage = 0; cpage < npages; ++cpage) {
                         names_cpage();
-                        if (recover_session(session_file, 1, 1)) {
-                                while (recover_session(NULL, 1, 0));
+                        if (recover_session(session_file, 1)) {
                                 dl_ne[cpage] = symbols;
                                 dl_db[cpage] = doubts;
                                 dl_r[cpage] = runs;

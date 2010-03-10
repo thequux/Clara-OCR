@@ -1875,7 +1875,7 @@ void pop_text(void);
 int dump_session(char *f, int reset);
 int dump_acts(char *f, int reset);
 int dump_patterns(char *f, int reset);
-int recover_session(char *f, int st, int reset);
+int recover_session(char *f, int st);
 int recover_acts(char *f);
 int recover_patterns(char *f);
 int free_page(void);

@@ -923,296 +923,291 @@ Session recover. If the parameter st is nonzero, then finish just
 after reading the unstruct element of the session.
 
 */
-int recover_session(char *f, int st, int reset) {
-        static FILE *F;
-        static int k, e, pio;
-        static int cm = -1;
-        static trdesc *tr;
+int recover_session(char *f, int st) {
+        FILE *F;
+        int k, pio;
+        int cm = -1;
+        trdesc *tr;
 
-        if (reset) {
 
-                /* open file */
-                if (selthresh || ((F = zfopen(f, "r", &pio)) == NULL)) {
-                        if (verbose)
-                                warn("session file \"%s\" not found (ok)",
-                                     f);
-                        return (0);
-                }
-                DLINE = 0;
-                e = 0;
-                return (1);
+        /* open file */
+        if (selthresh || ((F = zfopen(f, "r", &pio)) == NULL)) {
+                if (verbose)
+                        warn("session file \"%s\" not found (ok)",
+                             f);
+                return 0;
         }
+        DLINE = 0;
 
-        /* magic */
-        if (fromasc(F, "<Clara>", TNULL, 0, NULL) == 0) {
-        }
-
-        /* unstructured variables */
-        else if (fromasc(F, "<unstruct", TNULL, 0, NULL) == 0) {
-                fromasc(F, "XRES", TINT, 1, &XRES);
-                fromasc(F, "YRES", TINT, 1, &YRES);
-                fromasc(F, "zones", TINT, 1, &zones);
-                if (zones > 0)
-                        fromasc(F, "limits", TINT, 8 * zones, limits);
-                fromasc(F, "curr_mc", TINT, 1, &curr_mc);
-                fromasc(F, "symbols", TINT, 1, &symbols);
-                fromasc(F, "doubts", TINT, 1, &doubts);
-                fromasc(F, "runs", TINT, 1, &runs);
-                fromasc(F, "ocr_time", TINT, 1, &ocr_time);
-                fromasc(F, "ocr_r", TINT, 1, &ocr_r);
-                fromasc(F, "words", TINT, 1, &words);
-                fromasc(F, "classes", TINT, 1, &classes);
-                fromasc(F, "></unstruct>", TNULL, 0, NULL);
-                if (st)
-                        e = 1;
-        }
-
-        /* start of symbol */
-        else if (fromasc(F, "<sdesc idx", TINT, 1, &k) == 1) {
-                sdesc m;
-
-                if ((batch_mode == 0) && ((k % DPROG) == 0)) {
-                        snprintf(mba, MMB, "now reading symbol %d", k);
-                        show_hint(0, mba);
+        while (TRUE) {
+                /* magic */
+                if (fromasc(F, "<Clara>", TNULL, 0, NULL) == 0) {
                 }
 
-                /* current symbol */
-                cm = k;
-
-                /* enlarge memory area */
-                if (k >= ssz) {
-                        int i;
-
-                        i = ssz;
-                        mc = c_realloc(mc, (ssz += 1000) * sizeof(sdesc),
-                                       NULL);
-                        for (; i < ssz; ++i) {
-                                mc[i].ncl = 0;
-                                mc[i].tr = NULL;
-                        }
+                /* unstructured variables */
+                else if (fromasc(F, "<unstruct", TNULL, 0, NULL) == 0) {
+                        fromasc(F, "XRES", TINT, 1, &XRES);
+                        fromasc(F, "YRES", TINT, 1, &YRES);
+                        fromasc(F, "zones", TINT, 1, &zones);
+                        if (zones > 0)
+                                fromasc(F, "limits", TINT, 8 * zones, limits);
+                        fromasc(F, "curr_mc", TINT, 1, &curr_mc);
+                        fromasc(F, "symbols", TINT, 1, &symbols);
+                        fromasc(F, "doubts", TINT, 1, &doubts);
+                        fromasc(F, "runs", TINT, 1, &runs);
+                        fromasc(F, "ocr_time", TINT, 1, &ocr_time);
+                        fromasc(F, "ocr_r", TINT, 1, &ocr_r);
+                        fromasc(F, "words", TINT, 1, &words);
+                        fromasc(F, "classes", TINT, 1, &classes);
+                        fromasc(F, "></unstruct>", TNULL, 0, NULL);
+                        if (st)
+                                break;
                 }
 
-                m.tr = NULL;
+                /* start of symbol */
+                else if (fromasc(F, "<sdesc idx", TINT, 1, &k) == 1) {
+                        sdesc m;
 
-                fromasc(F, "ncl", TINT, 1, &(m.ncl));
-                fromasc(F, "cl", TINT, 0, &(m.cl));
-                fromasc(F, "l", TINT, 1, &(m.l));
-                fromasc(F, "r", TINT, 1, &(m.r));
-                fromasc(F, "t", TINT, 1, &(m.t));
-                fromasc(F, "b", TINT, 1, &(m.b));
-                fromasc(F, "nbp", TINT, 1, &(m.nbp));
-                fromasc(F, "va", TCHAR, 1, &(m.va));
-                fromasc(F, "c", TCHAR, 1, &(m.c));
-                fromasc(F, "f", TINT, 1, &(m.f));
-                fromasc(F, "N", TINT, 1, &(m.N));
-                fromasc(F, "S", TINT, 1, &(m.S));
-                fromasc(F, "E", TINT, 1, &(m.E));
-                fromasc(F, "W", TINT, 1, &(m.W));
-                fromasc(F, "sw", TINT, 1, &(m.sw));
-                fromasc(F, "sl", TINT, 1, &(m.sl));
-                m.bs = -1;
-                fromasc(F, "bs", TINT, 1, &(m.bs));
-                fromasc(F, "tc", TCHAR, 1, &(m.tc));
-                fromasc(F, "pb", TINT, 1, &(m.pb));
-                fromasc(F, "lfa", TINT, 1, &(m.lfa));
-                fromasc(F, "bm", TINT, 1, &(m.bm));
-                fromasc(F, "></sdesc>", TNULL, 0, NULL);
-
-                /* copy */
-                memcpy(mc + k, &m, sizeof(sdesc));
-        }
-
-        /* start of closure */
-        else if (fromasc(F, "<cldesc idx", TINT, 1, &k) == 1) {
-                cldesc m;
-                int topsup;
-
-                if ((batch_mode == 0) && ((k % DPROG) == 0)) {
-                        snprintf(mba, MMB, "now reading cl %d", k);
-                        show_hint(0, mba);
-                }
-
-                fromasc(F, "l", TINT, 1, &(m.l));
-                fromasc(F, "r", TINT, 1, &(m.r));
-                fromasc(F, "t", TINT, 1, &(m.t));
-                fromasc(F, "b", TINT, 1, &(m.b));
-                fromasc(F, "bm", TCHAR, 0, &(m.bm));
-                fromasc(F, "nbp", TINT, 1, &(m.nbp));
-                fromasc(F, "seed", TSHORT, 2, &(m.seed));
-                fromasc(F, "supsz", TINT, 1, &(m.supsz));
-                m.sup = c_realloc(NULL, m.supsz * sizeof(int), NULL);
-                topsup = fromasc(F, "sup", TINT, -m.supsz, m.sup);
-                m.sup[topsup] = -1;
-                fromasc(F, "></cldesc>", TNULL, 0, NULL);
-
-                /* must enlarge allocated area for cl */
-                checkcl(++topcl);
-                memcpy(cl + topcl, &m, sizeof(cldesc));
-
-                /* create unitary symbol */
-                /* mc[new_mc(&topcl,1)].isp = 1; */
-
-                /* printf("l=%d\n",m.l); */
-        }
-
-        /* start of vote */
-        else if (fromasc(F, "<vdesc idx", TINT, 1, &k) == 1) {
-                vdesc *v, *a;
-
-                v = c_realloc(NULL, sizeof(vdesc), NULL);
-                fromasc(F, "orig", TCHAR, 1, &(v->orig));
-                fromasc(F, "act", TINT, 1, &(v->act));
-                fromasc(F, "q", TCHAR, 1, &(v->q));
-                fromasc(F, "></vdesc>", TNULL, 0, NULL);
-
-                /* add to the current transliteration */
-                v->nv = NULL;
-                if (tr->v == NULL)
-                        tr->v = v;
-                else {
-                        for (a = tr->v; a->nv != NULL;
-                             a = (vdesc *) (a->nv));
-                        a->nv = (void *) v;
-                }
-        }
-
-        /* start of transliteration */
-        else if (fromasc(F, "<trdesc idx", TINT, 1, &k) == 1) {
-                trdesc *a;
-
-                tr = c_realloc(NULL, sizeof(trdesc), NULL);
-                fromasc(F, "pr", TINT, 1, &(tr->pr));
-                fromasc(F, "n", TINT, 1, &(tr->n));
-                fromasc(F, "f", TINT, 1, &(tr->f));
-                fromasc(F, "a", TCHAR, 1, &(tr->a));
-                fromasc(F, "t", TSTR, 0, &(tr->t));
-                fromasc(F, "></trdesc>", TNULL, 0, NULL);
-
-                /* no votes by now */
-                tr->v = NULL;
-
-                /* add to the current symbol */
-                tr->nt = NULL;
-                if (mc[cm].tr == NULL)
-                        mc[cm].tr = tr;
-                else {
-                        for (a = mc[cm].tr; a->nt != NULL; a = a->nt);
-                        a->nt = tr;
-                }
-        }
-
-        /* recover link */
-        else if (fromasc(F, "<lkdesc idx", TINT, 1, &k) == 1) {
-
-                if (k >= lksz) {
-                        lk = c_realloc(lk,
-                                       (lksz +=
-                                        128) * (sizeof(lkdesc)), NULL);
-                }
-                if (k > toplk)
-                        toplk = k;
-
-                fromasc(F, "t", TCHAR, 1, &(lk[k].t));
-                fromasc(F, "p", TCHAR, 1, &(lk[k].p));
-                fromasc(F, "a", TINT, 1, &(lk[k].a));
-                fromasc(F, "l", TINT, 1, &(lk[k].l));
-                fromasc(F, "r", TINT, 1, &(lk[k].r));
-                fromasc(F, "></lkdesc>\n", TNULL, 0, NULL);
-        }
-
-        /* recover line */
-        else if (fromasc(F, "<lndesc idx", TINT, 1, &k) == 1) {
-                if (k >= lnsz) {
-                        int i = lnsz;
-
-                        lnsz = k + 128;
-                        line =
-                            c_realloc(line, lnsz * sizeof(lndesc), NULL);
-                        for (; i < lnsz; ++i)
-                                line[i].f = -1;
-                }
-                if (k > topln)
-                        topln = k;
-                fromasc(F, "f", TINT, 1, &(line[k].f));
-                fromasc(F, "l", TINT, 1, &(line[k].l));
-                fromasc(F, "></lndesc>", TNULL, 0, NULL);
-        }
-
-        /* recover word */
-        else if (fromasc(F, "<wdesc idx", TINT, 1, &k) == 1) {
-
-                if (k >= wsz) {
-                        int i = wsz;
-
-                        wsz = k + 128;
-                        word = c_realloc(word, wsz * sizeof(wdesc), NULL);
-                        for (; i < wsz; ++i)
-                                word[i].F = -1;
-                }
-                if (k > topw)
-                        topw = k;
-
-                fromasc(F, "F", TINT, 1, &(word[k].F));
-                fromasc(F, "L", TINT, 1, &(word[k].L));
-                fromasc(F, "l", TINT, 1, &(word[k].l));
-                fromasc(F, "r", TINT, 1, &(word[k].r));
-                fromasc(F, "t", TINT, 1, &(word[k].t));
-                fromasc(F, "b", TINT, 1, &(word[k].b));
-                fromasc(F, "E", TINT, 1, &(word[k].E));
-                fromasc(F, "W", TINT, 1, &(word[k].W));
-                fromasc(F, "tl", TINT, 1, &(word[k].tl));
-                fromasc(F, "bl", TINT, 1, &(word[k].bl));
-                fromasc(F, "br", TINT, 1, &(word[k].br));
-                fromasc(F, "f", TINT, 1, &(word[k].f));
-                fromasc(F, "a", TCHAR, 1, &(word[k].a));
-                fromasc(F, "sh", TSHORT, 1, &(word[k].sh));
-                fromasc(F, "as", TSHORT, 1, &(word[k].as));
-                fromasc(F, "ds", TSHORT, 1, &(word[k].ds));
-                fromasc(F, "sk", TINT, 1, &(word[k].sk));
-                fromasc(F, "></wdesc>\n", TNULL, 0, NULL);
-        }
-
-        /* end of dump */
-        else if (fromasc(F, "</Clara>", TNULL, 0, NULL) == 0) {
-                e = 1;
-        }
-
-        else {
-                fatal(FD, "unexpected token found ar line %d of %s\n",
-                      DLINE, f);
-        }
-
-        /* completed */
-        if (e) {
-
-                /* compute tops */
-                if (!st) {
-                        int i;
-
-                        for (i = ssz - 1; (i >= 0) && (mc[i].ncl == 0);
-                             --i);
-                        tops = i;
-                        for (; (i >= 0); --i) {
-                                if (mc[i].ncl == 0)
-                                        db("oops.. hole in mc array index %d\n", i);
-                        }
-
-                        if (batch_mode == 0) {
-                                snprintf(mba, MMB,
-                                         "finished reading session (topcl=%d tops=%d)",
-                                         topcl, tops);
+                        if ((batch_mode == 0) && ((k % DPROG) == 0)) {
+                                snprintf(mba, MMB, "now reading symbol %d", k);
                                 show_hint(0, mba);
                         }
+
+                        /* current symbol */
+                        cm = k;
+
+                        /* enlarge memory area */
+                        if (k >= ssz) {
+                                int i;
+
+                                i = ssz;
+                                mc = c_realloc(mc, (ssz += 1000) * sizeof(sdesc),
+                                               NULL);
+                                for (; i < ssz; ++i) {
+                                        mc[i].ncl = 0;
+                                        mc[i].tr = NULL;
+                                }
+                        }
+
+                        m.tr = NULL;
+
+                        fromasc(F, "ncl", TINT, 1, &(m.ncl));
+                        fromasc(F, "cl", TINT, 0, &(m.cl));
+                        fromasc(F, "l", TINT, 1, &(m.l));
+                        fromasc(F, "r", TINT, 1, &(m.r));
+                        fromasc(F, "t", TINT, 1, &(m.t));
+                        fromasc(F, "b", TINT, 1, &(m.b));
+                        fromasc(F, "nbp", TINT, 1, &(m.nbp));
+                        fromasc(F, "va", TCHAR, 1, &(m.va));
+                        fromasc(F, "c", TCHAR, 1, &(m.c));
+                        fromasc(F, "f", TINT, 1, &(m.f));
+                        fromasc(F, "N", TINT, 1, &(m.N));
+                        fromasc(F, "S", TINT, 1, &(m.S));
+                        fromasc(F, "E", TINT, 1, &(m.E));
+                        fromasc(F, "W", TINT, 1, &(m.W));
+                        fromasc(F, "sw", TINT, 1, &(m.sw));
+                        fromasc(F, "sl", TINT, 1, &(m.sl));
+                        m.bs = -1;
+                        fromasc(F, "bs", TINT, 1, &(m.bs));
+                        fromasc(F, "tc", TCHAR, 1, &(m.tc));
+                        fromasc(F, "pb", TINT, 1, &(m.pb));
+                        fromasc(F, "lfa", TINT, 1, &(m.lfa));
+                        fromasc(F, "bm", TINT, 1, &(m.bm));
+                        fromasc(F, "></sdesc>", TNULL, 0, NULL);
+
+                        /* copy */
+                        memcpy(mc + k, &m, sizeof(sdesc));
                 }
 
-                /* finished */
-                zfclose(F, pio);
-                sess_changed = 0;
-                return (0);
+                /* start of closure */
+                else if (fromasc(F, "<cldesc idx", TINT, 1, &k) == 1) {
+                        cldesc m;
+                        int topsup;
+
+                        if ((batch_mode == 0) && ((k % DPROG) == 0)) {
+                                snprintf(mba, MMB, "now reading cl %d", k);
+                                show_hint(0, mba);
+                        }
+
+                        fromasc(F, "l", TINT, 1, &(m.l));
+                        fromasc(F, "r", TINT, 1, &(m.r));
+                        fromasc(F, "t", TINT, 1, &(m.t));
+                        fromasc(F, "b", TINT, 1, &(m.b));
+                        fromasc(F, "bm", TCHAR, 0, &(m.bm));
+                        fromasc(F, "nbp", TINT, 1, &(m.nbp));
+                        fromasc(F, "seed", TSHORT, 2, &(m.seed));
+                        fromasc(F, "supsz", TINT, 1, &(m.supsz));
+                        m.sup = c_realloc(NULL, m.supsz * sizeof(int), NULL);
+                        topsup = fromasc(F, "sup", TINT, -m.supsz, m.sup);
+                        m.sup[topsup] = -1;
+                        fromasc(F, "></cldesc>", TNULL, 0, NULL);
+
+                        /* must enlarge allocated area for cl */
+                        checkcl(++topcl);
+                        memcpy(cl + topcl, &m, sizeof(cldesc));
+
+                        /* create unitary symbol */
+                        /* mc[new_mc(&topcl,1)].isp = 1; */
+
+                        /* printf("l=%d\n",m.l); */
+                }
+
+                /* start of vote */
+                else if (fromasc(F, "<vdesc idx", TINT, 1, &k) == 1) {
+                        vdesc *v, *a;
+
+                        v = c_realloc(NULL, sizeof(vdesc), NULL);
+                        fromasc(F, "orig", TCHAR, 1, &(v->orig));
+                        fromasc(F, "act", TINT, 1, &(v->act));
+                        fromasc(F, "q", TCHAR, 1, &(v->q));
+                        fromasc(F, "></vdesc>", TNULL, 0, NULL);
+
+                        /* add to the current transliteration */
+                        v->nv = NULL;
+                        if (tr->v == NULL)
+                                tr->v = v;
+                        else {
+                                for (a = tr->v; a->nv != NULL;
+                                     a = (vdesc *) (a->nv));
+                                a->nv = (void *) v;
+                        }
+                }
+
+                /* start of transliteration */
+                else if (fromasc(F, "<trdesc idx", TINT, 1, &k) == 1) {
+                        trdesc *a;
+
+                        tr = c_realloc(NULL, sizeof(trdesc), NULL);
+                        fromasc(F, "pr", TINT, 1, &(tr->pr));
+                        fromasc(F, "n", TINT, 1, &(tr->n));
+                        fromasc(F, "f", TINT, 1, &(tr->f));
+                        fromasc(F, "a", TCHAR, 1, &(tr->a));
+                        fromasc(F, "t", TSTR, 0, &(tr->t));
+                        fromasc(F, "></trdesc>", TNULL, 0, NULL);
+
+                        /* no votes by now */
+                        tr->v = NULL;
+
+                        /* add to the current symbol */
+                        tr->nt = NULL;
+                        if (mc[cm].tr == NULL)
+                                mc[cm].tr = tr;
+                        else {
+                                for (a = mc[cm].tr; a->nt != NULL; a = a->nt);
+                                a->nt = tr;
+                        }
+                }
+
+                /* recover link */
+                else if (fromasc(F, "<lkdesc idx", TINT, 1, &k) == 1) {
+
+                        if (k >= lksz) {
+                                lk = c_realloc(lk,
+                                               (lksz +=
+                                                128) * (sizeof(lkdesc)), NULL);
+                        }
+                        if (k > toplk)
+                                toplk = k;
+
+                        fromasc(F, "t", TCHAR, 1, &(lk[k].t));
+                        fromasc(F, "p", TCHAR, 1, &(lk[k].p));
+                        fromasc(F, "a", TINT, 1, &(lk[k].a));
+                        fromasc(F, "l", TINT, 1, &(lk[k].l));
+                        fromasc(F, "r", TINT, 1, &(lk[k].r));
+                        fromasc(F, "></lkdesc>\n", TNULL, 0, NULL);
+                }
+
+                /* recover line */
+                else if (fromasc(F, "<lndesc idx", TINT, 1, &k) == 1) {
+                        if (k >= lnsz) {
+                                int i = lnsz;
+
+                                lnsz = k + 128;
+                                line =
+                                        c_realloc(line, lnsz * sizeof(lndesc), NULL);
+                                for (; i < lnsz; ++i)
+                                        line[i].f = -1;
+                        }
+                        if (k > topln)
+                                topln = k;
+                        fromasc(F, "f", TINT, 1, &(line[k].f));
+                        fromasc(F, "l", TINT, 1, &(line[k].l));
+                        fromasc(F, "></lndesc>", TNULL, 0, NULL);
+                }
+
+                /* recover word */
+                else if (fromasc(F, "<wdesc idx", TINT, 1, &k) == 1) {
+
+                        if (k >= wsz) {
+                                int i = wsz;
+
+                                wsz = k + 128;
+                                word = c_realloc(word, wsz * sizeof(wdesc), NULL);
+                                for (; i < wsz; ++i)
+                                        word[i].F = -1;
+                        }
+                        if (k > topw)
+                                topw = k;
+
+                        fromasc(F, "F", TINT, 1, &(word[k].F));
+                        fromasc(F, "L", TINT, 1, &(word[k].L));
+                        fromasc(F, "l", TINT, 1, &(word[k].l));
+                        fromasc(F, "r", TINT, 1, &(word[k].r));
+                        fromasc(F, "t", TINT, 1, &(word[k].t));
+                        fromasc(F, "b", TINT, 1, &(word[k].b));
+                        fromasc(F, "E", TINT, 1, &(word[k].E));
+                        fromasc(F, "W", TINT, 1, &(word[k].W));
+                        fromasc(F, "tl", TINT, 1, &(word[k].tl));
+                        fromasc(F, "bl", TINT, 1, &(word[k].bl));
+                        fromasc(F, "br", TINT, 1, &(word[k].br));
+                        fromasc(F, "f", TINT, 1, &(word[k].f));
+                        fromasc(F, "a", TCHAR, 1, &(word[k].a));
+                        fromasc(F, "sh", TSHORT, 1, &(word[k].sh));
+                        fromasc(F, "as", TSHORT, 1, &(word[k].as));
+                        fromasc(F, "ds", TSHORT, 1, &(word[k].ds));
+                        fromasc(F, "sk", TINT, 1, &(word[k].sk));
+                        fromasc(F, "></wdesc>\n", TNULL, 0, NULL);
+                }
+
+                /* end of dump */
+                else if (fromasc(F, "</Clara>", TNULL, 0, NULL) == 0) {
+                        break;
+                }
+
+                else {
+                        fatal(FD, "unexpected token found ar line %d of %s\n",
+                              DLINE, f);
+                }
+
         }
 
-        /* unfinished */
-        return (1);
+        // done:
+
+        /* compute tops */
+        if (!st) {
+                int i;
+
+                for (i = ssz - 1; (i >= 0) && (mc[i].ncl == 0);
+                     --i);
+                tops = i;
+                for (; (i >= 0); --i) {
+                        if (mc[i].ncl == 0)
+                                db("oops.. hole in mc array index %d\n", i);
+                }
+
+                if (batch_mode == 0) {
+                        snprintf(mba, MMB,
+                                 "finished reading session (topcl=%d tops=%d)",
+                                 topcl, tops);
+                        show_hint(0, mba);
+                }
+        }
+
+                /* finished */
+        zfclose(F, pio);
+        sess_changed = 0;
+        return 1;
+
 }
 
 /*
@@ -1680,11 +1675,12 @@ int load_page(int p, int reset, int bin) {
                 words = 0;
 
                 /* Try to start recovering the session file */
-                if (recover_session(session_file, 0, 1))
+                if (recover_session(session_file, 0)) {
+                        cl_ready = 1;
                         mode = 1;
-
+                        synchronize();
                 /* Try to start reading the bitmap */
-                else {
+                } else {
                         char *f = NULL;
 
                         /* filename */
@@ -1720,14 +1716,8 @@ int load_page(int p, int reset, int bin) {
 
         /* continue recovering the session file */
         if (mode == 1) {
-
-                /* not finished yet */
-                if (recover_session(NULL, 0, 0))
-                        return (1);
-
-                /* finished reading the session file */
-                cl_ready = 1;
-                synchronize();
+                // at some point I need to get rid of this; it's just here so recoversing a session file can continue.
+                //g_warn_if_reached();
         }
 
         /* continue reading the bitmap */
