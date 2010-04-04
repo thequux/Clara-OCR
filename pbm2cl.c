@@ -269,7 +269,7 @@ void extend(bdesc *b, int x, int y, int w, int h) {
                 ab_mem += ns - b->s;
                 test_ab_mem();
                 b->s = ns;
-                b->b = c_realloc(b->b, b->s, "extend");
+                b->b = g_realloc(b->b, b->s);
         }
 
         /* clear bottom lines */
@@ -325,21 +325,15 @@ void extend(bdesc *b, int x, int y, int w, int h) {
                                         if (n > m) {
                                                 if ((t = m2p[n]) > i)
                                                         t = i;
-                                                mp = ((a =
-                                                       m << t) - 1) ^ (m -
-                                                                       1);
-                                                v = (*p & mp) << (m2p[m] -
-                                                                  m2p[n]);
+                                                mp = ((a = m << t) - 1) ^ (m - 1);
+                                                v = (*p & mp) << (m2p[m] - m2p[n]);
                                         } else {
                                                 if ((t = m2p[m]) > i)
                                                         t = i;
-                                                mp = ((a =
-                                                       m << t) - 1) ^ (m -
-                                                                       1);
+                                                mp = ((a = m << t) - 1) ^ (m - 1);
                                                 v = *p & mp;
                                                 if (m > n)
-                                                        v >>= (m2p[n] -
-                                                               m2p[m]);
+                                                        v >>= (m2p[n] - m2p[m]);
                                         }
 
                                         mq = ((b = n << t) - 1) ^ (n - 1);
@@ -595,7 +589,7 @@ void join(int *p, int *q, bdesc *ab) {
 
                                 /* free large unused memory buffers */
                                 if (ab[old].s > 64000) {
-                                        c_free(ab[old].b);
+                                        g_free(ab[old].b);
                                         ab[old].b = NULL;
                                         ab[old].s = 0;
                                 }
@@ -629,10 +623,9 @@ void new_cl_global(int x, int y, int w, int h, void *b) {
         cl[topcl].b = y + h - 1;
 
         t = byteat(w) * h;
-        cl[topcl].bm = c_realloc(NULL, t, "new_cl");
-        memcpy(cl[topcl].bm, b, t);
+        cl[topcl].bm = g_memdup(b, t);
 
-        cl[topcl].sup = c_realloc(NULL, MAXSUP * sizeof(int), NULL);
+        cl[topcl].sup = g_new(int, MAXSUP);
         cl[topcl].sup[0] = -1;
         cl[topcl].supsz = MAXSUP;
 
@@ -714,7 +707,7 @@ void new_cl(int x, int y, int w, int h, void *b) {
 
         /* alloc memory buffer to the closure bitmap */
         ct = byteat(cw);
-        cl[topcl].bm = c_realloc(NULL, ct * ch, "new_cl");
+        cl[topcl].bm = g_malloc(ct * ch);
 
         /*
            In some cases, the bitmap must be copied line
@@ -754,7 +747,7 @@ void new_cl(int x, int y, int w, int h, void *b) {
         cl[topcl].r = x + rm;
         cl[topcl].t = y + tm;
         cl[topcl].b = y + bm;
-        cl[topcl].sup = c_realloc(NULL, MAXSUP * sizeof(int), NULL);
+        cl[topcl].sup = g_new(int, MAXSUP);
         cl[topcl].sup[0] = -1;
         cl[topcl].supsz = MAXSUP;
 
@@ -984,11 +977,11 @@ int pbm2bm(char *f, int reset) {
 
                 /* alloc line buffers */
                 bl = byteat(w);
-                s = c_realloc(NULL, bl, "pbm2bm");
-                ll = c_realloc(NULL, (w + 2) * sizeof(int), "pbm2bm");
+                s = g_malloc(bl);
+                ll = g_new(int, (w + 2));
                 for (n = 0; n < w + 2; ++n)
                         ll[n] = -1;
-                kl = c_realloc(NULL, (w + 2) * sizeof(int), "pbm2bm");
+                kl = g_new(int, (w + 2));
                 kl[0] = kl[w + 1] = -1;
                 ab = NULL;
                 abs = 0;
@@ -1066,26 +1059,13 @@ int pbm2bm(char *f, int reset) {
 
                                         /* must enlarge the array of bitmaps */
                                         if (la < 0) {
-                                                ab_mem +=
-                                                    AB_INCR *
-                                                    sizeof(bdesc);
+                                                ab_mem += AB_INCR * sizeof(bdesc);
                                                 test_ab_mem();
-                                                ab = c_realloc(ab,
-                                                               (abs +
-                                                                AB_INCR) *
-                                                               sizeof
-                                                               (bdesc),
-                                                               "pbm2bm");
-                                                for (j = 0; j < AB_INCR;
-                                                     ++j) {
+                                                ab = g_renew(bdesc, ab, (abs + AB_INCR));
+                                                for (j = 0; j < AB_INCR; ++j) {
                                                         ab[abs + j].x = -1;
-                                                        ab[abs + j].y =
-                                                            (j ==
-                                                             AB_INCR -
-                                                             1) ? -1 : abs
-                                                            + j + 1;
-                                                        ab[abs + j].b =
-                                                            NULL;
+                                                        ab[abs + j].y = (j == AB_INCR - 1) ? -1 : abs + j + 1;
+                                                        ab[abs + j].b = NULL;
                                                         ab[abs + j].s = 0;
                                                 }
                                                 la = abs;
@@ -1102,15 +1082,10 @@ int pbm2bm(char *f, int reset) {
                                         ab[j].y = n;
                                         ab[j].w = 0;
                                         ab[j].h = 0;
-                                        if (ab[j].b == NULL) {
-                                                ab[j].b =
-                                                    c_realloc(NULL,
-                                                              ab[j].s =
-                                                              FS * FS /
-                                                              (4 * 8),
-                                                              "pbm2bm");
-                                        }
-                                        memset(ab[j].b, 0, ab[j].s);
+                                        if (ab[j].b == NULL)
+                                                ab[j].b = g_malloc0(ab[j].s = FS * FS / (4 * 8));
+                                        else
+                                                memset(ab[j].b, 0, ab[j].s);
                                 }
                         }
 
@@ -1192,8 +1167,7 @@ int pbm2bm(char *f, int reset) {
                                              (f == 0) && (v < ab[j].h);
                                              ++v) {
                                                 m = 128;
-                                                p = ((unsigned char *)
-                                                     ab[j].b) + v * t;
+                                                p = ((unsigned char *) ab[j].b) + v * t;
                                                 for (u = 0;
                                                      (f == 0) &&
                                                      (u < ab[j].w); ++u) {
@@ -1345,15 +1319,15 @@ int pbm2bm(char *f, int reset) {
         if (++n > h) {
 
                 /* free all buffers */
-                c_free(s);
-                c_free(ll);
-                c_free(kl);
+                g_free(s);
+                g_free(ll);
+                g_free(kl);
                 if (ab != NULL) {
                         while (--abs >= 0)
                                 if (ab[abs].b != NULL) {
-                                        free(ab[abs].b);
+                                        g_free(ab[abs].b);
                                 }
-                        c_free(ab);
+                        g_free(ab);
                 }
 
                 snprintf(mba, MMB, "finished reading file %s", pagename);
@@ -1490,8 +1464,7 @@ int wrzone(char *s1, int fz) {
         RWX = r - l + 1;
         RWY = b - t + 1;
         bpl = (RWX / 8) + ((RWX % 8) != 0);
-        rw = c_realloc(NULL, RWY * bpl, NULL);
-        memset(rw, 0, RWY * bpl);
+        rw = g_malloc0(RWY * bpl);
 
         /*
            By-closure strategy.
@@ -1613,6 +1586,6 @@ int wrzone(char *s1, int fz) {
                 show_hint(2, "%s successfully written", s1);
         }
 
-        c_free(rw);
+        g_free(rw);
         return (1);
 }

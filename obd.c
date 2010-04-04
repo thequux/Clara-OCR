@@ -16,12 +16,6 @@
 */
 
 
-/*
- *  $Log$
- */
-
-static char rcsid[] = "$Header$";
-
 
 #include <ctype.h>
 #include <limits.h>

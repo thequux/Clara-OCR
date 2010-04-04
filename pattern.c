@@ -63,7 +63,7 @@ void enlarge_pt(int new_toppt) {
                 /* enlarge array */
                 if (new_toppt >= ptsz) {
                         ptsz += (new_toppt - ptsz) + 10;
-                        pt = c_realloc(pt, ptsz * sizeof(ptdesc), NULL);
+                        pt = g_renew(ptdesc, pt, ptsz);
                 }
 
                 for (i = toppt + 1; i <= new_toppt; ++i) {
@@ -444,17 +444,14 @@ void new_pattern(void) {
 
         /* enlarge pattern array if necessary */
         if ((topp + 1) >= psz) {
-                pattern =
-                    c_realloc(pattern,
-                              (psz +=
-                               (topp - psz + 100)) * sizeof(pdesc), NULL);
+                pattern = g_renew(pdesc, pattern, (psz = (topp + 100)));
         }
 
         /* alloc memory buffers */
         s = pattern + (++topp);
         s->bs = BMS;
-        s->b = c_realloc(NULL, s->bs, NULL);
-        s->s = c_realloc(NULL, s->bs, NULL);
+        s->b = g_malloc(s->bs);
+        s->s = g_malloc(s->bs);
         s->ts = 0;
         s->tr = NULL;
         s->ds = 0;
@@ -540,8 +537,8 @@ void update_pattern_raw(int new, int an, int mc, char *tb, char a,
         }
 
         else {
-                c_free(d->b);
-                c_free(d->s);
+                g_free(d->b);
+                g_free(d->s);
         }
 
         /* font size (10pt, 12pt, etc) */
@@ -551,16 +548,12 @@ void update_pattern_raw(int new, int an, int mc, char *tb, char a,
         if (tb == NULL) {
                 d->ts = 0;
                 if (d->tr != NULL)
-                        c_free(d->tr);
+                        g_free(d->tr);
                 d->tr = NULL;
         } else {
                 d->ts = strlen(tb) + 1;
-                if (d->tr == NULL)
-                        d->tr = c_realloc(NULL, d->ts, NULL);
-                if (strlen(tb) > MFTL) {
-                        fatal(BO, "transliteration too long");
-                }
-                strcpy(d->tr, tb);
+                g_free(d->tr);
+                d->tr = g_strdup(tb);
         }
 
         /* flags */
@@ -619,7 +612,7 @@ void update_pattern_raw(int new, int an, int mc, char *tb, char a,
         if (new == 0) {
                 d = pattern + cdfc;
                 if (d->tr != NULL)
-                        c_free(d->tr);
+                        g_free(d->tr);
                 memcpy(pattern + cdfc, pattern + topp + 1, sizeof(pdesc));
                 snprintf(mba, MMB, "pattern %d updated", cdfc);
                 show_hint(1, mba);
@@ -804,14 +797,14 @@ void rm_pattern(int n) {
         /* free buffers */
         d = pattern + n;
         if (d->b != NULL)
-                c_free(d->b);
+                g_free(d->b);
         if (d->s != NULL)
-                c_free(d->s);
+                g_free(d->s);
         if (d->tr != NULL)
-                c_free(d->tr);
+                g_free(d->tr);
         if (d->d != NULL)
-                c_free(d->d);
-
+                g_free(d->d);
+        
         for (i = n; i < topp; ++i) {
                 memcpy(pattern + i, pattern + i + 1, sizeof(pdesc));
         }
@@ -1029,13 +1022,8 @@ int prepare_patterns(int reset) {
 
                                         /* enlarge array */
                                         if (++toppt >= ptsz) {
-                                                ptsz +=
-                                                    (toppt - ptsz) + 10;
-                                                pt = c_realloc(pt,
-                                                               ptsz *
-                                                               sizeof
-                                                               (ptdesc),
-                                                               NULL);
+                                                ptsz += (toppt - ptsz) + 10;
+                                                pt = g_renew(ptdesc, pt, ptsz);
                                         }
 
                                         /* initialize fields */
@@ -1183,7 +1171,8 @@ By now this is a first (or second) experiment.
 */
 void build_internal_patterns(void) {
         int i, i0, j, l, ph, pw;
-        unsigned char *p, tr[2];
+        char *p, tr[2];
+        
 
         char *a[] = {
 

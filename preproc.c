@@ -225,7 +225,7 @@ float skew_score(float F, float Delta) {
         dx = w / NP + 1;        /* max NP test-point per row */
         h = abs(F * w) + 2;
 
-        p = alloca(NP * sizeof(*p));
+        p = g_newa(float, NP);
         for (i = c = 0; c < w; c += dx, i++)
                 p[i] = F * c;
 
@@ -307,10 +307,10 @@ void pp_shear_y(float f) {
         // s = (s/2) + 1;
 
         s = (s / 2 + 1);
-        p = alloca(YRES);
+        p = g_alloca(YRES);
 
-        d = alloca(XRES * sizeof(d));
-        m1 = alloca(XRES * sizeof(*m1));
+        d = g_newa(int, XRES);
+        m1 = g_newa(float, XRES);
 
 
         D = XRES / 2;
@@ -376,7 +376,7 @@ void pp_shear_x(float f) {
         s = (int) (f * (YRES - 1));
         if (s == 0)
                 return;
-        p = alloca(XRES);
+        p = g_alloca(XRES);
         D = -s / 2;
         for (y = 0; y < YRES; y++) {
                 if ((m1 = modff(f * y + D, &m0)) < 0)
@@ -512,7 +512,7 @@ void pre_balance() {
         dx = Rx / 40 + 1;
         dy = Ry / 40 + 1;
         /* temp buffer for icon */
-        Icon = malloc(Iw * Ih);
+        Icon = g_malloc(Iw * Ih);
 
         /* calculate icon */
         for (y = 0; y < Ih; y++) {
@@ -564,8 +564,8 @@ void balance() {
 
         pre_balance();
 
-        r1 = alloca(XRES * sizeof(*r1));
-        r2 = alloca(XRES * sizeof(*r2));
+        r1 = g_newa(float, XRES);
+        r2 = g_newa(float, XRES);
 
         for (x = 0; x < XRES; x++)
                 r1[x] = PIXFI((float) (x - Dx) / Rx, 0, Icon, Iw, Ih);
@@ -617,9 +617,9 @@ void avoid_links(float C) {
 
         C *= 100;
         q = pixmap;
-        r1 = alloca(XRES + 2);
-        r2 = alloca(XRES + 2);
-        r3 = alloca(XRES + 2);
+        r1 = g_alloca(XRES + 2);
+        r2 = g_alloca(XRES + 2);
+        r3 = g_alloca(XRES + 2);
         bpl = (XRES / 4) + ((XRES % 4) != 0);   /* byte per line */
 
         MC(r2, pixmap);
@@ -676,9 +676,9 @@ void hqbin() {
         float d;
 
         q1 = q2 = pixmap;
-        r1 = alloca(XRES + 2);
-        r2 = alloca(XRES + 2);
-        r3 = alloca(XRES + 2);
+        r1 = g_alloca(XRES + 2);
+        r2 = g_alloca(XRES + 2);
+        r3 = g_alloca(XRES + 2);
         bpl = (XRES / 4) + ((XRES % 4) != 0);   /* byte per line */
 
         MC(r2, pixmap);

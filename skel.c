@@ -200,7 +200,8 @@ int RX2, DRX = 0;
 int fc_bp, lc_bp, fl_bp, ll_bp;
 
 /* cb and cb2 are buffers for symbols, used to compute skeletons */
-char cb[LFS * FS], cb2[LFS * FS];
+/* TODO: did not have sign specifier before */
+unsigned char cb[LFS * FS], cb2[LFS * FS];
 
 /*
 
@@ -398,10 +399,10 @@ void consist_skel(void) {
         DRX = (RX2 * RX2);
 
         /* arrays required for skeleton and boxes computation */
-        xbp = c_realloc(xbp, sizeof(int) * DRX, NULL);
-        ybp = c_realloc(ybp, sizeof(int) * DRX, NULL);
-        rmdistp = c_realloc(rmdistp, sizeof(float) * RX2 * RX2, NULL);
-        bpd = c_realloc(bpd, sizeof(float) * DRX, NULL);
+        xbp = g_renew(int, xbp, DRX);
+        ybp = g_renew(int, ybp, DRX);
+        rmdistp = g_renew(float, rmdistp, RX2 * RX2);
+        bpd = g_renew(float, bpd, DRX);
 
         /* build rmdist */
         rmdist = rmdistp + RX * RX2 + RX;
@@ -743,11 +744,11 @@ coordinates of skeleton pixels (the horizontal coordinate of the
 leftmost|righmost|topmost|bottomost skeleton pixel is stored on
 fc_bp|lc_bp|fl_bp|ll_bp).
 
-For algorithms 0, 1 and 2, if (i0,j0) is a valid pixel coordinate
+For algorithms 0, 1 and 2, iff (i0,j0) is a valid pixel coordinate
 of the buffer cb, then use it as a seed and computes only the
 skeleton of the component that contains (i0,j0).
 
-For algorithms 0, 1 and 2, if (i0==-2) then compute only the
+For algorithms 0, 1 and 2, iff (i0==-2) then compute only the
 skeleton of the components that belong to the symbol j0. In this
 case, assumes that cb is aligned at the top and left limits of
 symbol j0.
@@ -760,8 +761,9 @@ W=0 and H=0. To achieve time savings, pass on W and H the
 width and heigth of the bitmap.
 
 */
+                                               
 void skel(int i0, int j0, int W, int H) {
-        char cb3[FS * LFS];
+        unsigned char cb3[FS * LFS];
         int i, j, x, y;
 
         /*
@@ -811,7 +813,7 @@ void skel(int i0, int j0, int W, int H) {
          */
         if (SA == 7) {
                 int t, r, s, n, m;
-                char *p;
+                unsigned char *p;
 
                 /* must remember original bitmap */
                 memcpy(cb3, cb, LFS * FS);
@@ -981,7 +983,7 @@ void skel(int i0, int j0, int W, int H) {
 
                 /* compute limits */
                 for (y = 0; y < FS; ++y) {
-                        char *p;
+                        unsigned char *p;
 
                         p = cb + y * LFS;
                         for (x = 0; x < FS; ++x, ++p) {
@@ -1123,7 +1125,7 @@ void skel(int i0, int j0, int W, int H) {
 
                 /* compute limits */
                 for (y = 0; y < FS; ++y) {
-                        char *p;
+                        unsigned char *p;
 
                         p = cb + y * LFS;
                         for (x = 0; x < FS; ++x, ++p) {
@@ -1373,7 +1375,7 @@ void skel(int i0, int j0, int W, int H) {
 
                 /* compute limits */
                 for (y = 0; y < FS; ++y) {
-                        char *p;
+                        unsigned char *p;
 
                         p = cb + y * LFS;
                         for (x = 0; x < FS; ++x, ++p) {
@@ -1400,7 +1402,7 @@ void skel(int i0, int j0, int W, int H) {
          */
         if (SA == 3) {
                 int n;
-                char *p;
+                unsigned char *p;
 
                 /* must remember original bitmap */
                 memcpy(cb3, cb, LFS * FS);
@@ -1540,7 +1542,7 @@ void skel(int i0, int j0, int W, int H) {
                 }
 
                 for (rc = rmin; (rc <= r) && (rc - dmin <= RR); ++rc) {
-                        char *pp, *pl;
+                        unsigned char *pp, *pl;
                         int mu, mv;
 
                         /* top and bottom */
@@ -2016,7 +2018,7 @@ int tune_skel_global(int reset, int p) {
                 n /= 8;
 
                 /* reset statuses and counters */
-                Q = c_realloc(Q, n * sizeof(int), NULL);
+                Q = g_renew(int, Q, n);
                 for (i = 0; i < n; ++i)
                         Q[i] = 0;
 
@@ -2259,7 +2261,7 @@ int border_path(unsigned char *b, int w, int h, short *bp, int m, int u0,
            Alloc buffer to store the pixel list (to
            span the current component simulating recursion).
          */
-        pl = alloca(2 * sizeof(short) * w * h);
+        pl = g_newa(short, 2 * w * h);
         plp = 0;
         plt = -1;
 
@@ -2268,8 +2270,8 @@ int border_path(unsigned char *b, int w, int h, short *bp, int m, int u0,
            visited pixels. b3 has a similar usage, but restricted to
            the construction of the border path.
          */
-        b2 = alloca(bs = h * bpl);
-        b3 = alloca(bs);
+        b2 = g_alloca(bs = h * bpl);
+        b3 = g_alloca(bs);
         memcpy(b2, b, bs);
 
         /* path size */
@@ -2951,7 +2953,7 @@ int closure_border_slines(int e, int t, int crit, float val, short *res,
            inverted coordinates flag (bit 2), per-pixel (bit 1) and
            per-segment (bit 0) validation flags.
          */
-        pf = alloca(ps);
+        pf = g_alloca(ps);
         memset(pf, 3, ps);
 
         /* this is to avoid casting the segment size */
@@ -3909,9 +3911,9 @@ int search_barcode(void) {
 
                 if ((topb + 1) >= bsz) {
                         bsz += d;
-                        b = c_realloc(b, bsz * sizeof(int), NULL);
-                        sk = c_realloc(sk, bsz * sizeof(float), NULL);
-                        bl = c_realloc(bl, bsz * sizeof(float), NULL);
+                        b = g_renew(int, b, bsz);
+                        sk = g_renew(float, sk, bsz);
+                        bl = g_renew(float, bl, bsz);
                 }
 
                 if (isbar(k, sk + (topb + 1), bl + (topb + 1)) > 0) {
@@ -3935,8 +3937,7 @@ int search_barcode(void) {
         if (n >= bc_minnb) {
 
                 if (n > bcsz)
-                        bc = c_realloc(bc, (bcsz = (n + 48)) * sizeof(int),
-                                       NULL);
+                        bc = g_renew(int, bc, (bcsz = (n + 48)));
 
                 for (k = 0; k < n; ++k) {
                         bc[k] = b[clusterize_r[k]];
@@ -3999,7 +4000,7 @@ int search_barcode(void) {
                 line_eq(&A, &B, &C, u0, v0, a);
 
                 /* initial laserbeam buffer */
-                lb = c_realloc(NULL, lbsz = 512, NULL);
+                lb = g_malloc(lbsz = 512);
                 lbp = 0;
 
                 /* width variation */
@@ -4033,7 +4034,7 @@ int search_barcode(void) {
 
                         /* add pixel to laserbeam buffer */
                         if (lbp >= lbsz)
-                                lb = c_realloc(lb, (lbsz += 256), NULL);
+                                lb = g_realloc(lb, (lbsz += 256));
                         lb[lbp++] = (n == 0);
 
                         /* add closure to cluster if it's not there */
@@ -4044,11 +4045,7 @@ int search_barcode(void) {
                                      ++k);
                                 if (k > topbc) {
                                         if (++topbc >= bcsz)
-                                                bc = c_realloc(bc,
-                                                               (bcsz +=
-                                                                32) *
-                                                               sizeof(int),
-                                                               NULL);
+                                                bc = g_renew(int, bc, (bcsz += 32));
                                         bc[topbc] = c;
                                 }
                         }
@@ -4089,7 +4086,7 @@ int search_barcode(void) {
 
                         /* add pixel to laserbeam buffer */
                         if (lbp >= lbsz)
-                                lb = c_realloc(lb, (lbsz += 256), NULL);
+                                lb = g_realloc(lb, (lbsz += 256));
                         lb[lbp++] = (n == 0);
 
                         /* add closure to cluster if it's not there */
@@ -4100,11 +4097,7 @@ int search_barcode(void) {
                                      ++k);
                                 if (k > topbc) {
                                         if (++topbc >= bcsz)
-                                                bc = c_realloc(bc,
-                                                               (bcsz +=
-                                                                32) *
-                                                               sizeof(int),
-                                                               NULL);
+                                                bc = g_renew(int, bc, (bcsz += 32));
                                         bc[topbc] = c;
                                 }
                         }
@@ -4131,8 +4124,7 @@ int search_barcode(void) {
                         fclose(F);
                         obd_main(4, argv);
                         if (unlink("/tmp/clara.barcode") != 0)
-                                fatal(IO,
-                                      "could not remove /tmp/clara.barcode");
+                                fatal(IO, "could not remove /tmp/clara.barcode");
                 }
 
                 /* send laserbeam to stdout */
@@ -4147,7 +4139,7 @@ int search_barcode(void) {
                 }
 
                 /* free laserbeam buffer */
-                c_free(lb);
+                g_free(lb);
         }
 
         /* create zone and centralize */
@@ -4203,7 +4195,7 @@ int search_barcode(void) {
         /*enter_wait(lb,1,1); */
 
         /* free buffers */
-        c_free(bc);
+        g_free(bc);
 
         return (0);
 }
@@ -4216,8 +4208,8 @@ Macro used by draw_circ.
 #define incr_topcircp { \
     if (++topcircp >= circp_sz) { \
         circp_sz = topcircp + 256; \
-        circpx = c_realloc(circpx,circp_sz*sizeof(short),NULL); \
-        circpy = c_realloc(circpy,circp_sz*sizeof(short),NULL); \
+        circpx = g_renew(short, circpx, circp_sz); \
+        circpy = g_renew(short, circpy, circp_sz); \
     } \
 }
 
@@ -4364,8 +4356,8 @@ void comp_circ(int max) {
 
         /* pointers to the start of each circumference at circpx and circpy */
         circ_sz = (max + 1);
-        circ = c_realloc(circ, circ_sz * sizeof(int), NULL);
-        circ_np = c_realloc(circ_np, circ_sz * sizeof(int), NULL);
+        circ = g_renew(int, circ, circ_sz);
+        circ_np = g_renew(int, circ_np, circ_sz);
 
         /* compute each circumference */
         for (r = 0; r <= max; ++r) {
@@ -4413,8 +4405,8 @@ int is_extr(int i, int j, int dx, int dy) {
         int d1 = 0, d2 = 0;
 
         /* per-radius results */
-        rho = alloca(circ_sz * sizeof(int));
-        theta = alloca(circ_sz * sizeof(int));
+        rho = g_newa(int, circ_sz);
+        theta = g_newa(int, circ_sz);
 
         /*
            Search the smallest radius r>=4 for which the intersection

@@ -321,6 +321,8 @@ typedef enum {
         OE_DJVU = 3,
 } output_encap_t;
 
+extern output_encap_t outp_format;
+
 void mk_page_symbol(int c);
 void mk_page_output(output_encap_t encap);
 void mk_pattern_list(void);

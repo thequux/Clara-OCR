@@ -80,7 +80,7 @@ void toasc(FILE *F, char *name, int type, int n, void *f) {
 
         /* alloc initial buffer */
         if (s == NULL)
-                s = c_realloc(NULL, max = 4096, NULL);
+                s = g_malloc(max = 4096);
 
         /* dump field name */
         if ((d = snprintf(s, max, "%s", name)) < 0) {
@@ -164,7 +164,7 @@ char *recover_line(FILE *F) {
 
         /* alloc initial buffer */
         if (s == NULL)
-                s = c_realloc(NULL, psz = 512, NULL);
+                s = g_malloc(psz = 512);
 
         /* reading loop */
         for (t = 0, end = 0; end == 0;) {
@@ -211,7 +211,7 @@ char *recover_line(FILE *F) {
 
                         /* enlarge memory buffer */
                         else if (t >= psz - 2) {
-                                s = c_realloc(s, psz += 512, NULL);
+                                s = g_realloc(s, psz += 512);
                         }
                 }
         }
@@ -330,7 +330,7 @@ int fromasc(FILE *F, char *name, int type, int size, void *f) {
 
                                 /* enlarge memory buffer */
                                 if (bs < (n + 1) * ts)
-                                        b = c_realloc(b, bs += 512, NULL);
+                                        b = g_realloc(b, bs += 512);
 
                                 /* exceeded size */
                                 if (((size > 0) && (n >= size)) ||
@@ -372,14 +372,13 @@ int fromasc(FILE *F, char *name, int type, int size, void *f) {
                 /* alloc memory */
                 if (size == 0) {
                         if (type == TSTR) {
-                                *((void **) f) =
-                                    c_realloc(NULL, (n + 1) * ts, NULL);
-                                memcpy(*((void **) f), b, n * ts);
-                                *(((char *) *((void **) f)) + n) = 0;
+                                g_assert(ts == 1);
+                                char** fv = (char**)f;
+                                *(char**)fv = g_strndup(b, n);
+                                //memcpy(*fv, b, n * ts);
+                                //*(*fv + n) = 0;
                         } else {
-                                *((void **) f) =
-                                    c_realloc(NULL, n * ts, NULL);
-                                memcpy(*((void **) f), b, n * ts);
+                                *((void **) f) = g_memdup(b, n * ts);
                         }
                 }
 
@@ -981,8 +980,7 @@ int recover_session(char *f, int st) {
                                 int i;
 
                                 i = ssz;
-                                mc = c_realloc(mc, (ssz += 1000) * sizeof(sdesc),
-                                               NULL);
+                                mc = g_renew(sdesc, mc, (ssz += 1000));
                                 for (; i < ssz; ++i) {
                                         mc[i].ncl = 0;
                                         mc[i].tr = NULL;
@@ -1037,7 +1035,7 @@ int recover_session(char *f, int st) {
                         fromasc(F, "nbp", TINT, 1, &(m.nbp));
                         fromasc(F, "seed", TSHORT, 2, &(m.seed));
                         fromasc(F, "supsz", TINT, 1, &(m.supsz));
-                        m.sup = c_realloc(NULL, m.supsz * sizeof(int), NULL);
+                        m.sup = g_new(int, m.supsz);
                         topsup = fromasc(F, "sup", TINT, -m.supsz, m.sup);
                         m.sup[topsup] = -1;
                         fromasc(F, "></cldesc>", TNULL, 0, NULL);
@@ -1056,7 +1054,7 @@ int recover_session(char *f, int st) {
                 else if (fromasc(F, "<vdesc idx", TINT, 1, &k) == 1) {
                         vdesc *v, *a;
 
-                        v = c_realloc(NULL, sizeof(vdesc), NULL);
+                        v = g_new(vdesc, 1);
                         fromasc(F, "orig", TCHAR, 1, &(v->orig));
                         fromasc(F, "act", TINT, 1, &(v->act));
                         fromasc(F, "q", TCHAR, 1, &(v->q));
@@ -1077,7 +1075,7 @@ int recover_session(char *f, int st) {
                 else if (fromasc(F, "<trdesc idx", TINT, 1, &k) == 1) {
                         trdesc *a;
 
-                        tr = c_realloc(NULL, sizeof(trdesc), NULL);
+                        tr = g_new(trdesc, 1);
                         fromasc(F, "pr", TINT, 1, &(tr->pr));
                         fromasc(F, "n", TINT, 1, &(tr->n));
                         fromasc(F, "f", TINT, 1, &(tr->f));
@@ -1102,9 +1100,7 @@ int recover_session(char *f, int st) {
                 else if (fromasc(F, "<lkdesc idx", TINT, 1, &k) == 1) {
 
                         if (k >= lksz) {
-                                lk = c_realloc(lk,
-                                               (lksz +=
-                                                128) * (sizeof(lkdesc)), NULL);
+                                lk = g_renew(lkdesc, lk, lksz += 128);
                         }
                         if (k > toplk)
                                 toplk = k;
@@ -1123,8 +1119,7 @@ int recover_session(char *f, int st) {
                                 int i = lnsz;
 
                                 lnsz = k + 128;
-                                line =
-                                        c_realloc(line, lnsz * sizeof(lndesc), NULL);
+                                line = g_renew(lndesc, line, lnsz);
                                 for (; i < lnsz; ++i)
                                         line[i].f = -1;
                         }
@@ -1142,7 +1137,7 @@ int recover_session(char *f, int st) {
                                 int i = wsz;
 
                                 wsz = k + 128;
-                                word = c_realloc(word, wsz * sizeof(wdesc), NULL);
+                                word = g_renew(wdesc, word, wsz);
                                 for (; i < wsz; ++i)
                                         word[i].F = -1;
                         }
@@ -1258,11 +1253,7 @@ int recover_acts(char *f) {
                                 int j;
 
                                 j = actsz;
-                                act =
-                                    c_realloc(act,
-                                              (actsz =
-                                               i + 100) * sizeof(adesc),
-                                              NULL);
+                                act = g_renew(adesc, act, (actsz = i + 100));
                                 for (; j < actsz; ++j) {
                                         act[i].d = NULL;
                                         act[i].tr = NULL;
@@ -1410,9 +1401,7 @@ int recover_patterns(char *f) {
 
                         if (psz <= i) {
                                 psz += i - psz + 100;
-                                pattern =
-                                    c_realloc(pattern, psz * sizeof(pdesc),
-                                              NULL);
+                                pattern = g_renew(pdesc, pattern, psz);
                         }
                         s = pattern + i;
                         s->tr = s->d = NULL;
@@ -1434,7 +1423,7 @@ int recover_patterns(char *f) {
                         fromasc(F, "sy", TSHORT, 1, &(s->sy));
                         fromasc(F, "bs", TSHORT, 1, &(s->bs));
                         fromasc(F, "b", TCHAR, 0, &(s->b));
-                        s->s = c_realloc(NULL, s->bs, NULL);
+                        s->s = g_malloc(s->bs);
                         fromasc(F, "a", TCHAR, 1, &(s->a));
                         fromasc(F, "pt", TINT, 1, &(s->pt));
                         fromasc(F, "fs", TSHORT, 1, &(s->fs));
@@ -1475,8 +1464,7 @@ int recover_patterns(char *f) {
 
                         if (ptsz <= i) {
                                 ptsz += i - ptsz + 100;
-                                pt = c_realloc(pt, ptsz * sizeof(ptdesc),
-                                               NULL);
+                                pt = g_renew(ptdesc, pt, ptsz);
                         }
                         s = pt + i;
 
@@ -1510,9 +1498,7 @@ int recover_patterns(char *f) {
                 }
 
                 else {
-                        fatal(FD,
-                              "unexpected token at line %d of file %s\n",
-                              DLINE, f);
+                        fatal(FD, "unexpected token at line %d of file %s\n", DLINE, f);
                 }
         }
 
@@ -1534,13 +1520,13 @@ int free_page(void) {
 
         /* free closures */
         for (k = 0; k <= topcl; ++k) {
-                c_free(cl[k].bm);
-                c_free(cl[k].sup);
+                g_free(cl[k].bm);
+                g_free(cl[k].sup);
         }
         topcl = -1;
         cl_ready = 0;
 
-        c_free(cl);
+        g_free(cl);
         cl = NULL;
         clsz = 0;
 
@@ -1554,26 +1540,26 @@ int free_page(void) {
                         nt = t->nt;
                         for (v = t->v; v != NULL; v = nv) {
                                 nv = (vdesc *) (v->nv);
-                                c_free(v);
+                                g_free(v);
                         }
-                        c_free(t);
+                        g_free(t);
                 }
                 mc[k].tr = NULL;
 
                 /* free cl */
-                c_free(mc[k].cl);
+                g_free(mc[k].cl);
                 mc[k].ncl = 0;
                 mc[k].cl = NULL;
         }
         tops = -1;
         curr_mc = -1;
 
-        c_free(mc);
+        g_free(mc);
         ssz = 0;
         mc = NULL;
 
         /* free lines and words */
-        c_free(line);
+        g_free(line);
         line = NULL;
         lnsz = 0;
         topln = -1;
@@ -1847,11 +1833,8 @@ void dict_load(void) {
                 if (el == CML_TEXT) {
 
                         /* printf("\n** found text:\n\n---\n%s\n---\n",tagtxt); */
-
-                        de[topde].val =
-                            c_realloc(de[topde].val, strlen(tagtxt) + 1,
-                                      NULL);
-                        strcpy(de[topde].val, tagtxt);
+                        g_free(de[topde].val);
+                        de[topde].val = g_strdup(tagtxt);
                 }
 
                 /* start entry */
@@ -1863,8 +1846,7 @@ void dict_load(void) {
                                 int oldsz = desz;
 
                                 desz = topde + 128;
-                                de = c_realloc(de, desz * sizeof(ddesc),
-                                               NULL);
+                                de = g_renew(ddesc, de, desz);
                                 for (; oldsz < desz; ++oldsz) {
                                         de[oldsz].b = NULL;
                                         de[oldsz].val = NULL;
@@ -1892,7 +1874,7 @@ void dict_load(void) {
                         }
 
                         /* alloc buffer for attributes */
-                        de[topde].b = c_realloc(de[topde].b, l, NULL);
+                        de[topde].b = g_realloc(de[topde].b, l);
 
                         /* copy attributes */
                         for (i = l = 0; i < attribc; ++i) {

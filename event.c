@@ -2561,10 +2561,10 @@ int spyhole(int x, int y, int op, int et) {
         /* alloc bitmap buffers */
         bpl = (dx / 8) + ((dx % 8) != 0);
         bb_sz = dy * bpl;
-        bb = alloca(bb_sz);
-        bc = alloca(bb_sz);
-        bd = alloca(bb_sz);
-        be = alloca(bb_sz);
+        bb = g_alloca(bb_sz);
+        bc = g_alloca(bb_sz);
+        bd = g_alloca(bb_sz);
+        be = g_alloca(bb_sz);
 
         /*
            Initial thresholds.
@@ -3152,7 +3152,7 @@ int spyhole(int x, int y, int op, int et) {
 
                 /* copy the symbol to the spyhole buffer */
                 if (dx * dy > sh_sz) {
-                        eg = c_realloc(eg, sh_sz = dx * dy, NULL);
+                        eg = g_realloc(eg, sh_sz = dx * dy);
                 }
                 q = eg;
                 for (j = y0, l = dy; l > 0; --l, ++j) {
@@ -6571,8 +6571,7 @@ static GtkWidget *create_page_list_window() {
                                        G_TYPE_INT,      // symbols
                                        G_TYPE_INT,      // doubts
                                        G_TYPE_INT);     // classes
-        pageIters = malloc(sizeof(GtkTreeIter) * npages);
-        memset(pageIters, 0, sizeof(GtkTreeIter) * npages);
+        pageIters = g_new0(GtkTreeIter, npages);
 
         for (i = 0; i < npages; i++) {
                 gtk_list_store_insert_with_values(pageStore, pageIters + i, i,

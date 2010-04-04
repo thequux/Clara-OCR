@@ -95,14 +95,12 @@ void pgmmap(unsigned char *pb, int w, int h) {
         int C[256];
 
         bpl = ((w / 8) + ((w % 8) != 0));
-        m = c_realloc(NULL, h * bpl, NULL);
-        memset(m, 0, h * bpl);
+        m = g_malloc0(h * bpl);
 
         memset(C, 0, sizeof(int) * 256);
 
         for (j = 0; j < h - 1; ++j) {
                 for (i = 0; i < w; ++i) {
-
                         ++(C[pb[j * w + i]]);
                 }
         }
@@ -113,7 +111,7 @@ void pgmmap(unsigned char *pb, int w, int h) {
 
                 for (i = 0; i < 256; ++i)
                         p[i] = i;
-                true_qsi(p, 0, 255, (char *) C, sizeof(int), 0, 0);
+                qsi(p, 0, 255, (char *) C, sizeof(int), 0, 0);
                 memset(s, 0, sizeof(int) * 256);
 
                 for (i = 0; i < 128; ++i)
@@ -169,7 +167,7 @@ void pgmmap(unsigned char *pb, int w, int h) {
                 close(F);
         }
 
-        c_free(m);
+        g_free(m);
 }
 
 /*
@@ -192,8 +190,7 @@ void pgmunmap(unsigned char *pb, int w, int h) {
         unsigned char *m;
 
         bpl = ((w / 8) + ((w % 8) != 0));
-        m = c_realloc(NULL, h * bpl, NULL);
-        memset(m, 0, h * bpl);
+        m = g_malloc0(h * bpl);
 
         {
                 int i, j, F;
@@ -230,7 +227,7 @@ void pgmunmap(unsigned char *pb, int w, int h) {
                 }
         }
 
-        c_free(m);
+        g_free(m);
 }
 
 /*
@@ -382,7 +379,7 @@ int loadpgm(int reset, char *f, unsigned char **pb, int *w, int *h) {
                    Alloc buffer large enough to store a graymap, even
                    for PBM files.
                  */
-                *pb = c_realloc(*pb, *h * *w, NULL);
+                *pb = g_realloc(*pb, *h * *w);
 
                 if (*pb == NULL) {
                         fprintf(stderr, "memory exhausted\n");
@@ -485,7 +482,7 @@ int clusterize(int N, int T, int dist(int, int)) {
         int i, j, k, l, f, lcs, lcf, n, p;
 
         /* "first edge" pointers */
-        fe = alloca((N + 1) * sizeof(int));
+        fe = g_newa(int, N + 1);
 
         /* "delta" to increase edges array */
         if ((de = N / 5) < 128)
@@ -507,11 +504,7 @@ int clusterize(int N, int T, int dist(int, int)) {
                         if (dist(i, j) <= T) {
 
                                 if (++tope >= esz)
-                                        e = c_realloc(e,
-                                                      (esz =
-                                                       tope +
-                                                       de) * sizeof(int),
-                                                      NULL);
+                                        e = g_renew(int, e, (esz = tope + de));
                                 e[tope] = j;
                         }
                 }
@@ -522,9 +515,9 @@ int clusterize(int N, int T, int dist(int, int)) {
 
         /* array of marks */
         msz = (N / 32) + ((N % 32) != 0);
-        m = alloca(msz * sizeof(int));
-        m2 = alloca(msz * sizeof(int));
-        m3 = alloca(msz * sizeof(int));
+        m = g_newa(unsigned int, msz);
+        m2 = g_newa(unsigned int, msz);
+        m3 = g_newa(unsigned int, msz);
         if ((m == NULL) || (m2 == NULL) || (m3 == NULL))
                 fatal(ME, "at clusterize");
         memset(m, 0, msz * sizeof(int));
@@ -536,7 +529,7 @@ int clusterize(int N, int T, int dist(int, int)) {
         /* stack */
         sp = -1;
         if (stsz < N)
-                st = c_realloc(st, (stsz = N) * sizeof(int), NULL);
+                st = g_renew(int, st, (stsz = N));
 
         /*
            Search the largest component of the graph.
@@ -815,8 +808,8 @@ int vlines2(unsigned char *pb, int w, int h, int *l, int *r, int *t,
         /* line buffers */
         if (lsz < YRES) {
                 lsz = YRES;
-                ll = c_realloc(ll, lsz * sizeof(int), NULL);
-                rl = c_realloc(rl, lsz * sizeof(int), NULL);
+                ll = g_renew(int, ll, lsz);
+                rl = g_renew(int, rl, lsz);
         }
 
         /* rules */
@@ -834,15 +827,9 @@ int vlines2(unsigned char *pb, int w, int h, int *l, int *r, int *t,
 
                                 if (++topr >= rsz) {
                                         rsz = (topr + 128);
-                                        rx = c_realloc(rx,
-                                                       rsz * sizeof(int),
-                                                       NULL);
-                                        ry = c_realloc(ry,
-                                                       rsz * sizeof(int),
-                                                       NULL);
-                                        rz = c_realloc(rz,
-                                                       rsz * sizeof(int),
-                                                       NULL);
+                                        rx = g_renew(int, rx, rsz);
+                                        ry = g_renew(int, ry, rsz);
+                                        rz = g_renew(int, rz, rsz);
                                 }
                                 rx[topr] = i;
                                 ry[topr] = j;
@@ -964,7 +951,7 @@ int hmargin(unsigned char *pb, int w, int h, int dx) {
         int p, *L, lm, r;
 
         lm = (h / 100) + 1;
-        L = alloca(sizeof(int) * lm);
+        L = g_newa(int, lm);
 
         /* compute margin */
         for (j = p = 0; (j < h) && (p < lm); j += d, ++p) {

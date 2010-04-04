@@ -795,57 +795,6 @@ void warn(char *m, ...) {
         va_end(args);
 }
 
-/* (devel)
-
-The memory allocator
---------------------
-
-Clara OCR relies on the memory allocator both for allocation or
-resizing of some large blocks used by the main data structures, and
-for allocation of a large number of small arrays. Currently Clara OCR
-does not include or use an special memory allocator, but implements an
-interface to realloc. The alloca function is also used sometimes along
-the code, generally to allocate buffers for sorting arrays.
-
-The interface is the function c_realloc. The function c_free must be
-used to free the blocks allocated or resized by c_realloc. In the near
-future, c_realloc will build a list of the currently allocated blocks,
-their sizes and some bits more in order to help to trace flaws.
-
-*/
-
-/*
-
-Alloc memory or die. The third parameter is an optional informative
-string to be appended to the error message generated when the memory
-becomes exhausted.
-
-*/
-void *c_realloc(void *p, int m, const char *s) {
-        void *nptr;
-
-        if (p == NULL)
-                nptr = malloc(m);
-        else
-                nptr = realloc(p, m);
-        if (nptr == NULL) {
-                if (s == NULL)
-                        fatal(ME, "memory exhausted");
-                else
-                        fatal(ME, "memory exhausted (%s)", s);
-        }
-        return (nptr);
-}
-
-/*
-
-Free a memory block.
-
-*/
-void c_free(void *p) {
-        if (p != NULL)
-                free(p);
-}
 
 /*
 
@@ -893,7 +842,7 @@ FILE *zfopen(char *f, char *mode, int *pio) {
 
                 t = strlen(f);
                 if ((t >= 4) && (strcmp(f + t - 3, ".gz") == 0)) {
-                        if ((a = alloca(t + 20)) == NULL) {
+                        if ((a = g_alloca(t + 20)) == NULL) {
                                 fatal(ME, "at zfopen");
                         }
                         if (strcmp(mode, "r") == 0) {
@@ -1077,7 +1026,7 @@ void zfclose(FILE *F, int pio) {
 Sort the array a[l..r] of integers.
 
 */
-void true_qss(int *a, int l, int r) {
+static void true_qss(int *a, int l, int r) {
         int b, i, j, m;
 
         m = a[l];
@@ -1123,7 +1072,7 @@ Sort the array a[l..r] of integers using as
 criterion of comparison the function cmpf.
 
 */
-void true_qsf(int *a, int l, int r, int inv, int cmpf(int, int)) {
+static void true_qsf(int *a, int l, int r, int inv, int cmpf(int, int)) {
         int i, j, m, b;
 
         m = a[l];
@@ -1178,7 +1127,7 @@ entries of a) entries of t.
 
 */
 #define qsie(x) (*((int *)(t+x*sz+p)))
-void true_qsi(int *a, int l, int r, char *t, int sz, int p, int inv) {
+static void true_qsi(int *a, int l, int r, char *t, int sz, int p, int inv) {
         int i, j, m, b, me;
 
         m = a[l];
@@ -1295,17 +1244,13 @@ intersection (leftmost and rightmost).
 
 */
 int intersize(int a, int b, int c, int d, int *e, int *f) {
+        int x,y;
         if (a <= c) {
-
                 /* a--c--d--b  */
                 if (b >= d) {
-                        if (e != NULL)
-                                *e = c;
-                        if (f != NULL)
-                                *f = d;
-                        return (d - c + 1);
-                }
-
+                        x = c;
+                        y = d;
+                } 
                 /* a--b  c--d  */
                 else if (b < c) {
                         return (0);
@@ -1313,21 +1258,15 @@ int intersize(int a, int b, int c, int d, int *e, int *f) {
 
                 /* a--c--b--d  */
                 else {
-                        if (e != NULL)
-                                *e = c;
-                        if (f != NULL)
-                                *f = b;
-                        return (b - c + 1);
+                        x = c;
+                        y = b;
                 }
         }
 
         /* c--a--b--d  */
         else if (d >= b) {
-                if (e != NULL)
-                        *e = a;
-                if (f != NULL)
-                        *f = b;
-                return (b - a + 1);
+                x = a;
+                y = b;
         }
 
         /* c--d  a--b  */
@@ -1337,12 +1276,15 @@ int intersize(int a, int b, int c, int d, int *e, int *f) {
 
         /* c--a--d--b  */
         else {
-                if (e != NULL)
-                        *e = a;
-                if (f != NULL)
-                        *f = d;
-                return (d - a + 1);
+                x = a;
+                y = d;
         }
+
+        if (e != NULL)
+                *e = x;
+        if (f != NULL)
+                *f = y;
+        return (y - x + 1);
 }
 
 /*
@@ -1401,8 +1343,7 @@ void make_pmc(void) {
 
         /* enlarge area for the list */
         if (pssz <= tops) {
-                ps = c_realloc(ps, (pssz = (topps + 512)) * sizeof(int),
-                               NULL);
+                ps = g_renew(int, ps, (pssz = (topps + 512)));
         }
 
         /* copy */
@@ -1421,7 +1362,7 @@ void checkcl(int m) {
         if (m >= clsz) {
                 int n = clsz;
 
-                cl = c_realloc(cl, (clsz += 1000) * sizeof(cldesc), NULL);
+                cl = g_renew(cldesc, cl, (clsz += 1000));
                 for (; n < clsz; ++n) {
                         cl[n].sup = NULL;
                         cl[n].bm = NULL;
@@ -1516,7 +1457,7 @@ int prf(char *f) {
          */
 
         if (textsz < MAXRRL + 1)
-                c_realloc(text, textsz = MAXRRL + 1024, NULL);
+                text = g_realloc(text, textsz = MAXRRL + 1024);
 
         /* process the file contents as a revision stream */
         n = read(F, text, MAXRRL);
@@ -1835,13 +1776,13 @@ void build_plist(const gchar* source) {
         if (npages > 0) {
                 int i;
 
-                dl_ne = c_realloc(dl_ne, npages * sizeof(int), NULL);
-                dl_db = c_realloc(dl_db, npages * sizeof(int), NULL);
-                dl_r = c_realloc(dl_r, npages * sizeof(int), NULL);
-                dl_t = c_realloc(dl_t, npages * sizeof(int), NULL);
-                dl_lr = c_realloc(dl_lr, npages * sizeof(int), NULL);
-                dl_w = c_realloc(dl_w, npages * sizeof(int), NULL);
-                dl_c = c_realloc(dl_c, npages * sizeof(int), NULL);
+                dl_ne = g_renew(int, dl_ne, npages);
+                dl_db = g_renew(int, dl_db, npages);
+                dl_r = g_renew(int, dl_r, npages);
+                dl_t = g_renew(int, dl_t, npages);
+                dl_lr = g_renew(int, dl_lr, npages);
+                dl_w = g_renew(int, dl_w, npages);
+                dl_c = g_renew(int, dl_c, npages);
                 for (i = 0; i < npages; ++i) {
                         dl_ne[i] = 0;
                         dl_db[i] = 0;
@@ -1868,51 +1809,6 @@ void build_plist(const gchar* source) {
                 runs = 0;
         }
 }
-
-static gboolean reviewer_type_cb(const gchar* opt_name, const gchar* opt_value, gpointer data, GError** err) {
-        if (g_strcmp0(opt_value, "A") == 0)
-                revtype = ARBITER;
-        else if (g_strcmp0(opt_value, "T") == 0)
-                revtype = TRUSTED;
-        else if (g_strcmp0(opt_value, "N") == 0)
-                revtype = ANON;
-        else {
-                g_set_error(err, G_OPTION_ERROR, G_OPTION_ERROR_BAD_VALUE, "Invalid reviewer type %s", opt_value);
-                return FALSE;
-        }
-        return TRUE;
-}
-static gboolean output_format_cb(const gchar* opt_name, const gchar* opt_value, gpointer data, GError** err) {
-        // text,html,djvu
-        if (g_strcmp0(opt_value, "text") == 0)
-                outp_format = OE_TEXT;
-        else if (g_strcmp0(opt_value, "html") == 0)
-                outp_format = OE_ENCAP_HTML;
-        else if (g_strcmp0(opt_value, "djvu") == 0) {
-                g_warning("DJVu output not yet supported");
-                outp_format = OE_DJVU;
-        } else {
-                g_set_error(err, G_OPTION_ERROR, G_OPTION_ERROR_BAD_VALUE, "Invalid output format %s", opt_value);
-                return FALSE;
-        }
-        return TRUE;
-}
-
-static GOptionEntry optDesc[] = {
-        {"batch", 'b', 0, G_OPTION_ARG_NONE, &batch_mode, "Run in batch mode (non-interactive)", NULL },
-        {"debug", 'd', 0, G_OPTION_ARG_NONE, &debug, "Enable debugging", NULL },
-        {"reviewer", 'r', 0, G_OPTION_ARG_STRING, &reviewer, "Reviewer name", "reviewer"},
-        {"reviewer-type", 't', 0, G_OPTION_ARG_CALLBACK, reviewer_type_cb, "Reviewer type", "A|N|T"},
-        {"page-dir", 'f', 0, G_OPTION_ARG_FILENAME, &page_dir, "Directory containing page images", "dir"},
-        {"output-format", 'o', 0, G_OPTION_ARG_CALLBACK, output_format_cb, "Output format", "text|html|djvu"},
-        {"selthresh", 'T', 0, G_OPTION_ARG_NONE, &selthresh, "Don't use session files. Intended for selthresh script", NULL},
-        {"trace", 0, 0, G_OPTION_ARG_NONE, &trace, "Enable trace messages", NULL},
-        {"verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose, "Verbose mode", NULL},
-        {"workdir", 'w', 0, G_OPTION_ARG_FILENAME, &workdir, "Work directory", "dir"},
-        {"resolution", 'y', 0, G_OPTION_ARG_INT, &DENSITY, "Resolution of input page", "dpi"},
-        {"compress",'z', 0, G_OPTION_ARG_NONE, &zsession, "Prefer compressed session files", NULL},
-        {},
-};
 /*
 
 Print short help to stderr.
@@ -2049,14 +1945,14 @@ int checkvar(char *c) {
 
                         /* copy varname dropping '-' */
                         if (c[0] == '-') {
-                                id = alloca(i);
+                                id = g_alloca(i);
                                 strncpy(id, c + 1, i - 1);
                                 id[i - 1] = 0;
                         }
 
                         /* copy varname as is */
                         else {
-                                id = alloca(i + 1);
+                                id = g_alloca(i + 1);
                                 strncpy(id, c, i);
                                 id[i] = 0;
                         }
@@ -2170,47 +2066,6 @@ int checkvar(char *c) {
         return (r);
 }
 
-static gboolean preinit_arg_hook(GOptionContext* context,
-                                 GOptionGroup* group,
-                                 gpointer data,
-                                 GError** err) {
-        spcpy(SP_GLOBAL, SP_DEF);
-
-        if (workdir != NULL)
-                g_free(workdir);
-        if (page_dir != NULL)
-                g_free(page_dir);
-        workdir = page_dir = NULL;
-
-        return TRUE;
-}
-
-static gboolean postinit_arg_hook(GOptionContext* context,
-                                  GOptionGroup* group,
-                                  gpointer data,
-                                  GError** err) {
-        /* book font path */
-        patterns_file = g_build_filename(workdir, zsession? "patterns.gz":"patterns", NULL);
-        acts_file = g_build_filename(workdir, zsession? "acts.gz":"acts", NULL);
-
-        /* doubts dir */
-        if (web) {
-                doubtsdir = g_build_filename(workdir,doubts, NULL);
-        }
-
-        /* no current page by now */
-        cpage = -1;
-
-        /* use default skeleton parameters */
-        //if (havek == 0)
-        skel_parms(",,,,,,,");
-
-        if(page_dir == NULL)
-                page_dir = g_strdup("./");
-        if(workdir == NULL)
-                workdir = g_strdup(page_dir);
-        return TRUE;
-}
 
 /*
 
@@ -2262,18 +2117,11 @@ void process_cl(int argc, char *argv[]) {
 
                         if (a != NULL) {
                                 if (largc >= lsz) {
-                                        disp =
-                                            c_realloc(disp,
-                                                      (lsz +=
-                                                       32) * sizeof(int),
-                                                      NULL);
+                                        disp = g_renew(int, disp, (lsz += 32));
                                 }
                                 l = strlen(a);
                                 if ((l + 1 + topb + 1) > bsz)
-                                        argb =
-                                            c_realloc(argb,
-                                                      (bsz +=
-                                                       l + 256), NULL);
+                                        argb = g_realloc(argb, (bsz += l + 256));
                                 disp[largc] = topb + 1;
                                 sprintf(argb + topb + 1, a);
                                 topb += l + 1;
@@ -2281,8 +2129,7 @@ void process_cl(int argc, char *argv[]) {
                         }
                 }
 
-                largv =
-                    c_realloc(NULL, (largc + 2) * sizeof(char **), NULL);
+                largv = g_new(char*, (largc + 2));
                 for (i = 0; i < largc; ++i) {
                         largv[i] = argb + disp[i];
                 }
@@ -2292,8 +2139,7 @@ void process_cl(int argc, char *argv[]) {
         /* parse command-line parameters */
         e = 0;
         while (e == 0) {
-                c = getopt(largc, largv,
-                           "a:bde:f:hik:m:N:o:p:P:R:rTtuU:vVw:WX:y:zZ:");
+                c = getopt(largc, largv, "a:bde:f:hik:m:N:o:p:P:R:rTtuU:vVw:WX:y:zZ:");
 
                 /* (book)
 
@@ -2556,9 +2402,9 @@ void process_cl(int argc, char *argv[]) {
 
 
         /* free buffers */
-        c_free(argb);
-        c_free(largv);
-        c_free(disp);
+        g_free(argb);
+        g_free(largv);
+        g_free(disp);
 }
 
 /*
@@ -2571,7 +2417,7 @@ void init_ds(void) {
 
 #ifdef HAVE_SIGNAL
         /* alarm queue */
-        alrmq = c_realloc(NULL, (alrmqsz = 20) * sizeof(int), NULL);
+        alrmq = g_new(int, (alrmqsz = 20));
 #endif
 
         /* register GUI buttons */
@@ -2593,7 +2439,7 @@ void init_ds(void) {
         build_plist(page_dir);
 
         /* alloc HTML text buffer */
-        text = c_realloc(NULL, textsz = 15000, NULL);
+        text = g_malloc(textsz = 15000);
         text[0] = 0;
 
         /* cfont initialization */
@@ -2622,17 +2468,18 @@ void init_ds(void) {
                 for (i = 0; i < 256; ++i) {
                         p64[i] = s64[i] = 0;
 #ifdef BIG_ENDIAN
-                        for (j = 1; j <= 128; j <<= 1) {
+                        for (j = 1; j <= 128; j <<= 1) 
 #else
-                        for (j = 128; j >= 1; j >>= 1) {
+                        for (j = 128; j >= 1; j >>= 1) 
 #endif
-                                p64[i] = (p64[i] << 8);
-                                if (i & j) {
-                                        p64[i] += BLACK;
-                                        ++(s64[i]);
-                                } else
-                                        p64[i] += WHITE;
-                        }
+                                {
+                                        p64[i] = (p64[i] << 8);
+                                        if (i & j) {
+                                                p64[i] += BLACK;
+                                                ++(s64[i]);
+                                        } else
+                                                p64[i] += WHITE;
+                                }
                 }
         }
 
@@ -2654,7 +2501,7 @@ int count_classes(void) {
         char *used;
         int i, k, c, *p;
 
-        used = alloca(topp + 1);
+        used = g_alloca(topp + 1);
         memset(used, 0, topp + 1);
         for (k = 0, p = ps; k <= topps; ++k, ++p) {
                 i = id2idx(mc[*p].bm);
@@ -2815,7 +2662,7 @@ int save_session(int reset) {
                 /* free the pixmap */
                 if ((myreset) && (pixmap != NULL)) {
                         spyhole(0, 0, 1, 0);
-                        c_free(pixmap);
+                        g_free(pixmap);
                         pixmap = NULL;
                 }
 
@@ -3668,8 +3515,8 @@ int step_14(int reset) {
                 int nd;
 
                 /* alloc memory on stack */
-                if (((a = alloca(sizeof(int) * (topps + 1))) == NULL) ||
-                    ((p = alloca(sizeof(int) * (tops + 1))) == NULL)) {
+                if (((a = g_newa(int, (topps + 1))) == NULL) ||
+                    ((p = g_newa(int, (tops + 1))) == NULL)) {
 
                         fatal(ME, "memory exhausted");
                 }
@@ -4415,7 +4262,7 @@ void continue_ocr(void) {
                 cannot_stop = 1;
         }
 }
-
+ 
 #ifdef HAVE_SIGNAL
 /*
 
@@ -4456,6 +4303,7 @@ void new_alrm(unsigned d, int who) {
         setitimer(ITIMER_REAL, &it, NULL);
 #endif
 }
+
 
 /*
 
@@ -4523,123 +4371,3 @@ void handle_alrm(int p) {
         }
 }
 #endif
-
-/*
-
-The program begins here.
-
-*/
-extern void init_flags();
-int main(int argc, char *argv[]) {
-
-#ifdef HAVE_SIGNAL
-        /* install handlers */
-        signal(SIGPIPE, handle_pipe);
-        signal(SIGALRM, handle_alrm);
-#endif
-        if (!g_thread_supported()) g_thread_init(NULL);
-        imlib_lock = g_mutex_new();
-        /*
-           Process command-line parameters.
-         */
-
-        init_flags();
-        {
-                GOptionContext *context;
-                GError *error = NULL;
-
-                context = g_option_context_new("");
-                g_option_context_add_main_entries(context, optDesc, NULL);
-                g_option_group_set_parse_hooks(g_option_context_get_main_group(context),
-                                               preinit_arg_hook,
-                                               postinit_arg_hook);
-                g_option_context_add_group(context, gtk_get_option_group(FALSE));
-
-                if (!g_option_context_parse(context, &argc, &argv, &error)) {
-                        g_print("option parsing failed: %s\n", error->message);
-                        exit(1);
-                }
-                g_option_context_free(context);
-        }
-
-
-        /*
-           Initialize main data structures.
-         */
-        init_ds();
-
-        /*
-           Initializes GUI.
-         */
-        init_welcome();
-        xpreamble();
-        // UNPATCHED: setview(WELCOME);
-
-        /*
-           A temporary solution for classifier 4. As we've decided to
-           handle pre-built fonts just like manually-created fonts,
-           the problem now concerns how to use both pre-built and
-           manually created fonts simultaneously. This problem was
-           not addressed yet. By now, classifier 4 should be used only
-           for tests and exclusively and not tryong to train symbols
-           manually.
-         */
-        if (classifier == CL_SHAPE)
-                build_internal_patterns();
-
-        /*
-           start full OCR or preprocessing automatically on
-           all pages when in batch mode.
-         */
-        if (batch_mode != 0) {
-                if (npages <= 0)
-                        fatal(DI, "no pages to process!");
-                if (pp_only)
-                        start_ocr(-1, OCR_PREPROC, 0);
-                else if (searchb) {
-                        ocr_other = 2;
-                        start_ocr(-1, OCR_OTHER, 0);
-                } else
-                        start_ocr(-1, -1, 0);
-        }
-
-
-        /* just perform a dictionary operation */
-        if (dict_op != 0) {
-
-                dict_behaviour();
-                exit(0);
-        }
-
-        /*
-
-           Now we alternate two "threads", one for handle user-generated
-           GUI events, and other to run the various OCR steps (these are
-           not true "threads", but ordinary subroutines).
-
-         */
-        if (batch_mode == 0) {
-                g_idle_add(continue_ocr_thunk, NULL);
-                gtk_main();
-        } else {
-                while (ocring && !finish)
-                        continue_ocr();
-        }
-
-
-        if ((batch_mode) && (report)) {
-                //mk_page_list();
-                //DFW = 6;
-                //html2ge(text, 0);
-                //write_report("report.txt");
-                mk_pattern_list();
-                //DFW = 6;
-                html2ge(text, 0);
-                write_report("classes.txt");
-        }
-
-        if (selthresh) {
-                printf("bookfont size is %d, %d links\n", topp, links);
-        }
-        exit(0);
-}

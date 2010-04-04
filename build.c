@@ -914,7 +914,7 @@ int new_word(int k) {
         /* enlarge buffer */
         if (++topw >= wsz) {
                 wsz = topw + 512;
-                word = c_realloc(word, sizeof(wdesc) * wsz, NULL);
+                word = g_renew(wdesc, word, wsz);
         }
         word[topw--].F = -1;
 
@@ -1496,8 +1496,7 @@ int build(int reset) {
                 /* enlarge memory area for lines */
                 if (lnsz <= topln) {
                         lnsz = topln + 512;
-                        line =
-                            c_realloc(line, sizeof(lndesc) * lnsz, NULL);
+                        line = g_renew(lndesc, line, lnsz);
                 }
 
                 /* line heads */
@@ -1518,8 +1517,8 @@ int build(int reset) {
                         int *a;
                         lndesc *l;
 
-                        a = alloca(sizeof(int) * (topln + 1));
-                        l = alloca(sizeof(lndesc) * (topln + 1));
+                        a = g_newa(int, topln + 1);
+                        l = g_newa(lndesc, topln + 1);
                         for (i = 0; i <= topln; ++i)
                                 a[i] = i;
                         qsf(a, 0, topln, 0, cmpln);

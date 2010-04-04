@@ -851,7 +851,8 @@ extern int BT;
 extern int fc_bp, lc_bp, fl_bp, ll_bp;
 
 /* cb and cb2 are buffers for symbols, used to compute skeletons */
-extern char cb[], cb2[];
+/* TODO: used to be "extern char cb[], cb2[];" */
+extern unsigned char cb[], cb2[];
 
 /*
 
@@ -1198,6 +1199,7 @@ extern int mf_i, mf_b, mf_c, mf_r, mf_l;
 extern int overr_cb;
 
 /* paths */
+extern char* page_dir;
 extern char* pagename;
 extern char* pagebase;
 extern GPtrArray *page_list;
@@ -1605,16 +1607,11 @@ Pixel macros.
 The service "pixel" can be used instead of the macro "pix".
 
 */
-#define pix(bm,bpl,i,j) \
-    (((((unsigned char *)bm)[(j)*bpl+((i)/8)]) & (1 << (7-((i)%8)))) != 0)
-#define pix3(bm,bpl,i,j) \
-    ((((((unsigned char *)bm)[(j)*bpl+((i)/8)]) >> (5-((i)%8))) & 7) == 7)
-#define setpix(bm,bpl,i,j) \
-    ((((unsigned char *)bm)[(j)*bpl+((i)/8)]) |= (1 << (7-((i)%8))))
-#define togglepix(bm,bpl,i,j) \
-    ((((unsigned char *)bm)[(j)*bpl+((i)/8)]) ^= (1 << (7-((i)%8))))
-#define unsetpix(bm,bpl,i,j) \
-    ((((unsigned char *)bm)[(j)*bpl+((i)/8)]) &= (~(1 << (7-((i)%8)))))
+#define pix(bm,bpl,i,j) (((((unsigned char *)bm)[(j)*bpl+((i)/8)]) & (1 << (7-((i)%8)))) != 0)
+#define pix3(bm,bpl,i,j) ((((((unsigned char *)bm)[(j)*bpl+((i)/8)]) >> (5-((i)%8))) & 7) == 7)
+#define setpix(bm,bpl,i,j) ((((unsigned char *)bm)[(j)*bpl+((i)/8)]) |= (1 << (7-((i)%8))))
+#define togglepix(bm,bpl,i,j) ((((unsigned char *)bm)[(j)*bpl+((i)/8)]) ^= (1 << (7-((i)%8))))
+#define unsetpix(bm,bpl,i,j) ((((unsigned char *)bm)[(j)*bpl+((i)/8)]) &= (~(1 << (7-((i)%8)))))
 
 /*
 
@@ -1742,10 +1739,6 @@ void db(char *m, ...);
 void warn(char *m, ...);
 void fatal(int code, char *m, ...);
 
-/* memory allocation */
-void *c_realloc(void *p, int m, const char *s);
-void c_free(void *p);
-
 /* I/O selector */
 CFile* cfopen(const gchar* path, const gchar* mode);
 gint cfread(CFile *f, gpointer buf, gsize len);
@@ -1812,7 +1805,7 @@ int wrmc8(int mm, char *s1, char *s2);
 int pixel(cldesc *c, int x, int y);
 int spixel(sdesc *m, int x, int y);
 int byteat(int b);
-void bm2byte(char *c, unsigned char *b);
+void bm2byte(unsigned char *c, unsigned char *b);
 int wrzone(char *s1, int all);
 int pbm2bm(char *f, int reset);
 int find_thing(int reset, int x, int y);
@@ -1857,7 +1850,6 @@ void qss(int *a, int l, int r);
 void qsf(int *a, int l, int r, int inv, int cmpf(int, int));
 void qsi(int *a, int l, int r, char *t, int sz, int p, int inv);
 void qs(char *a[], int l, int r, int p, int inv);
-void true_qsi(int *a, int l, int r, char *t, int sz, int p, int inv);
 
 /* revision services */
 int review(int reset, adesc *a);
@@ -1909,9 +1901,7 @@ void new_pattern(void);
 void justify_pattern(short *h, short *w, short *dx, short *dy);
 int opt_font();
 void pskel(int c);
-void new_pattern(void);
-int update_pattern(int k, char *tr, int an, char a, short ft, short fs,
-                   int f);
+int update_pattern(int k, char *tr, int an, char a, short ft, short fs, int f);
 void rm_pattern(int n);
 void rm_untrans(void);
 void clear_cm(void);
@@ -1933,11 +1923,10 @@ void cmi(void) __attribute__ ((deprecated));
 int mb_item(int x, int y);
 void init_welcome(void);
 void get_pointer(int *x, int *y) __attribute__ ((deprecated));
-void setview(int mode) G_GNUC_DEPRECATED;
+void setview(int mode); // G_GNUC_DEPRECATED;
 void check_dlimits(int cursoron);
 void set_buttons(int s, int p);
 void symb2buttons(int s);
-void set_mclip(int f);
 void draw_dw(int bg, int inp);
 
 /* auxiliar gui services */
@@ -1974,11 +1963,9 @@ int complete_align(int a, int b, int *as, int *xh, int *bl, int *ds);
 int geo_align(int c, int dd, int as, int xh, int bl, int ds);
 
 /* barcode stuff */
-int closure_border_slines(int e, int t, int crit, float val, short *res,
-                          int mr, int bar);
+int closure_border_slines(int e, int t, int crit, float val, short *res, int mr, int bar);
 int closure_border_path(int t);
-int border_path(unsigned char *b, int w, int h, short *bp, int m, int u0,
-                int v0, int relax);
+int border_path(unsigned char *b, int w, int h, short *bp, int m, int u0, int v0, int relax);
 int dist_bar(int i, int j);
 int search_barcode(void);
 int isbar(int k, float *sk, float *bl);
@@ -2037,7 +2024,9 @@ char *ht(int secs);
 void set_flag(flag_t flag, gboolean value);
 gboolean get_flag(flag_t flag);
 void resync_pagelist(int pageno);
-
+void init_ds();
 
 #define UNIMPLEMENTED() real_UNIMPLEMENTED(__FILE__,__FUNCTION__)
 void real_UNIMPLEMENTED();
+
+

@@ -232,7 +232,7 @@ int review_tr(adesc *a) {
                 old_tr = NULL;
                 old_f = 0;
         } else {
-                old_tr = alloca(strlen((mc[curr_mc].tr)->t) + 1);
+                old_tr = g_alloca(strlen((mc[curr_mc].tr)->t) + 1);
                 strcpy(old_tr, (mc[curr_mc].tr)->t);
                 old_f = (mc[curr_mc].tr)->f;
         }
@@ -416,8 +416,8 @@ void review_merge(adesc *a) {
         ws = mc[l].ncl + mc[k].ncl;
 
         /* build list of closures */
-        wc = alloca(sizeof(int) * ws);
-        af = alloca(sizeof(int) * ws);
+        wc = g_newa(int, ws);
+        af = g_newa(int, ws);
         for (n = 0; n < mc[l].ncl; ++n)
                 wc[n] = mc[l].cl[n];
         for (m = 0; m < mc[k].ncl; ++m)
@@ -449,10 +449,7 @@ void review_merge(adesc *a) {
         }
         if (j < 0) {
                 if (topps + 1 >= pssz)
-                        ps = c_realloc(ps,
-                                       (pssz =
-                                        (topps + 512)) * sizeof(int),
-                                       NULL);
+                        ps = g_renew(int, ps, (pssz = (topps + 512)));
                 ps[++topps] = t;
         }
 
@@ -497,7 +494,7 @@ void review_slink(adesc *a) {
 
         /* enlarge buffer */
         if (toplk + 1 >= lksz) {
-                lk = c_realloc(lk, (lksz += 128) * (sizeof(lkdesc)), NULL);
+                lk = g_renew(lkdesc, lk, (lksz += 128));
         }
 
         /* store symbol link */
@@ -521,7 +518,7 @@ void review_alink(adesc *a) {
 
         /* enlarge buffer */
         if (toplk + 1 >= lksz) {
-                lk = c_realloc(lk, (lksz += 128) * (sizeof(lkdesc)), NULL);
+                lk = g_renew(lkdesc, lk, (lksz += 128));
         }
 
         /* store symbol link */
@@ -556,7 +553,7 @@ void review_dis(adesc *a) {
          */
         for (i = 0; i < mc[k].ncl; ++i) {
                 C_SET(mc[mc[k].cl[i]].f, F_ISP);
-                p = alloca((1 + mc[k].ncl) * sizeof(int));
+                p = g_newa(int, 1 + mc[k].ncl);
 
                 /* the unitary pattern (if any) is unmarked as fragment */
                 /*
@@ -583,10 +580,7 @@ void review_dis(adesc *a) {
                         ps[i] = mc[k].cl[0];
         }
         if ((pssz - topps - 1) < mc[k].ncl - 1)
-                ps = c_realloc(ps,
-                               (pssz =
-                                (topps + mc[k].ncl + 512)) * sizeof(int),
-                               NULL);
+                ps = g_renew(int, ps, (pssz = (topps + mc[k].ncl + 512)));
         for (i = 1; i < mc[k].ncl; ++i)
                 ps[++topps] = mc[k].cl[i];
 
@@ -682,7 +676,8 @@ void reviewer_data(adesc *a) {
         /* reviewer data */
         a->r = reviewer;
         a->rt = revtype;
-        a->sa = g_get_host_name();
+        // BUG: possible leak
+        a->sa = g_strdup(g_get_host_name());
         a->dt = time(NULL);
 
         /* original revision data */
@@ -724,9 +719,7 @@ void gen_tr(char *tr) {
 
         /* alloc more space for acts */
         if (++topa >= actsz) {
-                act =
-                    c_realloc(act, (actsz = topa + 100) * sizeof(adesc),
-                              NULL);
+                act = g_renew(adesc, act, (actsz = topa + 100));
         }
         a = act + topa;
 
@@ -801,9 +794,7 @@ void gen_merge(int k, int l) {
 
         /* alloc more space for acts */
         if (++topa >= actsz) {
-                act =
-                    c_realloc(act, (actsz = topa + 100) * sizeof(adesc),
-                              NULL);
+                act = g_renew(adesc, act, (actsz = topa + 100));
         }
         a = act + topa;
 
@@ -837,9 +828,7 @@ void gen_dis(int k) {
 
         /* alloc more space for acts */
         if (++topa >= actsz) {
-                act =
-                    c_realloc(act, (actsz = topa + 100) * sizeof(adesc),
-                              NULL);
+                act = g_renew(adesc, act, (actsz = topa + 100));
         }
         a = act + topa;
 
@@ -869,9 +858,7 @@ void gen_slink(int k) {
 
         /* alloc more space for acts */
         if (++topa >= actsz) {
-                act =
-                    c_realloc(act, (actsz = topa + 100) * sizeof(adesc),
-                              NULL);
+                act = g_renew(adesc, act, (actsz = topa + 100));
         }
         a = act + topa;
 
@@ -901,9 +888,7 @@ void gen_alink(int k) {
 
         /* alloc more space for acts */
         if (++topa >= actsz) {
-                act =
-                    c_realloc(act, (actsz = topa + 100) * sizeof(adesc),
-                              NULL);
+                act = g_renew(adesc, act, (actsz = topa + 100));
         }
         a = act + topa;
 
@@ -1111,7 +1096,7 @@ void summarize(int m) {
                 int i;
                 trdesc **t;
 
-                t = alloca(n * sizeof(trdesc *));
+                t = g_newa(trdesc*, n);
                 for (a = mc[m].tr, i = 0; a != NULL; a = a->nt, ++i) {
                         t[i] = a;
                 }
@@ -1229,10 +1214,10 @@ void rmvotes(int o, int k, int a, int nd) {
                                                 t->v = (vdesc *) (v->nv);
                                         else
                                                 lv->nv = v->nv;
-                                        c_free(v);
-                                        v = (lv ==
-                                             NULL) ? t->v : ((vdesc
-                                                              *) (lv->nv));
+                                        g_free(v);
+                                        v = (lv == NULL)
+                                                ? t->v
+                                                : ((vdesc *) (lv->nv));
                                         r = 1;
                                 } else {
                                         lv = v;
@@ -1248,7 +1233,7 @@ void rmvotes(int o, int k, int a, int nd) {
                                         mc[k].tr = t->nt;
                                 else
                                         lt->nt = t->nt;
-                                c_free(t);
+                                g_free(t);
                                 t = (lt == NULL) ? mc[k].tr : lt->nt;
                                 r = 1;
                         } else {
@@ -1296,7 +1281,7 @@ void nullify(int n) {
                         if (pattern[k].act == n) {
                                 pattern[k].act = -1;
                                 if (pattern[k].tr != NULL) {
-                                        c_free(pattern[k].tr);
+                                        g_free(pattern[k].tr);
                                         pattern[k].tr = NULL;
                                 }
                                 pattern[k].ts = 0;

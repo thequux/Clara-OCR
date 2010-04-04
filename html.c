@@ -107,14 +107,12 @@ int get_attrib(char **ht) {
                 t = attribc - listsz + 16;
 
                 /* pointers to attributes and their values */
-                attrib =
-                    c_realloc(attrib, (listsz += t) * sizeof(char *),
-                              NULL);
-                val = c_realloc(val, listsz * sizeof(char *), NULL);
+                attrib = g_renew(char *, attrib, (listsz += t));
+                val = g_renew(char *, val, listsz);
 
                 /* sizes of attributes and their values */
-                attribsz = c_realloc(attribsz, listsz * sizeof(int), NULL);
-                valsz = c_realloc(valsz, listsz * sizeof(int), NULL);
+                attribsz = g_renew(int, attribsz, listsz);
+                valsz = g_renew(int, valsz, listsz);
 
                 /* initialize pointers and sizes */
                 for (n = 1; n <= t; ++n) {
@@ -143,8 +141,7 @@ int get_attrib(char **ht) {
         /* store name */
         n = attrib + attribc;
         if (attribsz[attribc] < t - a + 1)
-                *n = c_realloc(*n, attribsz[attribc] =
-                               t - a + 1 + 512, NULL);
+                *n = g_realloc(*n, attribsz[attribc] = t - a + 1 + 512);
         strncpy(*n, a, t - a);
         (*n)[t - a] = 0;
 
@@ -184,8 +181,7 @@ int get_attrib(char **ht) {
 
                 /* copy the value */
                 if (valsz[attribc] < u - a + 1)
-                        *v = c_realloc(*v, valsz[attribc] =
-                                       u - a + 1 + 512, NULL);
+                        *v = g_realloc(*v, valsz[attribc] = u - a + 1 + 512);
                 strncpy(*v, a, u - a);
                 (*v)[u - a] = 0;
         }
@@ -193,7 +189,7 @@ int get_attrib(char **ht) {
         /* empty value */
         else {
                 if (valsz[attribc] < 1)
-                        *v = c_realloc(*v, 512, NULL);
+                        *v = g_realloc(*v, 512);
                 (*v)[0] = 0;
         }
 
@@ -213,10 +209,10 @@ Increase topge by one and enlarge ge if necessary.
 void new_ge(void) {
         edesc *k;
 
-        if (++(topge) >= gesz) {
+        if (++topge >= gesz) {
                 int i;
 
-                ge = c_realloc(ge, ((gesz) += 250) * sizeof(edesc), NULL);
+                ge = g_renew(edesc, ge, (gesz += 250));
                 for (i = 0, k = ge + gesz - 1; i < 250; ++i, --k) {
                         k->tsz = k->argsz = 0;
                         k->txt = k->arg = NULL;
@@ -297,7 +293,7 @@ int get_tag(char **ht) {
                         ++t;
                 n = t - a;
                 if (tagsz < n + 1)
-                        tag = c_realloc(tag, tagsz = (n + 1 + 512), NULL);
+                        tag = g_realloc(tag, tagsz = (n + 1 + 512));
                 strncpy(tag, a, n);
                 tag[n] = 0;
 
@@ -317,19 +313,15 @@ int get_tag(char **ht) {
                                 name = val[attribc - 1];
                         else if (strcmp("VALUE", attrib[attribc - 1]) == 0)
                                 value = val[attribc - 1];
-                        else if (strcmp("ACTION", attrib[attribc - 1]) ==
-                                 0)
+                        else if (strcmp("ACTION", attrib[attribc - 1]) == 0)
                                 action = val[attribc - 1];
-                        else if (strcmp("BGCOLOR", attrib[attribc - 1]) ==
-                                 0)
+                        else if (strcmp("BGCOLOR", attrib[attribc - 1]) == 0)
                                 bgcolor = val[attribc - 1];
-                        else if (strcmp("CHECKED", attrib[attribc - 1]) ==
-                                 0)
+                        else if (strcmp("CHECKED", attrib[attribc - 1]) == 0)
                                 checked = 1;
                         else if (strcmp("SIZE", attrib[attribc - 1]) == 0)
                                 size = atoi(val[attribc - 1]);
-                        else if (strcmp("CELLSPACING", attrib[attribc - 1])
-                                 == 0)
+                        else if (strcmp("CELLSPACING", attrib[attribc - 1]) == 0)
                                 cellspacing = atoi(val[attribc - 1]);
                 }
                 if (d < 0) {
@@ -345,8 +337,7 @@ int get_tag(char **ht) {
                         ++t;
                 n = t - a;
                 if (tagtxtsz < n + 1)
-                        tagtxt = c_realloc(tagtxt, tagtxtsz =
-                                           (n + 1 + 512), NULL);
+                        tagtxt = g_realloc(tagtxt, tagtxtsz = (n + 1 + 512));
                 strncpy(tagtxt, a, n);
                 tagtxt[n] = 0;
                 r = CML_TEXT;
@@ -359,8 +350,7 @@ int get_tag(char **ht) {
                         ++t;
                 n = t - a;
                 if (tagtxtsz < n + 1)
-                        tagtxt = c_realloc(tagtxt, tagtxtsz =
-                                           (n + 1 + 512), NULL);
+                        tagtxt = g_realloc(tagtxt, tagtxtsz = (n + 1 + 512));
                 strncpy(tagtxt, a, n);
                 tagtxt[n] = 0;
                 r = CML_TEXT;
@@ -1476,8 +1466,9 @@ Pushes the current contents of text array (remark: the stack size is
 
 */
 void push_text(void) {
+        // TODO: make this not suck.
         if (ptextsz < (topt + 1))
-                ptext = c_realloc(ptext, ptextsz = topt + 1024, NULL);
+                ptext = g_realloc(ptext, ptextsz = topt + 1024);
         if (topt >= 0)
                 memcpy(ptext, text, topt + 1);
         ptopt = topt;
@@ -1490,6 +1481,7 @@ Pops the current contents of text array (remark: the stack size is
 
 */
 void pop_text(void) {
+        // TODO: unsuck
         if (textsz < (ptopt + 1))
                 fatal(IE, "inconsistent size of text buffers");
         if (ptopt >= 0)
@@ -1518,17 +1510,14 @@ void to(char **t, int *top, int *sz, const char *fmt, ...) {
                    the buffer is too small.
                  */
                 if (n < 0) {
-                        *t = c_realloc(*t, *sz += 15000, NULL);
+                        *t = g_realloc(*t, *sz += 15000);
                 }
 
                 /*
                    Others return the required size for the buffer.
                  */
                 else if (n + 1 > *sz - *top - 1) {
-                        *t = c_realloc(*t,
-                                       *sz +=
-                                       (n + 1 - (*sz - *top - 1) + 15000),
-                                       NULL);
+                        *t = g_realloc(*t, *sz += (n + 1 - (*sz - *top - 1) + 15000));
                 }
 
                 /* success */
@@ -1561,17 +1550,14 @@ void totext(const char *fmt, ...) {
                    the buffer is too small.
                  */
                 if (n < 0) {
-                        text = c_realloc(text, textsz += 15000, NULL);
+                        text = g_realloc(text, textsz += 15000);
                 }
 
                 /*
                    Others return the required size for the buffer.
                  */
                 else if (n + 1 > textsz - topt - 1) {
-                        text = c_realloc(text,
-                                         textsz +=
-                                         (n + 1 - (textsz - topt - 1) +
-                                          15000), NULL);
+                        text = g_realloc(text, textsz += (n + 1 - (textsz - topt - 1) + 15000));
                 }
 
                 /* success */
@@ -1883,7 +1869,7 @@ void mk_page_doubts(void) {
         wdesc *W;
         sdesc *m;
 
-        w = alloca(tops + 1);
+        w = g_alloca(tops + 1);
 
         /* search words with dubious chars */
         for (i = dr = 0; i <= topw; ++i) {
@@ -2411,8 +2397,7 @@ void mk_pattern_list(void) {
         /* sort patterns before displaying */
         if (pattern != NULL) {
                 if (slistsz <= topp)
-                        slist =
-                            c_realloc(slist, (slistsz = topp + 256) * sizeof(int), NULL);
+                        slist = g_renew(int, slist, (slistsz = topp + 256));
                 for (i = 0; i <= topp; ++i)
                         slist[i] = i;
                 qsf(slist, 0, topp, 0, cmp_pattern);
@@ -3363,7 +3348,7 @@ void ge2txt(void) {
                 c += (ge[i].type == GE_TEXT);
 
         /* list text ge's */
-        a = alloca(c * sizeof(int));
+        a = g_newa(int, c);
         for (i = c = 0; i <= topge; ++i)
                 if (ge[i].type == GE_TEXT)
                         a[c++] = i;

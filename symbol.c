@@ -1427,7 +1427,7 @@ int new_mc(int *l, int cls) {
 
         /* enlarge memory area */
         if ((n = tops + 1) >= ssz)
-                mc = c_realloc(mc, (ssz += 1000) * sizeof(sdesc), NULL);
+                mc = g_renew(sdesc, mc, (ssz += 1000));
 
         /* initializes mc[n] */
         mc[n].l = cl[a = l[0]].l;
@@ -1452,8 +1452,7 @@ int new_mc(int *l, int cls) {
         mc[n].bs = -1;
 
         /* alloc memory and store the cl list */
-        mc[n].cl = c_realloc(NULL, cls * sizeof(int), NULL);
-        memcpy(mc[n].cl, l, cls * sizeof(int));
+        mc[n].cl = g_memdup(l, cls * sizeof(int));
         mc[n].ncl = cls;
 
         /* compute the geometric limits */
@@ -1478,14 +1477,9 @@ int new_mc(int *l, int cls) {
                 for (b = 0; c->sup[b] >= 0; ++b);
 
                 if ((b + 1) == c->supsz) {
-                        cl->sup =
-                            c_realloc(c->sup,
-                                      (c->supsz +=
-                                       10) * sizeof(int), NULL);
+                        cl->sup = g_renew(int, c->sup, (c->supsz += 10));
                 } else if ((b + 1) > cl[i].supsz) {
-                        snprintf(mb, MMB,
-                                 "unterminated symbol list for cl=%d\n",
-                                 l[i]);
+                        snprintf(mb, MMB, "unterminated symbol list for cl=%d\n", l[i]);
                         fatal(IE, mb);
                 }
                 c->sup[b] = n;
@@ -1655,25 +1649,24 @@ void add_tr(int m, char *rt, int orig, int an, int q, char al, int f) {
 
         /* add the transliteration to the chain */
         if (a == NULL) {
-                tr = c_realloc(NULL, sizeof(trdesc), NULL);
+                tr = g_new(trdesc, 1);
                 tr->pr = 0;
                 tr->nt = NULL;
                 tr->a = al;
                 tr->f = f;
                 tr->v = NULL;
-                tr->t = c_realloc(NULL, strlen(t), NULL);
-                strcpy(tr->t, t);
+                tr->t = g_strdup(t);
 
                 if (mc[m].tr == NULL)
                         mc[m].tr = tr;
                 else {
-                        for (a = (trdesc *) mc[m].tr; a->nt != NULL;
-                             a = a->nt);
+                        for (a = (trdesc *) mc[m].tr;
+                             a->nt != NULL;
+                             a = a->nt)
+                                ;
                         a->nt = (void *) tr;
                 }
-        }
-
-        else {
+        } else {
                 tr = a;
         }
 
@@ -1687,7 +1680,7 @@ void add_tr(int m, char *rt, int orig, int an, int q, char al, int f) {
         }
 
         /* add the vote */
-        v = c_realloc(NULL, sizeof(vdesc), NULL);
+        v = g_new(vdesc, 1);
         v->orig = orig;
         v->act = an;
         v->q = q;
@@ -1951,7 +1944,7 @@ void copy_mc(void *mcbm, int c) {
 Copy the FSxFS bitmap b to the LFSxFS byte buffer c.
 
 */
-void bm2byte(char *c, unsigned char *b) {
+void bm2byte(unsigned char *c, unsigned char *b) {
         unsigned char m, *p;
         int i, j, h;
 
@@ -2266,28 +2259,15 @@ int bmpcmp_shape(int c, int st, int k, int mode) {
                                         /* set on aux */
                                         l = rint(j * sx);
                                         n = (128 >> (l % 8));
-                                        q = ((unsigned char *) aux) + r +
-                                            (l / 8);
+                                        q = ((unsigned char *) aux) + r + (l / 8);
                                         *q |= n;
 
                                         /* remember coords */
                                         if (++toppl >= plsz) {
                                                 plsz += 50;
-                                                plx =
-                                                    c_realloc(plx,
-                                                              plsz *
-                                                              sizeof(int),
-                                                              NULL);
-                                                ply =
-                                                    c_realloc(ply,
-                                                              plsz *
-                                                              sizeof(int),
-                                                              NULL);
-                                                plz =
-                                                    c_realloc(plz,
-                                                              plsz *
-                                                              sizeof(int),
-                                                              NULL);
+                                                plx = g_renew(int, plx, plsz);
+                                                ply = g_renew(int, ply, plsz);
+                                                plz = g_renew(int, plz, plsz);
                                         }
                                         plx[toppl] = l;
                                         ply[toppl] = s;
@@ -2325,23 +2305,20 @@ int bmpcmp_shape(int c, int st, int k, int mode) {
                                         for (i = 0; i < n; ++i, ++t) {
                                                 x = plx[c] + circpx[t];
                                                 y = ply[c] + circpy[t];
-                                                if (((0 <= x) && (x < FS)
-                                                     && (0 <= y) &&
-                                                     (y < FS))
-                                                    && (cb[x + y * LFS] ==
-                                                        BLACK)) {
+                                                if (((0 <= x) && (x < FS) &&
+                                                     (0 <= y) && (y < FS)) &&
+                                                    (cb[x + y * LFS] == BLACK)) {
 
                                                         if (++topB >= Bsz) {
                                                                 Bsz += 100;
-                                                                Bx = c_realloc(Bx, Bsz * sizeof(int), NULL);
-                                                                By = c_realloc(By, Bsz * sizeof(int), NULL);
+                                                                Bx = g_renew(int, Bx, Bsz);
+                                                                By = g_renew(int, By, Bsz);
                                                         }
                                                         Bx[topB] = x;
                                                         By[topB] = y;
 
                                                         if (f == 0) {
-                                                                plz[c] =
-                                                                    topB;
+                                                                plz[c] = topB;
                                                                 f = 1;
                                                                 topmap = c;
                                                         }
@@ -3984,7 +3961,7 @@ int classify(int c, int bmpcmp(int, int, int, int), int mode) {
                         p_spl_comp(c);
                 }
                 if (P_TR == NULL) {
-                        P_TR = c_realloc(NULL, 64, NULL);
+                        P_TR = g_malloc(64);
                 }
                 P_TR[0] = 0;
                 st = 1;
@@ -4345,7 +4322,7 @@ int classify(int c, int bmpcmp(int, int, int, int), int mode) {
                         t = strlen(P_TR) + strlen(result) + 1;
                         if (P_TR_SZ < t) {
                                 P_TR_SZ = t + 64;
-                                P_TR = c_realloc(P_TR, t, NULL);
+                                P_TR = g_realloc(P_TR, t);
                         }
                         strcat(P_TR, result);
 
@@ -4680,11 +4657,9 @@ void list_cl(int x, int y, int w, int h, int reset) {
                  */
                 if (csz <= topcl) {
                         csz = topcl + 1;
-                        clx = c_realloc(clx, csz * sizeof(int), "list_cl");
-                        cly = c_realloc(cly, csz * sizeof(int), "list_cl");
-                        list_cl_r =
-                            c_realloc(list_cl_r, csz * sizeof(int),
-                                      "list_cl");
+                        clx = g_renew(int, clx, csz);
+                        cly = g_renew(int, cly, csz);
+                        list_cl_r = g_renew(int, list_cl_r, csz);
                 }
 
                 /* This loop builds the clx array and computes nlx */
@@ -4742,7 +4717,7 @@ void list_cl(int x, int y, int w, int h, int reset) {
            used as temporary space for computing the list of closures
            that intersect the horizontal coordinates [x..x+w[.
          */
-        if ((cx = alloca((topcl + 1) * sizeof(int))) == NULL) {
+        if ((cx = g_newa(int, topcl + 1)) == NULL) {
                 fatal(ME, "at list_cl");
         }
         tx = -1;
@@ -4789,7 +4764,7 @@ void list_cl(int x, int y, int w, int h, int reset) {
            used as temporary space for computing the list of closures
            that intersect the vertical coordinates [y..y+w[.
          */
-        if ((cy = alloca((topcl + 1) * sizeof(int))) == NULL) {
+        if ((cy = g_newa(int, topcl + 1)) == NULL) {
                 fatal(ME, "at list_cl");
         }
         ty = -1;
@@ -4886,9 +4861,7 @@ void list_s(int x, int y, int w, int h) {
         /* enlarge the buffer */
         if (list_s_r_sz <= tops) {
                 list_s_r_sz = tops + 128;
-                list_s_r =
-                    c_realloc(list_s_r, list_s_r_sz * sizeof(int),
-                              "list_s");
+                list_s_r = g_renew(int, list_s_r, list_s_r_sz);
         }
 
         /* list the closures */
@@ -5020,11 +4993,12 @@ int inside(int x, int y, int *pol, int npol) {
         for (i = npol; i > 0; --i) {
 
                 /* vectorial dot */
-                r = (q[0] - x) * (q[3] - q[1]) - (q[1] - y) * (q[2] -
-                                                               q[0]);
+                r = (q[0] - x) * (q[3] - q[1]) -
+                    (q[1] - y) * (q[2] - q[0]);
 
                 /* outside */
-                if (((p > 0) && (r < 0)) || ((p < 0) && (r > 0)))
+                if (((p > 0) && (r < 0)) ||
+                    ((p < 0) && (r > 0)))
                         return (0);
 
                 else if (r == 0) {

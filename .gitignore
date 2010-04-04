@@ -12,3 +12,9 @@ classes.txt
 report.txt
 acts
 patterns
+*.p[bg]m
+clara-tests
+cscope.out
+\#*#
+.#*
+.sconsign.dblite

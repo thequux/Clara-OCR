@@ -88,7 +88,7 @@ COPTS = -DHAVE_POPEN -DMEMCHECK -DFUN_CODES -DHAVE_SIGNAL -DTEST -DNO_RINTF
 #
 # Add or remove flags if necessary:
 #
-CFLAGS = -g -Wall $(COPTS) -O0
+CFLAGS = -g -Wall $(COPTS) -O0 -Werror
 #CFLAGS = -g -Wall $(COPTS) -O3 -march=native -ffast-math -mfused-madd
 #CFLAGS = $(INCLUDE) -g -Wall -pedantic $(COPTS)
 #CFLAGS = $(INCLUDE) -g -O2 -Wall $(COPTS)
