@@ -1,0 +1,22 @@
+creator: Dan Hirsch <thequux@thequux.com>
+
+
+extra_strings:
+- BLOCKED-BY:0e97b845-3624-423d-9b8a-7eefdffdb00d
+- BLOCKED-BY:91a8a8b6-5c67-4ef4-907c-ea4469f243ac
+
+
+reporter: Dan Hirsch <thequux@thequux.com>
+
+
+severity: minor
+
+
+status: open
+
+
+summary: Refactor data structures
+
+
+time: Sun, 04 Apr 2010 21:31:44 +0000
+

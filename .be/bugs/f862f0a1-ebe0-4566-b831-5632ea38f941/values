@@ -1,0 +1,21 @@
+creator: Dan Hirsch <thequux@thequux.com>
+
+
+extra_strings:
+- BLOCKS:89032dec-c732-4558-aea4-2c03e87565f4
+
+
+reporter: Dan Hirsch <thequux@thequux.com>
+
+
+severity: minor
+
+
+status: open
+
+
+summary: Remove multicall functions
+
+
+time: Sun, 04 Apr 2010 21:30:55 +0000
+

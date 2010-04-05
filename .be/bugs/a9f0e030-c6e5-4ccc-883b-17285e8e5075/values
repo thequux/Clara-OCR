@@ -1,0 +1,21 @@
+creator: Dan Hirsch <thequux@thequux.com>
+
+
+extra_strings:
+- BLOCKED-BY:2bf0bbc5-022a-45e1-9b7c-abef5da3fb62
+
+
+reporter: Dan Hirsch <thequux@thequux.com>
+
+
+severity: minor
+
+
+status: open
+
+
+summary: Replace zfopen and friends
+
+
+time: Sun, 04 Apr 2010 21:35:28 +0000
+

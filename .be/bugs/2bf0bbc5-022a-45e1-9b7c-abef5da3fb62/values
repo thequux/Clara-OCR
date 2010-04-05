@@ -1,0 +1,21 @@
+creator: Dan Hirsch <thequux@thequux.com>
+
+
+extra_strings:
+- BLOCKS:a9f0e030-c6e5-4ccc-883b-17285e8e5075
+
+
+reporter: Dan Hirsch <thequux@thequux.com>
+
+
+severity: minor
+
+
+status: open
+
+
+summary: Replace image loader
+
+
+time: Sun, 04 Apr 2010 21:35:47 +0000
+

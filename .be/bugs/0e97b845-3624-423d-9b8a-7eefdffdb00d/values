@@ -1,0 +1,21 @@
+creator: Dan Hirsch <thequux@thequux.com>
+
+
+extra_strings:
+- BLOCKS:63ff2381-796c-41b9-a5ef-ff451b1d5171
+
+
+reporter: Dan Hirsch <thequux@thequux.com>
+
+
+severity: minor
+
+
+status: open
+
+
+summary: Bundle up page-related data
+
+
+time: Sun, 04 Apr 2010 21:32:32 +0000
+

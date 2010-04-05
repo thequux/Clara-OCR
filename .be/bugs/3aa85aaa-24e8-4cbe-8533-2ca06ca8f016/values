@@ -1,0 +1,22 @@
+creator: Dan Hirsch <thequux@thequux.com>
+
+
+extra_strings:
+- TAG:component/ui
+- TAG:type/regression
+
+
+reporter: Dan Hirsch <thequux@thequux.com>
+
+
+severity: minor
+
+
+status: open
+
+
+summary: Fix tuning view
+
+
+time: Sun, 04 Apr 2010 21:38:55 +0000
+

@@ -1,0 +1,22 @@
+creator: Dan Hirsch <thequux@thequux.com>
+
+
+extra_strings:
+- TAG:component/ui
+- TAG:type/regression
+
+
+reporter: Dan Hirsch <thequux@thequux.com>
+
+
+severity: minor
+
+
+status: open
+
+
+summary: Add rest of display modes for page view
+
+
+time: Mon, 05 Apr 2010 18:11:30 +0000
+

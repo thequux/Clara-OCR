@@ -1244,47 +1244,16 @@ intersection (leftmost and rightmost).
 
 */
 int intersize(int a, int b, int c, int d, int *e, int *f) {
-        int x,y;
-        if (a <= c) {
-                /* a--c--d--b  */
-                if (b >= d) {
-                        x = c;
-                        y = d;
-                } 
-                /* a--b  c--d  */
-                else if (b < c) {
-                        return (0);
-                }
-
-                /* a--c--b--d  */
-                else {
-                        x = c;
-                        y = b;
-                }
-        }
-
-        /* c--a--b--d  */
-        else if (d >= b) {
-                x = a;
-                y = b;
-        }
-
-        /* c--d  a--b  */
-        else if (d < a) {
-                return (0);
-        }
-
-        /* c--a--d--b  */
+        int x, y;
+        x = MAX(a,c);
+        y = MIN(b,d);
+        if (x > y)
+                return 0;
         else {
-                x = a;
-                y = d;
+                if (e != NULL) *e = x;
+                if (f != NULL) *f = y;
+                return (y  - x + 1);
         }
-
-        if (e != NULL)
-                *e = x;
-        if (f != NULL)
-                *f = y;
-        return (y - x + 1);
 }
 
 /*

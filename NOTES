@@ -29,6 +29,14 @@ pbm2bm needs to be split into two steps: reading the pixmap and splitting into c
 
 the call to pbm2bm in load_page needs to be changed massively.
 
+Hand-rolled dynamic arrays
+--------------------------
+
+There are a number of these. They are documented in common.h, in the
+doc-comment titled "Global Variables". They should be replaced with
+the appropriate glib data structures.
+
+
 Multicall functions:
 --------------------
 
@@ -37,10 +45,10 @@ incremental results, the point usually being to keep the UI
 responsive. This comes at the cost of allowing action at a distance
 and making control flow non-obvious.
 
-Because run the UI in a seperate thread, we don't gain any advantage
-from multicall functions. They need to be rewritten in the standard
-style; i.e., a function does everything that it's told to in the first
-call.
+Because we run the UI in a seperate thread, we don't gain any
+advantage from multicall functions. They need to be rewritten in the
+standard style; i.e., a function does everything that it's told to in
+the first call.
 
 Multicall functions have several distinguishing features:
 1) Most (if not all) variables are static
@@ -78,14 +86,17 @@ context menu on page view
 
 -- Cleanup
 
+Remove multicall functions
 Remove now-dead code
 Modify flags to be multivalued, where appropriate
 refactor data structures
   bundle up page-related stuff
-run OCR in seperate thread
+  Replace hand-rolled lists (cf)
 refactor control structure
+  run OCR in seperate thread
 Clean option parser
 Relace zfopen and friends with transparent zlib support.
+  blocking on 
 Add tests
 
 -- very long-term

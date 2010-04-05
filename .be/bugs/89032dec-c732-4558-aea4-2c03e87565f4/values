@@ -1,0 +1,22 @@
+creator: Dan Hirsch <thequux@thequux.com>
+
+
+extra_strings:
+- BLOCKED-BY:1de3638a-d2b7-4bbc-8abf-5b3e3b3d96c4
+- BLOCKED-BY:f862f0a1-ebe0-4566-b831-5632ea38f941
+
+
+reporter: Dan Hirsch <thequux@thequux.com>
+
+
+severity: minor
+
+
+status: open
+
+
+summary: Refactor control structure
+
+
+time: Sun, 04 Apr 2010 21:33:56 +0000
+
