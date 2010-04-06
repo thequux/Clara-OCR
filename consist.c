@@ -31,17 +31,10 @@ Consist closure c.
 
 */
 int cl_cons(int c) {
-        cldesc *m;
+        cldesc *m = closure_get(c);
         int i, f;
 
-        /* invalid closure index */
-        if ((c < 0) || (topcl < c)) {
-                show_hint(2, "closure %d does not exist", c);
-                return (1);
-        }
-
         /* consist closure parameters */
-        m = cl + c;
         if ((m->l < 0) || (m->r >= XRES) || (m->t < 0) || (m->b >= YRES) ||
             (m->nbp < 0) ||
             (m->nbp > (m->r - m->l + 1) * (m->b - m->t + 1)) ||
@@ -88,7 +81,7 @@ int s_cons(int c) {
 
         else {
                 for (i = 0; i < s->ncl; ++i)
-                        if ((s->cl[i] < 0) || (s->cl[i] > topcl)) {
+                        if ((s->cl[i] < 0) || (s->cl[i] >= closure_count())) {
                                 show_hint(2,
                                           "invalid closures on symbol %d",
                                           c);
@@ -134,7 +127,7 @@ int cons(int reset) {
 
         /* consist closures */
         if (st == 0) {
-                if (i > topcl) {
+                if (i >= closure_count()) {
                         st = 1;
                         i = 0;
                         r = 0;

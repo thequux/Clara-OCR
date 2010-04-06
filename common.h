@@ -538,9 +538,12 @@ typedef struct {
         int supsz;              /* size of the memory buffer sup */
 } cldesc;
 
+cldesc* closure_get(int i);
+cldesc* closure_new();
+int closure_count();
+void clear_closures();
+
 /* the closures */
-cldesc *cl;
-extern int topcl, clsz;
 extern int *clx, *cly;
 
 /* (devel)
@@ -1997,7 +2000,6 @@ void dict_load(void);
 void dict_behaviour(void);
 
 /* other */
-void checkcl(int m);
 void gen_wrf();
 void process_cl(int argc, char *argv[]);
 void process_webdata(void);

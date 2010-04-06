@@ -604,54 +604,6 @@ void join(int *p, int *q, bdesc *ab) {
 
 Create a new closure and the associated symbol.
 
-(this service was obsoleted by new_cl)
-
-*/
-void new_cl_global(int x, int y, int w, int h, void *b) {
-        int t;
-        unsigned char m;
-        int i, k;
-
-        /* must enlarge allocated area for cl */
-        checkcl(++topcl);
-
-        /* initialize the new entry */
-        cl[topcl].nbp = 0;
-        cl[topcl].l = x;
-        cl[topcl].r = x + w - 1;
-        cl[topcl].t = y;
-        cl[topcl].b = y + h - 1;
-
-        t = byteat(w) * h;
-        cl[topcl].bm = g_memdup(b, t);
-
-        cl[topcl].sup = g_new(int, MAXSUP);
-        cl[topcl].sup[0] = -1;
-        cl[topcl].supsz = MAXSUP;
-
-        /* seed and number of black pixels */
-        cl[topcl].nbp = 0;
-        for (i = 0; i < t; ++i) {
-                m = *(((unsigned char *) b) + i);
-                for (k = 0; m > 0; ++k) {
-                        if (m & 128) {
-                                if (++(cl[topcl].nbp) == 1) {
-                                        cl[topcl].seed[0] = i * 8 + k + x;
-                                        cl[topcl].seed[1] = y;
-                                }
-                        }
-                        m <<= 1;
-                }
-        }
-
-        /* create unitary symbol */
-        C_SET(mc[new_mc(&topcl, 1)].f, F_ISP);
-}
-
-/*
-
-Create a new closure and the associated symbol.
-
 */
 void new_cl(int x, int y, int w, int h, void *b) {
         int t, ct;
@@ -660,13 +612,13 @@ void new_cl(int x, int y, int w, int h, void *b) {
         int tm, lm, bm, rm, cw, ch;
 
         /* must enlarge allocated area for cl */
-        checkcl(++topcl);
+	cldesc *const ncl = closure_new();
 
         /*
            Compute the topmost, bottommost, leftmost and rightmost
            coordinates, number of black pixels and locate a seed.
          */
-        cl[topcl].nbp = 0;
+        ncl->nbp = 0;
         t = byteat(w);
         tm = h;
         bm = -1;
@@ -689,9 +641,9 @@ void new_cl(int x, int y, int w, int h, void *b) {
                                         bm = j;
 
                                 /* take (i,j) as seed if it's the first black pixel found */
-                                if (++(cl[topcl].nbp) == 1) {
-                                        cl[topcl].seed[0] = x + i;
-                                        cl[topcl].seed[1] = y + j;
+                                if (++(ncl->nbp) == 1) {
+                                        ncl->seed[0] = x + i;
+                                        ncl->seed[1] = y + j;
                                 }
                         }
                         if ((m >>= 1) == 0) {
@@ -707,19 +659,19 @@ void new_cl(int x, int y, int w, int h, void *b) {
 
         /* alloc memory buffer to the closure bitmap */
         ct = byteat(cw);
-        cl[topcl].bm = g_malloc(ct * ch);
+        ncl->bm = g_malloc(ct * ch);
 
         /*
            In some cases, the bitmap must be copied line
            by line.
          */
         if ((lm > 0) || (tm > 0) || (cw < w) || (ch < h)) {
-                memset(cl[topcl].bm, 0, ct * ch);
+                memset(ncl->bm, 0, ct * ch);
                 for (j = 0; j < ch; ++j) {
                         p = ((unsigned char *) b) + (j + tm) * t +
                             (lm / 8);
                         m = 1 << (7 - (lm % 8));
-                        q = ((unsigned char *) cl[topcl].bm) + j * ct;
+                        q = ((unsigned char *) ncl->bm) + j * ct;
                         n = 128;
                         for (i = 0; i < cw; ++i) {
                                 if (*p & m) {
@@ -739,20 +691,20 @@ void new_cl(int x, int y, int w, int h, void *b) {
 
         /* simple case: copy the bitmap using memcpy */
         else {
-                memcpy(cl[topcl].bm, b, ct * ch);
+                memcpy(ncl->bm, b, ct * ch);
         }
 
         /* initialize the new entry */
-        cl[topcl].l = x + lm;
-        cl[topcl].r = x + rm;
-        cl[topcl].t = y + tm;
-        cl[topcl].b = y + bm;
-        cl[topcl].sup = g_new(int, MAXSUP);
-        cl[topcl].sup[0] = -1;
-        cl[topcl].supsz = MAXSUP;
+        ncl->l = x + lm;
+        ncl->r = x + rm;
+        ncl->t = y + tm;
+        ncl->b = y + bm;
+        ncl->sup = g_new(int, MAXSUP);
+        ncl->sup[0] = -1;
+        ncl->supsz = MAXSUP;
 
         /* create unitary symbol */
-        int nsym = new_mc(&topcl, 1);
+        int nsym = new_mc(&ncl->id, 1);
         C_SET(mc[nsym].f, F_ISP);
 }
 
@@ -846,7 +798,7 @@ int find_thing(int reset, int x, int y) {
                 }
         }
 
-        show_hint(1, "now at line %d, total %d closures", j, topcl + 1);
+        show_hint(1, "now at line %d, total %d closures", j, closure_count());
 
         /* remember position */
         i = u;
@@ -1478,7 +1430,7 @@ int wrzone(char *s1, int fz) {
                 /* clip and copy each such closure */
                 for (k = 0; k < list_cl_sz; ++k) {
 
-                        y = cl + list_cl_r[k];
+                        y = closure_get(list_cl_r[k]);
                         clip_cl(rw, bpl, y, l, r, t, b, RWX, RWY);
                 }
         }
@@ -1567,7 +1519,7 @@ int wrzone(char *s1, int fz) {
                                 printf("symbol %d: closures\n", j);
 
                                 for (n = 0; n < y->ncl; ++n) {
-                                        clip_cl(rw, bpl, cl + (y->cl)[n],
+                                        clip_cl(rw, bpl, closure_get(y->cl[n]),
                                                 l, r, t, b, RWX, RWY);
                                 }
                         }

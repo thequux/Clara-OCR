@@ -176,7 +176,6 @@ a black pixel. In most cases you'll want u==0.
 */
 int closure_at(int x, int y, int u) {
         int c, md = -1, a, b, d = -1, e = -1;
-        cldesc *m;
 
         if (u) {
                 list_cl(x, y, 1, 1, 0);
@@ -185,7 +184,7 @@ int closure_at(int x, int y, int u) {
 
         for (c = 0; c < list_cl_sz; ++c) {
 
-                m = cl + list_cl_r[c];
+                cldesc* const m = closure_get(list_cl_r[c]);
 
                 /* the pointer is inside the closure bounding box */
                 if ((m->l <= x) && (x <= m->r) &&
@@ -1412,10 +1411,12 @@ int new_mc(int *l, int cls) {
         qss(l, 0, cls - 1);
 
         /* check if there is a symbol with list of closures equal to l */
-        for (i = 0, d = 1; (d != 0) && ((c = cl[l[0]].sup[i]) >= 0); ++i) {
+        for (i = 0, d = 1; 
+	     (d != 0) && ((c = closure_get(l[0])->sup[i]) >= 0);
+	     ++i) {
                 if (mc[c].ncl == cls) {
-                        for (j = 0; (mc[c].cl[j] == l[j]) && (l[j] >= 0);
-                             ++j);
+                        for (j = 0; (mc[c].cl[j] == l[j]) && (l[j] >= 0); ++j)
+				;
                         if (mc[c].cl[j] == l[j])
                                 d = 0;
                 }
@@ -1430,11 +1431,12 @@ int new_mc(int *l, int cls) {
                 mc = g_renew(sdesc, mc, (ssz += 1000));
 
         /* initializes mc[n] */
-        mc[n].l = cl[a = l[0]].l;
-        mc[n].r = cl[a].r;
-        mc[n].t = cl[a].t;
-        mc[n].b = cl[a].b;
-        mc[n].nbp = cl[a].nbp;
+	cldesc* const cla = closure_get(a = l[0]);
+        mc[n].l = cla->l;
+        mc[n].r = cla->r;
+        mc[n].t = cla->t;
+        mc[n].b = cla->b;
+        mc[n].nbp = cla->nbp;
         mc[n].va = -1;
         mc[n].c = -1;
         mc[n].f = 0;
@@ -1457,28 +1459,28 @@ int new_mc(int *l, int cls) {
 
         /* compute the geometric limits */
         for (i = 1; i < cls; ++i) {
-                if (cl[l[i]].l < mc[n].l)
-                        mc[n].l = cl[l[i]].l;
-                if (cl[l[i]].r > mc[n].r)
-                        mc[n].r = cl[l[i]].r;
-                if (cl[l[i]].t < mc[n].t)
-                        mc[n].t = cl[l[i]].t;
-                if (cl[l[i]].b > mc[n].b)
-                        mc[n].b = cl[l[i]].b;
-                mc[n].nbp += cl[l[i]].nbp;
+		cldesc *const cli = closure_get(l[i]);
+                if (cli->l < mc[n].l)
+                        mc[n].l = cli->l;
+                if (cli->r > mc[n].r)
+                        mc[n].r = cli->r;
+                if (cli->t < mc[n].t)
+                        mc[n].t = cli->t;
+                if (cli->b > mc[n].b)
+                        mc[n].b = cli->b;
+                mc[n].nbp += cli->nbp;
         }
 
         /* include n in the lists of symbols of all closures */
         for (i = 0; i < cls; ++i) {
                 int b;
-                cldesc *c;
+                cldesc *const c = closure_get(l[i]);
 
-                c = cl + l[i];
                 for (b = 0; c->sup[b] >= 0; ++b);
 
                 if ((b + 1) == c->supsz) {
-                        cl->sup = g_renew(int, c->sup, (c->supsz += 10));
-                } else if ((b + 1) > cl[i].supsz) {
+                        c->sup = g_renew(int, c->sup, (c->supsz += 10));
+                } else if ((b + 1) > closure_get(i)->supsz) { // BUG: inconsistent with snprintf
                         snprintf(mb, MMB, "unterminated symbol list for cl=%d\n", l[i]);
                         fatal(IE, mb);
                 }
@@ -1842,7 +1844,7 @@ int pixel_mlist(int k) {
         memset(cb, WHITE, LFS * FS);
         for (T = 0, n = 0; n < c->ncl; ++n) {
 
-                d = cl + c->cl[n];
+                d = closure_get(c->cl[n]);
 
                 dx = d->l - l;
                 dy = d->t - t;
@@ -4526,7 +4528,7 @@ void locate_cl(int *c, int t, int s, int w, int *a, int *b, int xaxis) {
         r = t + 1;
         while (l < r) {
                 m = (l + r) / 2;
-                if ((xaxis ? cl[c[m]].l : cl[c[m]].t) < s)
+                if ((xaxis ? closure_get(c[m])->l : closure_get(c[m])->t) < s)
                         l = m + 1;
                 else
                         r = m;
@@ -4543,7 +4545,9 @@ void locate_cl(int *c, int t, int s, int w, int *a, int *b, int xaxis) {
         r = t + 1;
         while (l < r) {
                 m = (l + r) / 2;
-                if ((xaxis ? cl[c[m]].l : cl[c[m]].t) < s + w)
+                if ((xaxis 
+		     ? closure_get(c[m])->l 
+		     : closure_get(c[m])->t) < s + w)
                         l = m + 1;
                 else
                         r = m;
@@ -4553,22 +4557,12 @@ void locate_cl(int *c, int t, int s, int w, int *a, int *b, int xaxis) {
 
 /* Auxiliar for sorting clx (see list_cl) */
 int cmp_clx(int a, int b) {
-        if (cl[a].l < cl[b].l)
-                return (-1);
-        else if (cl[a].l > cl[b].l)
-                return (1);
-        else
-                return (0);
+        return closure_get(a)->l - closure_get(b)->l;
 }
 
 /* Auxiliar for sorting cly (see list_cl) */
 int cmp_cly(int a, int b) {
-        if (cl[a].t < cl[b].t)
-                return (-1);
-        else if (cl[a].t > cl[b].t)
-                return (1);
-        else
-                return (0);
+        return closure_get(a)->t - closure_get(b)->t;
 }
 
 int *clx = NULL, *cly = NULL;
@@ -4623,7 +4617,7 @@ void list_cl(int x, int y, int w, int h, int reset) {
         int i, a, b;
         int *cx, *cy, tx, ty;
 
-        if (topcl < 0) {
+        if (closure_count() <= 0) {
                 if (reset) {
                         fatal(DI,
                               "resetting without closures (blank page?)");
@@ -4655,21 +4649,21 @@ void list_cl(int x, int y, int w, int h, int reset) {
                    Make the buffers larger depending on the number of
                    closures on the loaded page.
                  */
-                if (csz <= topcl) {
-                        csz = topcl + 1;
+                if (csz < closure_count()) {
+                        csz = closure_count();
                         clx = g_renew(int, clx, csz);
                         cly = g_renew(int, cly, csz);
                         list_cl_r = g_renew(int, list_cl_r, csz);
                 }
 
                 /* This loop builds the clx array and computes nlx */
-                for (nlx = 0, i = 0; i <= topcl; ++i) {
-                        if (cl[i].r - cl[i].l >= FS) {
+                for (nlx = 0, i = 0; i < closure_count(); ++i) {
+                        if (closure_get(i)->r - closure_get(i)->l >= FS) {
 
 #ifdef MEMCHECK
-                                checkidx(topcl - nlx, csz, "list_cl 1");
+                                checkidx(closure_count() - nlx - 1, csz, "list_cl 1");
 #endif
-                                clx[topcl - nlx] = i;
+                                clx[closure_count() - 1 - nlx] = i;
                                 ++nlx;
                         } else {
 
@@ -4679,16 +4673,16 @@ void list_cl(int x, int y, int w, int h, int reset) {
                                 clx[i - nlx] = i;
                         }
                 }
-                qsf(clx, 0, topcl - nlx, 0, cmp_clx);
+                qsf(clx, 0, closure_count() - 1 - nlx, 0, cmp_clx);
 
                 /* This loop builds the cly array and computes nly */
-                for (nly = 0, i = 0; i <= topcl; ++i) {
-                        if (cl[i].b - cl[i].t > FS) {
+                for (nly = 0, i = 0; i < closure_count(); ++i) {
+                        if (closure_get(i)->b - closure_get(i)->t > FS) {
 
 #ifdef MEMCHECK
-                                checkidx(topcl - nly, csz, "list_cl 3");
+                                checkidx(closure_count() - 1 - nly, csz, "list_cl 3");
 #endif
-                                cly[topcl - nly] = i;
+                                cly[closure_count() - 1 - nly] = i;
                                 ++nly;
                         } else {
 #ifdef MEMCHECK
@@ -4697,7 +4691,7 @@ void list_cl(int x, int y, int w, int h, int reset) {
                                 cly[i - nly] = i;
                         }
                 }
-                qsf(cly, 0, topcl - nly, 0, cmp_cly);
+                qsf(cly, 0, closure_count() - 1 - nly, 0, cmp_cly);
 
                 /* for debugging */
                 /*
@@ -4717,16 +4711,16 @@ void list_cl(int x, int y, int w, int h, int reset) {
            used as temporary space for computing the list of closures
            that intersect the horizontal coordinates [x..x+w[.
          */
-        if ((cx = g_newa(int, topcl + 1)) == NULL) {
+        if ((cx = g_newa(int, closure_count())) == NULL) {
                 fatal(ME, "at list_cl");
         }
         tx = -1;
 
         /* search the small closures with leftmost coordinate within [x..x+w[ */
-        locate_cl(clx, topcl - nlx, x, w, &a, &b, 1);
+        locate_cl(clx, closure_count() - 1 - nlx, x, w, &a, &b, 1);
         for (i = a; i <= b; ++i) {
 #ifdef MEMCHECK
-                checkidx(tx + 1, topcl + 1, "list_cl 4");
+                checkidx(tx + 1, closure_count(), "list_cl 4");
 #endif
                 cx[++tx] = clx[i];
         }
@@ -4735,12 +4729,12 @@ void list_cl(int x, int y, int w, int h, int reset) {
            Examine the small closures with leftmost coordinate
            within [x-FS+1,x[
          */
-        locate_cl(clx, topcl - nlx, x - FS + 1, FS - 1, &a, &b, 1);
+        locate_cl(clx, closure_count() - 1 - nlx, x - FS + 1, FS - 1, &a, &b, 1);
         for (i = a; i <= b; ++i) {
-                if (cl[clx[i]].r >= x) {
+                if (closure_get(clx[i])->r >= x) {
 
 #ifdef MEMCHECK
-                        checkidx(tx + 1, topcl + 1, "list_cl 5");
+                        checkidx(tx + 1, closure_count(), "list_cl 5");
 #endif
                         cx[++tx] = clx[i];
                 }
@@ -4748,12 +4742,12 @@ void list_cl(int x, int y, int w, int h, int reset) {
 
         /* search the large closures that intersect [x..x+w[ */
         for (i = 0; i < nlx; ++i) {
-                a = clx[topcl - i];
-                if (intersize(cl[a].l, cl[a].r, x, x + w - 1, NULL, NULL) >
+                a = clx[closure_count() - 1 - i];
+                if (intersize(closure_get(a)->l, closure_get(a)->r, x, x + w - 1, NULL, NULL) >
                     0) {
 
 #ifdef MEMCHECK
-                        checkidx(tx + 1, topcl + 1, "list_cl 6");
+                        checkidx(tx + 1, closure_count(), "list_cl 6");
 #endif
                         cx[++tx] = a;
                 }
@@ -4764,17 +4758,17 @@ void list_cl(int x, int y, int w, int h, int reset) {
            used as temporary space for computing the list of closures
            that intersect the vertical coordinates [y..y+w[.
          */
-        if ((cy = g_newa(int, topcl + 1)) == NULL) {
+        if ((cy = g_newa(int, closure_count())) == NULL) {
                 fatal(ME, "at list_cl");
         }
         ty = -1;
 
         /* search the small closures with topmost coordinate within [y..y+h[ */
-        locate_cl(cly, topcl - nly, y, h, &a, &b, 0);
+        locate_cl(cly, closure_count() - 1 - nly, y, h, &a, &b, 0);
         for (i = a; i <= b; ++i) {
 
 #ifdef MEMCHECK
-                checkidx(ty + 1, topcl + 1, "list_cl 7");
+                checkidx(ty + 1, closure_count(), "list_cl 7");
 #endif
                 cy[++ty] = cly[i];
         }
@@ -4783,11 +4777,11 @@ void list_cl(int x, int y, int w, int h, int reset) {
            examine the small closures with topmost coordinate
            within [y-FS+1,y[
          */
-        locate_cl(cly, topcl - nly, y - FS + 1, FS - 1, &a, &b, 0);
+        locate_cl(cly, closure_count() - 1 - nly, y - FS + 1, FS - 1, &a, &b, 0);
         for (i = a; i <= b; ++i) {
-                if (cl[cly[i]].b >= y) {
+                if (closure_get(cly[i])->b >= y) {
 #ifdef MEMCHECK
-                        checkidx(ty + 1, topcl + 1, "list_cl 8");
+                        checkidx(ty + 1, closure_count(), "list_cl 8");
 #endif
                         cy[++ty] = cly[i];
                 }
@@ -4795,11 +4789,11 @@ void list_cl(int x, int y, int w, int h, int reset) {
 
         /* search the large closures that intersect [y..y+h[ */
         for (i = 0; i < nly; ++i) {
-                a = cly[topcl - i];
-                if (intersize(cl[a].t, cl[a].b, y, y + h - 1, NULL, NULL) >
+                a = cly[closure_count() - 1 - i];
+                if (intersize(closure_get(a)->t, closure_get(a)->b, y, y + h - 1, NULL, NULL) >
                     0) {
 #ifdef MEMCHECK
-                        checkidx(ty + 1, topcl + 1, "list_cl 9");
+                        checkidx(ty + 1, closure_count(), "list_cl 9");
 #endif
                         cy[++ty] = a;
                 }
@@ -4871,7 +4865,7 @@ void list_s(int x, int y, int w, int h) {
         for (i = 0; i < list_cl_sz; ++i) {
                 int k;
 
-                c = cl[k = list_cl_r[i]].sup;
+                c = closure_get(k = list_cl_r[i])->sup;
                 for (j = 0; (*c >= 0) && (!C_ISSET(mc[*c].f, F_ISP));
                      ++j, ++c);
 

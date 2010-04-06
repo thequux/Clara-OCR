@@ -1262,38 +1262,10 @@ Compute the linear distance between segments [a,b] and [c,d].
 
 */
 int ldist(int a, int b, int c, int d) {
-        if (a <= c) {
-
-                /* a--c--d--b  */
-                if (b >= d) {
-                        return (0);
-                }
-
-                /* a--b  c--d  */
-                else if (b < c) {
-                        return (c - b);
-                }
-
-                /* a--c--b--d  */
-                else {
-                        return (0);
-                }
-        }
-
-        /* c--a--b--d  */
-        else if (d >= b) {
-                return (0);
-        }
-
-        /* c--d  a--b  */
-        else if (d < a) {
-                return (a - d);
-        }
-
-        /* c--a--d--b  */
-        else {
-                return (0);
-        }
+	if (a > d || b < c)
+		return MIN(abs(c-b),abs(a-d));
+	else
+		return 0;
 }
 
 
@@ -1321,23 +1293,6 @@ void make_pmc(void) {
                         ps[++topps] = i;
 }
 
-/*
-
-Make sure that cl has at least m entries.
-
-*/
-void checkcl(int m) {
-        /* must enlarge allocated area for cl */
-        if (m >= clsz) {
-                int n = clsz;
-
-                cl = g_renew(cldesc, cl, (clsz += 1000));
-                for (; n < clsz; ++n) {
-                        cl[n].sup = NULL;
-                        cl[n].bm = NULL;
-                }
-        }
-}
 
 /*
 
@@ -1374,7 +1329,7 @@ int spixel(sdesc *m, int x, int y) {
         cldesc *c;
 
         for (n = 0; n < m->ncl; ++n) {
-                c = cl + m->cl[n];
+                c = closure_get(m->cl[n]);
                 if ((c->l <= x) && (x <= c->r) && (c->t <= y) &&
                     (y <= c->b)) {
                         return (pixel(c, x, y));
@@ -2092,7 +2047,7 @@ void process_cl(int argc, char *argv[]) {
                                 if ((l + 1 + topb + 1) > bsz)
                                         argb = g_realloc(argb, (bsz += l + 256));
                                 disp[largc] = topb + 1;
-                                sprintf(argb + topb + 1, a);
+                                strcpy(argb + topb + 1, a);
                                 topb += l + 1;
                                 ++largc;
                         }
