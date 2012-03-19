@@ -1262,38 +1262,9 @@ Compute the linear distance between segments [a,b] and [c,d].
 
 */
 int ldist(int a, int b, int c, int d) {
-        if (a <= c) {
-
-                /* a--c--d--b  */
-                if (b >= d) {
-                        return (0);
-                }
-
-                /* a--b  c--d  */
-                else if (b < c) {
-                        return (c - b);
-                }
-
-                /* a--c--b--d  */
-                else {
-                        return (0);
-                }
-        }
-
-        /* c--a--b--d  */
-        else if (d >= b) {
-                return (0);
-        }
-
-        /* c--d  a--b  */
-        else if (d < a) {
-                return (a - d);
-        }
-
-        /* c--a--d--b  */
-        else {
-                return (0);
-        }
+        int r = MAX(a,c);
+        int l = MIN(b,d);
+        return MAX(r-l, 0);
 }
 
 
