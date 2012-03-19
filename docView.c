@@ -509,7 +509,7 @@ static void draw_symbol(cairo_t *cr, drawmode_t mode, sdesc *sym) {
                         cairo_set_source_rgb(cr, 1, 0, 0);
                 }
                 for (cn = 0; cn < sym->ncl; cn++) {
-                        cldesc *closure = cl + sym->cl[cn];
+                        cldesc *closure = closure_get(sym->cl[cn]);
                         int w = closure->r - closure->l + 1,
                             h = closure->b - closure->t + 1,
                             x = closure->l, y = closure->t;
@@ -541,7 +541,7 @@ static void draw_symbol(cairo_t *cr, drawmode_t mode, sdesc *sym) {
         if (0)
         for (cn = 0; cn < sym->ncl; cn++) {
                 char buf[50];
-                cldesc *closure = cl + sym->cl[cn];
+                cldesc *closure = closure_get(sym->cl[cn]);
                 int w = closure->r - closure->l + 1,
                     h = closure->b - closure->t + 1,
                     x = closure->l, y = closure->t;
@@ -595,9 +595,6 @@ static gboolean clara_doc_view_expose(GtkWidget *doc,
         cairo_t *cr;
 
         priv->use_position = TRUE;
-
-        if (cl == NULL)
-                return TRUE;
 
         // figure out what we want to draw...
         clara_doc_view_calc_viewport(self, &vp, &zoom);

@@ -1479,7 +1479,7 @@ void skel(int i0, int j0, int W, int H) {
                 memcpy(cb2, cb, LFS * FS);
                 m = mc + j0;
                 for (n = 0; n < m->ncl; ++n) {
-                        c = cl + m->cl[n];
+                        c = closure_get(m->cl[n]);
                         border(c->seed[0] - c->l, c->seed[1] - c->t);
                 }
         }
@@ -2649,21 +2649,15 @@ over the path.
 
 */
 int closure_border_path(int k) {
-        cldesc *c;
+        cldesc *c = closure_get(k);
         int w, h;
         int lps, ps;
-
-        if ((k < 0) || (topcl < k)) {
-                db("invalid call to closure_border_path");
-                return (0);
-        }
-
+       
         /* prepare */
         topfp = -1;
         lps = ps = 0;
 
         /* closure and geometry */
-        c = cl + k;
         w = c->r - c->l + 1;
         h = c->b - c->t + 1;
 
@@ -2897,7 +2891,7 @@ int closure_border_slines(int e, int t, int crit, float val, short *res,
         int ps;
 
         /* closure and dimension */
-        cldesc *c;
+        cldesc *c = closure_get(e);;
         int w, h;
 
         /* liner regression */
@@ -2920,18 +2914,11 @@ int closure_border_slines(int e, int t, int crit, float val, short *res,
         int k, x, y, kx, ky, x0, y0, lines, nc;
         float xa;
 
-        /* never heard about this closure */
-        if ((e < 0) || (topcl < e)) {
-                db("invalid call to closure_border_slines");
-                return (-2);
-        }
-
         /* refresh display */
         if (dw[PAGE_FATBITS].v)
                 copychar();
 
         /* closure and geometry */
-        c = cl + e;
         w = c->r - c->l + 1;
         h = c->b - c->t + 1;
 
@@ -3636,7 +3623,7 @@ Diagnostics:
 int isbar(int k, float *sk, float *bl) {
         short r[256];
         int rs, w, h, i, a, b, n, t, u, v;
-        cldesc *m;
+        cldesc *m = closure_get(k);
         float aa, ba, ma, A, B, C;
 
         /* barcode parameters in pixels */
@@ -3651,7 +3638,6 @@ int isbar(int k, float *sk, float *bl) {
         }
 
         /* geometry */
-        m = cl + k;
         w = m->r - m->l + 1;
         h = m->b - m->t + 1;
 
@@ -3814,11 +3800,10 @@ Compute the "distance" between two bars.
 
 */
 int dist_bar(int i, int j) {
-        cldesc *p, *q;
+        cldesc *p = closure_get(barlist[i]),
+		*q = closure_get(barlist[j]);
         int toofar = (1 << 30);
 
-        p = cl + barlist[i];
-        q = cl + barlist[j];
 
         /* same skew? */
         if (fabs(barsk[i] - barsk[j]) > 10) {
@@ -3898,7 +3883,7 @@ int search_barcode(void) {
         }
 
         /* prepare buffers */
-        d = (topcl + 1) / 10;
+        d = closure_count() / 10;
         if (d <= 0)
                 d = 128;
         topb = -1;
@@ -3907,7 +3892,7 @@ int search_barcode(void) {
         topbc = -1;
 
         /* search bars */
-        for (k = 0; k < topcl; ++k) {
+        for (k = 0; k < closure_count(); ++k) { // BUG: closure_count() - 1
 
                 if ((topb + 1) >= bsz) {
                         bsz += d;
@@ -3994,7 +3979,7 @@ int search_barcode(void) {
                 }
 
                 /* laserbeam starting point and line equation */
-                p = cl + bc[r];
+                p = closure_get(bc[r]);
                 u0 = (p->l + p->r) / 2;
                 v0 = (p->t + p->b) / 2;
                 line_eq(&A, &B, &C, u0, v0, a);
@@ -4153,7 +4138,7 @@ int search_barcode(void) {
 
                 for (k = 0; k <= topbc; ++k) {
 
-                        p = cl + bc[k];
+                        p = closure_get(bc[k]);
                         if (p->l < zl)
                                 zl = p->l;
                         if (p->r > zr)
@@ -4804,7 +4789,7 @@ extremities found.
 */
 int dx(int k, int i0, int j0) {
         /* the closure */
-        cldesc *m;
+        cldesc *m = closure_get(k);
         int w, h;
 
         /* indexes and counters */
@@ -4813,14 +4798,7 @@ int dx(int k, int i0, int j0) {
         /* closure displacement relative to FATBITS window */
         int dx, dy;
 
-        /* never heard about this closure */
-        if ((k < 0) || (topcl < k)) {
-                db("invalid call to dx");
-                return (-2);
-        }
-
         /* geometry */
-        m = cl + k;
         w = m->r - m->l + 1;
         h = m->b - m->t + 1;
 
@@ -4830,7 +4808,7 @@ int dx(int k, int i0, int j0) {
 
         /* copy bitmap to cb */
         memset(cb, WHITE, LFS * FS);
-        add_closure(cl + k, 0, 0);
+        add_closure(m, 0, 0);
 
         /* number of extremities found */
         n = 0;

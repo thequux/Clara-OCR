@@ -453,7 +453,7 @@ int dump_session(char *f, int reset) {
 
                 /* closures */
         case 2:
-                if (i > topcl) {
+                if (i >= closure_count()) {
                         st = 3;
                         i = 0;
                 } else {
@@ -462,24 +462,24 @@ int dump_session(char *f, int reset) {
                         if ((batch_mode == 0) && ((i % DPROG) == 0)) {
                                 snprintf(mba, MMB,
                                          "now saving closure %d/%d", i,
-                                         topcl);
+                                         closure_count());
                                 show_hint(0, mba);
                         }
 
                         toasc(F, "<cldesc idx", TINT, 1, &i);
-                        toasc(F, "l", TINT, 1, &(cl[i].l));
-                        toasc(F, "r", TINT, 1, &(cl[i].r));
-                        toasc(F, "t", TINT, 1, &(cl[i].t));
-                        toasc(F, "b", TINT, 1, &(cl[i].b));
+                        toasc(F, "l", TINT, 1, &(closure_get(i)->l));
+                        toasc(F, "r", TINT, 1, &(closure_get(i)->r));
+                        toasc(F, "t", TINT, 1, &(closure_get(i)->t));
+                        toasc(F, "b", TINT, 1, &(closure_get(i)->b));
                         bms =
-                            byteat(cl[i].r - cl[i].l + 1) * (cl[i].b -
-                                                             cl[i].t + 1);
-                        toasc(F, "bm", TCHAR, bms, cl[i].bm);
-                        toasc(F, "nbp", TINT, 1, &(cl[i].nbp));
-                        toasc(F, "seed", TSHORT, 2, cl[i].seed);
-                        toasc(F, "supsz", TINT, 1, &(cl[i].supsz));
-                        for (topsup = 0; cl[i].sup[topsup] >= 0; ++topsup);
-                        toasc(F, "sup", TINT, topsup, cl[i].sup);
+                            byteat(closure_get(i)->r - closure_get(i)->l + 1) * (closure_get(i)->b -
+                                                             closure_get(i)->t + 1);
+                        toasc(F, "bm", TCHAR, bms, closure_get(i)->bm);
+                        toasc(F, "nbp", TINT, 1, &(closure_get(i)->nbp));
+                        toasc(F, "seed", TSHORT, 2, closure_get(i)->seed);
+                        toasc(F, "supsz", TINT, 1, &(closure_get(i)->supsz));
+                        for (topsup = 0; closure_get(i)->sup[topsup] >= 0; ++topsup);
+                        toasc(F, "sup", TINT, topsup, closure_get(i)->sup);
                         toasc(F, "></cldesc>\n", TNULL, 0, NULL);
                         ++i;
                 }
@@ -1039,10 +1039,11 @@ int recover_session(char *f, int st) {
                         topsup = fromasc(F, "sup", TINT, -m.supsz, m.sup);
                         m.sup[topsup] = -1;
                         fromasc(F, "></cldesc>", TNULL, 0, NULL);
-
-                        /* must enlarge allocated area for cl */
-                        checkcl(++topcl);
-                        memcpy(cl + topcl, &m, sizeof(cldesc));
+			
+			cldesc *ncl = closure_new();
+			m.id = ncl->id;
+			g_assert(ncl->id == k);
+			*ncl = m;
 
                         /* create unitary symbol */
                         /* mc[new_mc(&topcl,1)].isp = 1; */
@@ -1193,7 +1194,7 @@ int recover_session(char *f, int st) {
                 if (batch_mode == 0) {
                         snprintf(mba, MMB,
                                  "finished reading session (topcl=%d tops=%d)",
-                                 topcl, tops);
+                                 closure_count(), tops);
                         show_hint(0, mba);
                 }
         }
@@ -1309,7 +1310,7 @@ int recover_acts(char *f) {
                                       "unexpected token at line %d of file %s",
                                       DLINE, f);
                         else {
-                                printf(text);
+                                fputs(text, stdout);
                                 fatal(FD,
                                       "unexpected token found on internally generated act");
                         }
@@ -1519,16 +1520,8 @@ int free_page(void) {
         int k;
 
         /* free closures */
-        for (k = 0; k <= topcl; ++k) {
-                g_free(cl[k].bm);
-                g_free(cl[k].sup);
-        }
-        topcl = -1;
+	clear_closures();
         cl_ready = 0;
-
-        g_free(cl);
-        cl = NULL;
-        clsz = 0;
 
         /* free symbols */
         for (k = 0; k <= tops; ++k) {
@@ -2077,7 +2070,7 @@ void dict_behaviour(void) {
                 dict_sel(&e);
                 dump_dict(1, NULL);
                 while (dump_dict(0, NULL));
-                printf(text);
+                fputs(text, stdout);
         }
 
         /* store with backup */

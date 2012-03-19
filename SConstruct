@@ -6,6 +6,7 @@ Command("clara_marshalers.h", "clara_marshalers.list", "glib-genmarshal --header
 common_sources = [
     'clara_marshalers.c',
     'clara.c',
+    'data.c',
     'skel.c',
     'event.c',
     'symbol.c',
